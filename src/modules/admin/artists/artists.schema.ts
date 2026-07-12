@@ -1,14 +1,17 @@
 import { z } from "zod";
 import { ArtistStatus } from "@prisma/client";
 
+// Único campo obligatorio: stageName. El resto es opcional y, a propósito, sin
+// validación estricta de formato (URL) para que un YouTube escrito como "@canal"
+// o una URL sin "https://" no bloquee el guardado del artista.
 export const createArtistSchema = z.object({
   stageName: z.string().min(1).max(150),
   bio: z.string().max(5000).optional(),
   spotifyId: z.string().optional(),
   soundcloudId: z.string().optional(),
   instagram: z.string().optional(),
-  youtube: z.string().url().optional(),
-  images: z.array(z.string().url()).default([]),
+  youtube: z.string().optional(),
+  images: z.array(z.string()).default([]),
   status: z.nativeEnum(ArtistStatus).default(ArtistStatus.ACTIVO),
   userId: z.string().cuid().optional(),
 });
