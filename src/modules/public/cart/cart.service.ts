@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { AppError } from "@/utils/AppError";
 import { CartStatus } from "@prisma/client";
 import { validateAndPriceDiscount } from "@/services/discount.service";
+import { assertDropPurchasable } from "@/services/drop.service";
 
 const cartInclude = {
   items: { include: { product: true, productVariant: true } },
@@ -30,11 +31,14 @@ export async function addItemToCart(input: {
 }) {
   const variant = await prisma.productVariant.findUnique({
     where: { id: input.productVariantId },
-    include: { product: true },
+    include: { product: { include: { dropMeta: true } } },
   });
   if (!variant || variant.productId !== input.productId) {
     throw AppError.notFound("Variante de producto");
   }
+
+  // No se puede añadir un drop que aún no está abierto (gate de servidor).
+  assertDropPurchasable(variant.product);
 
   // Comprobación "optimista" de stock a nivel de carrito. La verdad definitiva
   // (con row locking) se aplica en el checkout, aquí solo evitamos UX confusa.

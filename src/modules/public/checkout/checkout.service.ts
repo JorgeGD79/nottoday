@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { env } from "@/config/env";
 import { AppError } from "@/utils/AppError";
 import { validateAndPriceDiscount } from "@/services/discount.service";
+import { assertDropPurchasable } from "@/services/drop.service";
 import { createPaymentIntent, toStripeAmount } from "@/services/stripe.service";
 import { invalidateCatalogCache } from "@/services/cache.service";
 import { CheckoutInput } from "./checkout.schema";
@@ -35,12 +36,21 @@ interface LockedVariantRow {
 export async function checkout(input: CheckoutInput) {
   const cart = await prisma.cart.findUnique({
     where: { id: input.cartId },
-    include: { items: { include: { product: true, productVariant: true } }, discountCode: true },
+    include: {
+      items: { include: { product: { include: { dropMeta: true } }, productVariant: true } },
+      discountCode: true,
+    },
   });
 
   if (!cart) throw AppError.notFound("Carrito");
   if (cart.items.length === 0) throw new AppError("El carrito está vacío", 422);
   if (cart.status === CartStatus.CONVERTIDO) throw AppError.conflict("Este carrito ya fue procesado");
+
+  // Gate autoritativo: ningún item puede ser un drop cerrado, aunque se haya
+  // saltado el frontend y el add-to-cart. Se comprueba antes de tocar stock.
+  for (const item of cart.items) {
+    assertDropPurchasable(item.product);
+  }
 
   const subtotal = cart.items.reduce(
     (sum, item) => sum + Number(item.product.price) * item.quantity,

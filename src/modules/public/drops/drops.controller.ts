@@ -2,6 +2,7 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import { prisma } from "@/lib/prisma";
 import { ProductType } from "@prisma/client";
 import { CACHE_KEYS, CACHE_TTL_SECONDS, getCached, setCached } from "@/services/cache.service";
+import { effectiveDropStatus } from "@/services/drop.service";
 
 /**
  * GET /api/drops
@@ -17,7 +18,7 @@ export async function listDropsHandler(_request: FastifyRequest, reply: FastifyR
     return reply.header("X-Cache", "HIT").send(cached);
   }
 
-  const drops = await prisma.product.findMany({
+  const fetched = await prisma.product.findMany({
     where: { productType: ProductType.DROP_EXCLUSIVO, dropMeta: { isNot: null } },
     include: {
       variants: { select: { id: true, size: true, stockAvailable: true } },
@@ -25,6 +26,15 @@ export async function listDropsHandler(_request: FastifyRequest, reply: FastifyR
     },
     orderBy: { dropMeta: { releaseAt: "asc" } },
   });
+
+  // Estado calculado al leer: un drop PROXIMAMENTE cuya fecha ya pasó se
+  // devuelve como ABIERTO, sin necesidad de que nadie lo cambie a mano.
+  const drops = fetched.map((d) => ({
+    ...d,
+    dropMeta: d.dropMeta
+      ? { ...d.dropMeta, dropStatus: effectiveDropStatus(d.dropMeta) }
+      : d.dropMeta,
+  }));
 
   const payload = { drops };
   await setCached(CACHE_KEYS.drops, payload, CACHE_TTL_SECONDS.drops);
