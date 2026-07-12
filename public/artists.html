@@ -73,7 +73,7 @@
             <span class="font-body-md text-body-md uppercase text-on-surface-variant">© 2024 NOT TODAY COLLECTIVE. ALL RIGHTS RESERVED.</span>
         </div>
         <div class="md:col-span-8 flex flex-wrap gap-x-8 gap-y-4 md:justify-end items-end font-body-md text-body-md uppercase text-on-surface-variant">
-            <a class="hover:text-secondary transition-colors" href="#">Instagram</a>
+            <a class="hover:text-secondary transition-colors" href="https://www.instagram.com/nottoday.nty/" target="_blank" rel="noopener noreferrer">Instagram</a>
             <a class="hover:text-secondary transition-colors" href="#">SoundCloud</a>
             <a class="hover:text-secondary transition-colors" href="#">Spotify</a>
             <a class="hover:text-secondary transition-colors" href="track.html">Seguimiento</a>
@@ -106,6 +106,8 @@
 <script src="assets/js/api.js"></script>
 <script src="assets/js/cart.js"></script>
 <script>
+    let allArtists = [];
+
     function socialLinks(artist) {
         const links = [];
         if (artist.spotifyId) {
@@ -159,10 +161,11 @@
         const photo = (artist.images && artist.images[0]) || ntPlaceholderImage(artist.stageName);
         return `
         <article class="brutal-card group relative flex flex-col overflow-hidden">
-            <div class="relative w-full aspect-[4/3] bg-surface-container overflow-hidden border-b border-outline-variant/20">
+            <div data-artist="${artist.id}" class="relative w-full aspect-[4/3] bg-surface-container overflow-hidden border-b border-outline-variant/20 cursor-pointer">
                 <img class="w-full h-full object-cover transition-transform duration-500 grayscale group-hover:grayscale-0 opacity-90 group-hover:opacity-100"
                      src="${photo}" alt="${ntEscapeHtml(artist.stageName)}"/>
                 <div class="absolute inset-0 bg-gradient-to-t from-primary-container/80 via-transparent to-transparent"></div>
+                <span class="absolute top-2 right-2 font-label-mono text-[11px] uppercase tracking-widest text-on-surface bg-primary-container/70 border border-on-surface/20 px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">Ver perfil</span>
                 <h2 class="absolute bottom-4 left-4 font-headline-xl text-[40px] md:text-[56px] text-on-surface uppercase leading-none tracking-tighter">
                     ${ntEscapeHtml(artist.stageName)}
                 </h2>
@@ -191,7 +194,13 @@
                 </div>`;
                 return;
             }
+            allArtists = artists;
             grid.innerHTML = artists.map(artistCard).join("");
+            grid.querySelectorAll("[data-artist]").forEach((el) =>
+                el.addEventListener("click", () => {
+                    const a = allArtists.find((x) => x.id === el.dataset.artist);
+                    if (a) openArtistModal(a);
+                }));
         } catch (err) {
             grid.innerHTML = `<div class="md:col-span-2 border border-error/40 p-stack-lg text-center">
                 <p class="font-label-mono text-label-mono text-error uppercase">${ntEscapeHtml(err.message)}</p>
@@ -199,6 +208,75 @@
         }
     }
 
+    // ===================== Modal de detalle de artista =====================
+    let amArtist = null;
+    let amImgIndex = 0;
+
+    function mountArtistModal() {
+        const root = document.createElement("div");
+        root.id = "am-root";
+        root.className = "hidden fixed inset-0 z-[70]";
+        root.innerHTML = `
+            <div id="am-backdrop" class="absolute inset-0 bg-primary-container/90 backdrop-blur-sm"></div>
+            <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
+                <div id="am-panel" class="bg-surface-container-lowest border-2 border-on-surface w-full max-w-4xl max-h-[90vh] overflow-y-auto pointer-events-auto relative"></div>
+            </div>`;
+        document.body.appendChild(root);
+        root.querySelector("#am-backdrop").addEventListener("click", closeArtistModal);
+        document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeArtistModal(); });
+    }
+
+    function openArtistModal(artist) {
+        amArtist = artist;
+        amImgIndex = 0;
+        document.getElementById("am-root").classList.remove("hidden");
+        document.body.style.overflow = "hidden";
+        renderArtistModal();
+    }
+
+    function closeArtistModal() {
+        const root = document.getElementById("am-root");
+        if (root) root.classList.add("hidden");
+        document.body.style.overflow = "";
+    }
+
+    function renderArtistModal() {
+        const a = amArtist;
+        const images = (a.images && a.images.length) ? a.images : [ntPlaceholderImage(a.stageName)];
+        const thumbs = images.length > 1
+            ? `<div class="flex gap-2 mt-2 flex-wrap">${images.map((img, i) => `
+                <button data-thumb="${i}" class="w-14 h-16 border ${i === amImgIndex ? "border-secondary" : "border-outline-variant/30"} overflow-hidden">
+                    <img src="${ntEscapeHtml(img)}" class="w-full h-full object-cover" alt=""/>
+                </button>`).join("")}</div>`
+            : "";
+        document.getElementById("am-panel").innerHTML = `
+            <button id="am-close" class="absolute top-2 right-2 z-10 text-on-surface hover:text-secondary transition-colors p-1" aria-label="Cerrar">
+                <span class="material-symbols-outlined text-3xl">close</span>
+            </button>
+            <div class="grid grid-cols-1 md:grid-cols-2">
+                <div class="p-stack-md">
+                    <div class="w-full aspect-[4/5] bg-surface-container border border-outline-variant/20 overflow-hidden">
+                        <img id="am-main" src="${ntEscapeHtml(images[amImgIndex])}" class="w-full h-full object-cover" alt="${ntEscapeHtml(a.stageName)}"/>
+                    </div>
+                    ${thumbs}
+                </div>
+                <div class="p-stack-md flex flex-col gap-stack-md border-t md:border-t-0 md:border-l border-outline-variant/20">
+                    <h2 class="font-headline-xl text-[40px] text-on-surface uppercase leading-none">${ntEscapeHtml(a.stageName)}</h2>
+                    ${a.bio ? `<p class="font-body-md text-body-md text-on-surface-variant whitespace-pre-line">${ntEscapeHtml(a.bio)}</p>` : ""}
+                    <div class="flex flex-wrap gap-2">${socialLinks(a)}</div>
+                    ${artistSessions(a)}
+                    <a href="booking.html" class="inline-flex items-center gap-2 font-headline-lg text-[20px] uppercase text-secondary hover:text-on-surface transition-colors mt-auto pt-stack-md">
+                        Book ${ntEscapeHtml(a.stageName)} <span class="material-symbols-outlined">arrow_forward</span>
+                    </a>
+                </div>
+            </div>`;
+        const panel = document.getElementById("am-panel");
+        panel.querySelector("#am-close").addEventListener("click", closeArtistModal);
+        panel.querySelectorAll("[data-thumb]").forEach((b) =>
+            b.addEventListener("click", () => { amImgIndex = Number(b.dataset.thumb); renderArtistModal(); }));
+    }
+
+    mountArtistModal();
     loadArtists();
 </script>
 </body>
