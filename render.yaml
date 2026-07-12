@@ -26,10 +26,9 @@ services:
     plan: free             # el plan free "duerme" tras 15 min de inactividad
     healthCheckPath: /health
     autoDeploy: true
-    # Aplica migraciones y arranca. El admin se siembra aparte (una sola vez)
-    # desde tu máquina contra la External Database URL, para no acoplar el
-    # arranque del servidor al seed. Render ya ejecuta esto dentro de una shell.
-    dockerCommand: "npx prisma migrate deploy && node dist/server.js"
+    # Comando SIN operadores de shell (Render trocea los "&&" y los rompe).
+    # La secuencia migrate + start vive en docker-entrypoint.sh.
+    dockerCommand: sh docker-entrypoint.sh
     envVars:
       - key: NODE_ENV
         value: development          # demo: relaja validaciones y permite pago simulado

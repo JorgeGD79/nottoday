@@ -22,6 +22,9 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY prisma ./prisma
 COPY public ./public
+COPY docker-entrypoint.sh ./
 # Render inyecta la variable PORT; el server escucha en env.PORT y host 0.0.0.0.
 EXPOSE 4123
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
+# El script encapsula "migrate + start" para no depender de operadores de shell
+# (&&) en el comando, que Render trocea y rompe.
+CMD ["sh", "docker-entrypoint.sh"]
