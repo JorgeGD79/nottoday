@@ -6,6 +6,7 @@ import rateLimit from "@fastify/rate-limit";
 import sensible from "@fastify/sensible";
 import jwt from "@fastify/jwt";
 import fastifyStatic from "@fastify/static";
+import multipart from "@fastify/multipart";
 import { ZodError } from "zod";
 import { Prisma } from "@prisma/client";
 
@@ -33,6 +34,7 @@ import { publicShippingRoutes } from "@/modules/public/shipping/shipping.routes"
 import { publicOrdersRoutes } from "@/modules/public/orders/orders.routes";
 import { adminShippingRoutes } from "@/modules/admin/shipping/shipping.routes";
 import { adminOrdersRoutes } from "@/modules/admin/orders/orders.routes";
+import { adminUploadsRoutes } from "@/modules/admin/uploads/uploads.routes";
 
 export async function buildApp(): Promise<FastifyInstance> {
   // Dejamos que Fastify construya su propia instancia de pino a partir de
@@ -94,6 +96,8 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(rateLimit, { max: 100, timeWindow: "1 minute", redis });
   await app.register(sensible);
   await app.register(jwt, { secret: env.JWT_SECRET });
+  // Subida de imágenes del panel (multipart/form-data). Límite por archivo 10 MB.
+  await app.register(multipart, { limits: { fileSize: 10 * 1024 * 1024, files: 10 } });
 
   // --- Manejador de errores global ---
   // IMPORTANTE: debe registrarse ANTES de los `app.register(...)` de las rutas.
@@ -156,6 +160,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(adminSessionsRoutes, { prefix: "/api/admin/sessions" });
   await app.register(adminShippingRoutes, { prefix: "/api/admin/shipping" });
   await app.register(adminOrdersRoutes, { prefix: "/api/admin/orders" });
+  await app.register(adminUploadsRoutes, { prefix: "/api/admin/uploads" });
 
   app.get("/health", async () => ({ status: "ok" }));
 

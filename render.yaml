@@ -46,6 +46,14 @@ services:
         value: admin@nottoday.com
       - key: SEED_ADMIN_PASSWORD
         generateValue: true         # léela en el panel de Render para el primer login
+      # Cloudinary (subida de fotos). sync:false = las metes a mano en el dashboard
+      # de Render (Environment), no se guardan en git.
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
       - key: DATABASE_URL
         fromDatabase:
           name: nottoday-db

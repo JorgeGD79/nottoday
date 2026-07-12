@@ -47,6 +47,21 @@ async function adminApi(path, options = {}) {
   }
 }
 
+// Sube archivos a POST /api/admin/uploads (multipart). NO fijamos Content-Type:
+// el navegador lo pone con el boundary correcto al usar FormData.
+async function uploadImages(files) {
+  const fd = new FormData();
+  for (const f of files) fd.append("files", f);
+  const res = await fetch("/api/admin/uploads", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${Auth.token}` },
+    body: fd,
+  });
+  const body = await res.json().catch(() => null);
+  if (!res.ok) throw new Error((body && body.error) || `Error ${res.status}`);
+  return body.urls;
+}
+
 // ---------- Helpers de formato ----------
 
 const fmtShortDate = (iso) =>
@@ -113,6 +128,74 @@ const fDatetime = (name, label, isoValue, required = false) => `
     <label class="nt-label">${label}</label>
     <input class="nt-input" name="${name}" type="datetime-local" value="${toLocalInput(isoValue)}" ${required ? "required" : ""}/>
   </div>`;
+
+// ---------- Campo de imágenes (adjuntar archivo → sube a Cloudinary) ----------
+// Mantiene en memoria la lista de URLs de cada campo (por `id`), muestra
+// miniaturas con botón de quitar, y sube los archivos elegidos. En el submit del
+// formulario se leen las URLs con ImageField.get(id) (no via drawerValues).
+const ImageField = {
+  state: {},
+  render(id, label, urls = [], multiple = true) {
+    this.state[id] = Array.isArray(urls) ? [...urls] : [];
+    return `
+      <div>
+        <label class="nt-label">${label}</label>
+        <div id="${id}-previews" class="flex flex-wrap gap-2 mt-2"></div>
+        <label class="inline-flex items-center gap-2 mt-2 cursor-pointer font-label-mono text-[12px] uppercase border border-outline-variant/30 px-3 py-2 text-on-surface-variant hover:border-secondary hover:text-secondary transition-colors">
+          <span class="material-symbols-outlined text-[18px]">upload</span> Adjuntar ${multiple ? "fotos" : "foto"}
+          <input type="file" id="${id}-file" accept="image/*" ${multiple ? "multiple" : ""} class="hidden"/>
+        </label>
+        <p id="${id}-status" class="font-label-mono text-[11px] text-on-surface-variant uppercase mt-1"></p>
+      </div>`;
+  },
+  wire(id, multiple = true) {
+    this.renderPreviews(id);
+    const input = document.getElementById(`${id}-file`);
+    if (!input) return;
+    input.addEventListener("change", async () => {
+      const files = [...input.files];
+      if (!files.length) return;
+      const status = document.getElementById(`${id}-status`);
+      status.textContent = "Subiendo...";
+      try {
+        const urls = await uploadImages(files);
+        if (!multiple) this.state[id] = [];
+        this.state[id].push(...urls);
+        status.textContent = "";
+        this.renderPreviews(id);
+      } catch (err) {
+        status.textContent = err.message;
+      } finally {
+        input.value = "";
+      }
+    });
+  },
+  renderPreviews(id) {
+    const box = document.getElementById(`${id}-previews`);
+    if (!box) return;
+    box.innerHTML = this.state[id]
+      .map(
+        (url, i) => `
+        <div class="relative w-20 h-20 border border-outline-variant/30 overflow-hidden">
+          <img src="${ntEscapeHtml(url)}" class="w-full h-full object-cover" alt=""/>
+          <button type="button" data-img-remove="${i}" title="Quitar"
+            class="absolute top-0 right-0 bg-primary-container/80 text-on-surface hover:text-error leading-none p-0.5">
+            <span class="material-symbols-outlined text-[16px]">close</span>
+          </button>
+        </div>`
+      )
+      .join("");
+    box.querySelectorAll("[data-img-remove]").forEach((btn) =>
+      btn.addEventListener("click", () => {
+        this.state[id].splice(Number(btn.dataset.imgRemove), 1);
+        this.renderPreviews(id);
+      })
+    );
+  },
+  get(id) {
+    return this.state[id] || [];
+  },
+};
 
 // ---------- Drawer ----------
 
@@ -250,7 +333,7 @@ const Sections = {
         ${fText("name", "Nombre", p?.name, { required: true })}
         ${fTextarea("description", "Descripción", p?.description)}
         ${fText("price", "Precio (EUR)", p?.price, { type: "number", step: "0.01", min: 0, required: true })}
-        ${fTextarea("images", "Imágenes (una URL por línea)", (p?.images || []).join("\n"), 2)}
+        ${ImageField.render("prod-images", "Fotos del producto", p?.images || [], true)}
         ${fSelect("productType", "Tipo", [["TIENDA_GENERAL", "Tienda general"], ["DROP_EXCLUSIVO", "Drop exclusivo"]], p?.productType || "TIENDA_GENERAL")}
         ${fSelect("status", "Estado", ["BORRADOR", "ACTIVO", "AGOTADO"], p?.status || "BORRADOR")}
         <div>
@@ -281,7 +364,7 @@ const Sections = {
           productType: v.productType,
           status: v.status,
         });
-        payload.images = v.images ? v.images.split("\n").map((l) => l.trim()).filter(Boolean) : [];
+        payload.images = ImageField.get("prod-images");
         if (variants.length) payload.variants = variants;
         if (v.productType === "DROP_EXCLUSIVO" && v.releaseAt) {
           payload.dropMeta = { releaseAt: fromLocalInput(v.releaseAt), dropStatus: v.dropStatus };
@@ -292,6 +375,7 @@ const Sections = {
           "products", p ? "Producto actualizado" : "Producto creado");
       });
 
+      ImageField.wire("prod-images", true);
       document.getElementById("drawer-form")
         .querySelector("[name=productType]")
         .addEventListener("change", (e) =>
@@ -331,7 +415,7 @@ const Sections = {
         ${fText("youtube", "YouTube (URL)", a?.youtube, { placeholder: "https://www.youtube.com/@canal" })}
         ${fText("soundcloudId", "SoundCloud (usuario)", a?.soundcloudId)}
         ${fText("instagram", "Instagram (@usuario)", a?.instagram)}
-        ${fTextarea("images", "Fotos (una URL por línea)", (a?.images || []).join("\n"), 2)}
+        ${ImageField.render("artist-images", "Fotos", a?.images || [], true)}
         ${fSelect("status", "Estado", ["ACTIVO", "INACTIVO"], a?.status || "ACTIVO")}`;
       Drawer.open(a ? "Editar artista" : "Nuevo artista", html, () => {
         const v = drawerValues();
@@ -339,12 +423,13 @@ const Sections = {
           stageName: v.stageName, bio: v.bio, spotifyId: v.spotifyId, youtube: v.youtube,
           soundcloudId: v.soundcloudId, instagram: v.instagram, status: v.status,
         });
-        payload.images = v.images ? v.images.split("\n").map((l) => l.trim()).filter(Boolean) : [];
+        payload.images = ImageField.get("artist-images");
         return submitAndReload(
           a ? adminApi(`/admin/artists/${a.id}`, { method: "PUT", body: JSON.stringify(payload) })
             : adminApi("/admin/artists", { method: "POST", body: JSON.stringify(payload) }),
           "artists", a ? "Artista actualizado" : "Artista creado");
       });
+      ImageField.wire("artist-images", true);
     },
   },
 
@@ -389,7 +474,7 @@ const Sections = {
         ${fDatetime("date", "Fecha y hora", e?.date, true)}
         ${fText("venue", "Sala / Ciudad", e?.venue, { required: true, placeholder: "Nave 12 / Madrid" })}
         ${fTextarea("description", "Descripción", e?.description)}
-        ${fText("posterUrl", "Póster (URL)", e?.posterUrl)}
+        ${ImageField.render("event-poster", "Póster", e?.posterUrl ? [e.posterUrl] : [], false)}
         ${fText("price", "Precio entrada (EUR)", e?.price ?? 0, { type: "number", step: "0.01", min: 0 })}
         ${fSelect("status", "Estado", ["BORRADOR", "PUBLICADO", "CANCELADO", "FINALIZADO"], e?.status || "BORRADOR")}
         <div>
@@ -413,10 +498,11 @@ const Sections = {
           date: fromLocalInput(v.date),
           venue: v.venue,
           description: v.description,
-          posterUrl: v.posterUrl,
           price: parseFloat(v.price || "0"),
           status: v.status,
         });
+        const poster = ImageField.get("event-poster")[0];
+        if (poster) payload.posterUrl = poster;
         payload.lineup = lineup;
         return submitAndReload(
           e ? adminApi(`/admin/events/${e.id}`, { method: "PUT", body: JSON.stringify(payload) })
@@ -424,6 +510,7 @@ const Sections = {
           "events", e ? "Evento actualizado" : "Evento creado");
       });
 
+      ImageField.wire("event-poster", false);
       document.getElementById("lineup-add").addEventListener("click", () => {
         document.getElementById("lineup-rows").insertAdjacentHTML("beforeend", lineupRow());
       });

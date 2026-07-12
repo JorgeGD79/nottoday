@@ -30,6 +30,12 @@ const envSchema = z
     STRIPE_SECRET_KEY: z.string().min(1, "STRIPE_SECRET_KEY es obligatorio"),
     STRIPE_WEBHOOK_SECRET: z.string().optional(),
 
+    // Cloudinary (subida de imágenes del panel). Opcionales: si faltan, el
+    // endpoint de subida responde un error claro en vez de tumbar el arranque.
+    CLOUDINARY_CLOUD_NAME: z.string().optional(),
+    CLOUDINARY_API_KEY: z.string().optional(),
+    CLOUDINARY_API_SECRET: z.string().optional(),
+
     // Solo desarrollo/pruebas: salta la llamada a Stripe en el checkout y confirma
     // el pedido como pagado directamente, para poder simular la web de punta a punta
     // sin claves de Stripe reales. PROHIBIDO en producción (ver superRefine).
