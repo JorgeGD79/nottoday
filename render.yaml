@@ -26,6 +26,10 @@ services:
     plan: free             # el plan free "duerme" tras 15 min de inactividad
     healthCheckPath: /health
     autoDeploy: true
+    # Migra la BD y siembra el admin al arrancar (evita necesitar el Shell de pago).
+    # El seed es idempotente (upsert): en despliegues posteriores no duplica ni
+    # cambia la contraseña si el usuario ya existe.
+    dockerCommand: sh -c "npx prisma migrate deploy && npx tsx prisma/seed.ts && node dist/server.js"
     envVars:
       - key: NODE_ENV
         value: development          # demo: relaja validaciones y permite pago simulado
