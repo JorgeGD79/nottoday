@@ -82,6 +82,16 @@ body::after {
 .nt-input::placeholder {
     color: #8e9192;
 }
+/* El autofill del navegador pinta un fondo claro y deja el texto en color claro
+   (invisible). Forzamos texto claro + fondo del tema en los campos autocompletados. */
+.nt-input:-webkit-autofill,
+.nt-input:-webkit-autofill:hover,
+.nt-input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #e5e2e1;
+    -webkit-box-shadow: 0 0 0 1000px #131313 inset;
+    caret-color: #e5e2e1;
+    transition: background-color 9999s ease-in-out 0s;
+}
 .nt-label {
     font-family: "JetBrains Mono", monospace;
     font-size: 14px;
