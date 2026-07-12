@@ -1,6 +1,18 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-import { addItemSchema, applyDiscountSchema, cartIdParamsSchema, removeItemParamsSchema } from "./cart.schema";
-import { addItemToCart, applyDiscountToCart, getCart, removeItemFromCart } from "./cart.service";
+import {
+  addItemSchema,
+  applyDiscountSchema,
+  cartIdParamsSchema,
+  removeItemParamsSchema,
+  updateItemBodySchema,
+} from "./cart.schema";
+import {
+  addItemToCart,
+  applyDiscountToCart,
+  getCart,
+  removeItemFromCart,
+  setItemQuantity,
+} from "./cart.service";
 
 export async function getCartHandler(request: FastifyRequest, reply: FastifyReply) {
   const { cartId } = cartIdParamsSchema.parse(request.params);
@@ -17,6 +29,13 @@ export async function addItemHandler(request: FastifyRequest, reply: FastifyRepl
 export async function removeItemHandler(request: FastifyRequest, reply: FastifyReply) {
   const { cartId, productVariantId } = removeItemParamsSchema.parse(request.params);
   const cart = await removeItemFromCart(cartId, productVariantId);
+  return reply.send({ cart });
+}
+
+export async function updateItemHandler(request: FastifyRequest, reply: FastifyReply) {
+  const { cartId, productVariantId } = removeItemParamsSchema.parse(request.params);
+  const { quantity } = updateItemBodySchema.parse(request.body);
+  const cart = await setItemQuantity(cartId, productVariantId, quantity);
   return reply.send({ cart });
 }
 

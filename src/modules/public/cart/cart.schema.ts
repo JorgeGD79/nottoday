@@ -19,3 +19,8 @@ export const removeItemParamsSchema = z.object({
   cartId: z.string().cuid(),
   productVariantId: z.string().cuid(),
 });
+
+// Fijar la cantidad de una línea. quantity 0 = eliminar la línea.
+export const updateItemBodySchema = z.object({
+  quantity: z.number().int().min(0).max(10),
+});

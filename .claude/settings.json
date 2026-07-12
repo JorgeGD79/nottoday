@@ -68,7 +68,8 @@
       "Bash(rm -f _test-artist.ts)",
       "Bash(node --check public/assets/js/api.js)",
       "Bash(node --check public/assets/js/admin.js)",
-      "Bash(curl -s -X POST http://localhost:4123/api/admin/uploads -w \"\\\\nHTTP %{http_code}\\\\n\")"
+      "Bash(curl -s -X POST http://localhost:4123/api/admin/uploads -w \"\\\\nHTTP %{http_code}\\\\n\")",
+      "Bash(node -e ' *)"
     ]
   }
 }

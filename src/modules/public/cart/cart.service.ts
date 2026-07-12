@@ -78,6 +78,30 @@ export async function applyDiscountToCart(cartId: string, code: string) {
   return { cart: await prisma.cart.findUniqueOrThrow({ where: { id: cartId }, include: cartInclude }), evaluation };
 }
 
+export async function setItemQuantity(cartId: string, productVariantId: string, quantity: number) {
+  const cart = await prisma.cart.findUnique({ where: { id: cartId } });
+  if (!cart) throw AppError.notFound("Carrito");
+
+  // Cantidad 0 (o menos) = quitar la línea.
+  if (quantity <= 0) {
+    return removeItemFromCart(cartId, productVariantId);
+  }
+
+  const variant = await prisma.productVariant.findUnique({ where: { id: productVariantId } });
+  if (!variant) throw AppError.notFound("Variante de producto");
+
+  const availableToPromise = variant.stockAvailable - variant.stockReserved;
+  if (availableToPromise < quantity) {
+    throw new AppError(`Stock insuficiente para la talla ${variant.size} (disponible: ${availableToPromise})`, 422);
+  }
+
+  // updateMany para no lanzar si la línea no existe (no-op idempotente).
+  await prisma.cartItem.updateMany({ where: { cartId, productVariantId }, data: { quantity } });
+  await prisma.cart.update({ where: { id: cartId }, data: { updatedAt: new Date() } });
+
+  return prisma.cart.findUniqueOrThrow({ where: { id: cartId }, include: cartInclude });
+}
+
 export async function removeItemFromCart(cartId: string, productVariantId: string) {
   const cart = await prisma.cart.findUnique({ where: { id: cartId } });
   if (!cart) throw AppError.notFound("Carrito");

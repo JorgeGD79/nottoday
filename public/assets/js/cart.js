@@ -56,6 +56,16 @@ const NTCart = {
     this.render();
   },
 
+  async setQuantity(productVariantId, quantity) {
+    if (!this.cartId) return;
+    const { cart } = await ntApi(`/cart/${this.cartId}/items/${productVariantId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ quantity }),
+    });
+    this.cart = cart;
+    this.render();
+  },
+
   async applyDiscount(code) {
     if (!this.cartId) throw new Error("El carrito está vacío");
     const { cart } = await ntApi("/cart/discount", {
@@ -150,10 +160,20 @@ const NTCart = {
           <div class="flex flex-col flex-grow justify-between py-1">
             <div>
               <h3 class="font-headline-lg text-headline-lg-mobile text-on-surface uppercase leading-none">${ntEscapeHtml(item.product.name)}</h3>
-              <p class="font-label-mono text-label-mono text-on-surface-variant mt-1">Talla: ${item.productVariant.size} · x${item.quantity}</p>
+              <p class="font-label-mono text-label-mono text-on-surface-variant mt-1">Talla: ${item.productVariant.size}</p>
             </div>
-            <div class="flex justify-between items-center mt-4">
-              <span class="font-label-mono text-label-mono text-on-surface-variant">${ntFormatMoney(item.product.price)} / ud</span>
+            <div class="flex justify-between items-center mt-4 gap-2">
+              <div class="flex items-center border border-outline-variant/30">
+                <button data-qty="dec" data-variant="${item.productVariant.id}" aria-label="Quitar una unidad"
+                  class="w-8 h-8 flex items-center justify-center text-on-surface hover:text-secondary transition-colors">
+                  <span class="material-symbols-outlined text-[18px]">remove</span>
+                </button>
+                <span class="w-8 text-center font-label-mono text-label-mono text-on-surface">${item.quantity}</span>
+                <button data-qty="inc" data-variant="${item.productVariant.id}" aria-label="Añadir una unidad"
+                  class="w-8 h-8 flex items-center justify-center text-on-surface hover:text-secondary transition-colors">
+                  <span class="material-symbols-outlined text-[18px]">add</span>
+                </button>
+              </div>
               <span class="font-label-mono text-label-mono text-secondary">${ntFormatMoney(Number(item.product.price) * item.quantity)}</span>
             </div>
           </div>
@@ -192,6 +212,23 @@ const NTCart = {
         try {
           await this.remove(btn.dataset.remove);
           ntToast("Producto eliminado");
+        } catch (err) {
+          ntToast(err.message, true);
+          btn.disabled = false;
+        }
+      })
+    );
+
+    // Botones de cantidad (− / +). En 1, el − elimina la línea (quantity 0).
+    itemsEl.querySelectorAll("[data-qty]").forEach((btn) =>
+      btn.addEventListener("click", async () => {
+        const variantId = btn.dataset.variant;
+        const item = this.cart.items.find((i) => i.productVariant.id === variantId);
+        if (!item) return;
+        const next = btn.dataset.qty === "inc" ? item.quantity + 1 : item.quantity - 1;
+        btn.disabled = true;
+        try {
+          await this.setQuantity(variantId, next);
         } catch (err) {
           ntToast(err.message, true);
           btn.disabled = false;

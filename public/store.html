@@ -155,7 +155,7 @@
         const isBlocked = disabled || soldOut;
         return `
         <article class="group relative flex flex-col bg-primary-container border-b md:border-b-0 md:border-r border-outline-variant/20 hover:border-secondary hover:z-10 transition-colors overflow-hidden p-stack-md" data-product-card="${product.id}">
-            <div class="relative w-full aspect-[4/5] bg-surface-container overflow-hidden border border-outline-variant/20">
+            <div data-view="${product.id}" class="relative w-full aspect-[4/5] bg-surface-container overflow-hidden border border-outline-variant/20 cursor-pointer">
                 <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03] opacity-90 group-hover:opacity-100 mix-blend-luminosity group-hover:mix-blend-normal"
                      src="${ntProductImage(product)}" alt="${ntEscapeHtml(product.name)}"/>
                 ${badge ? `<div class="absolute top-2 left-2 bg-primary-container border border-on-surface px-2 py-0.5">
@@ -186,6 +186,14 @@
     const selectedVariant = new Map();
 
     function wireCards(container) {
+        // Clic en la imagen → abre el detalle del producto (galería + descripción).
+        container.querySelectorAll("[data-view]").forEach((el) => {
+            el.addEventListener("click", () => {
+                const p = productIndex.get(el.dataset.view);
+                if (p) openProductModal(p);
+            });
+        });
+
         container.querySelectorAll(".size-btn:not(:disabled)").forEach((btn) => {
             btn.addEventListener("click", () => {
                 const productId = btn.dataset.product;
@@ -301,6 +309,115 @@
             /* la sección de drops permanece oculta si la API falla */
         }
     }
+
+    // ===================== Modal de detalle de producto =====================
+    let pmProduct = null;
+    let pmVariantId = null;
+    let pmImgIndex = 0;
+
+    function mountProductModal() {
+        const root = document.createElement("div");
+        root.id = "pm-root";
+        root.className = "hidden fixed inset-0 z-[70]";
+        root.innerHTML = `
+            <div id="pm-backdrop" class="absolute inset-0 bg-primary-container/90 backdrop-blur-sm"></div>
+            <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
+                <div id="pm-panel" class="bg-surface-container-lowest border-2 border-on-surface w-full max-w-4xl max-h-[90vh] overflow-y-auto pointer-events-auto relative"></div>
+            </div>`;
+        document.body.appendChild(root);
+        root.querySelector("#pm-backdrop").addEventListener("click", closeProductModal);
+        document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeProductModal(); });
+    }
+
+    function openProductModal(product) {
+        pmProduct = product;
+        pmImgIndex = 0;
+        pmVariantId = null;
+        document.getElementById("pm-root").classList.remove("hidden");
+        document.body.style.overflow = "hidden";
+        renderProductModal();
+    }
+
+    function closeProductModal() {
+        const root = document.getElementById("pm-root");
+        if (root) root.classList.add("hidden");
+        document.body.style.overflow = "";
+    }
+
+    function renderProductModal() {
+        const p = pmProduct;
+        const images = (p.images && p.images.length) ? p.images : [ntPlaceholderImage(p.name)];
+        const sizes = [...p.variants].sort((a, b) => SIZE_ORDER.indexOf(a.size) - SIZE_ORDER.indexOf(b.size));
+        const soldOut = p.status === "AGOTADO" || p.variants.every((v) => v.stockAvailable <= 0);
+        const dropLocked = p.dropMeta && p.dropMeta.dropStatus !== "ABIERTO";
+        const canBuy = !soldOut && !dropLocked;
+
+        const thumbs = images.length > 1
+            ? `<div class="flex gap-2 mt-2 flex-wrap">${images.map((img, i) => `
+                <button data-thumb="${i}" class="w-14 h-16 border ${i === pmImgIndex ? "border-secondary" : "border-outline-variant/30"} overflow-hidden">
+                    <img src="${ntEscapeHtml(img)}" class="w-full h-full object-cover" alt=""/>
+                </button>`).join("")}</div>`
+            : "";
+
+        const sizeBtns = sizes.map((v) => `
+            <button data-size="${v.id}" ${v.stockAvailable <= 0 ? "disabled" : ""}
+                class="size-btn ${pmVariantId === v.id ? "selected" : ""}"
+                title="${v.stockAvailable <= 0 ? "Agotado" : `${v.stockAvailable} disponibles`}">${v.size}</button>`).join("");
+
+        document.getElementById("pm-panel").innerHTML = `
+            <button id="pm-close" class="absolute top-2 right-2 z-10 text-on-surface hover:text-secondary transition-colors p-1" aria-label="Cerrar">
+                <span class="material-symbols-outlined text-3xl">close</span>
+            </button>
+            <div class="grid grid-cols-1 md:grid-cols-2">
+                <div class="p-stack-md">
+                    <div class="w-full aspect-[4/5] bg-surface-container border border-outline-variant/20 overflow-hidden">
+                        <img id="pm-main" src="${ntEscapeHtml(images[pmImgIndex])}" class="w-full h-full object-cover" alt="${ntEscapeHtml(p.name)}"/>
+                    </div>
+                    ${thumbs}
+                </div>
+                <div class="p-stack-md flex flex-col gap-stack-md border-t md:border-t-0 md:border-l border-outline-variant/20">
+                    <div>
+                        <span class="font-label-mono text-[12px] uppercase ${p.productType === "DROP_EXCLUSIVO" ? "text-secondary" : "text-on-surface-variant"}">${p.productType === "DROP_EXCLUSIVO" ? "Drop exclusivo" : "Tienda"}</span>
+                        <h2 class="font-headline-xl text-[36px] text-on-surface uppercase leading-none mt-1">${ntEscapeHtml(p.name)}</h2>
+                        <p class="font-label-mono text-label-mono text-secondary mt-2">${ntFormatMoney(p.price)}</p>
+                    </div>
+                    ${p.description ? `<p class="font-body-md text-body-md text-on-surface-variant whitespace-pre-line">${ntEscapeHtml(p.description)}</p>` : ""}
+                    <div>
+                        <span class="font-label-mono text-[11px] text-on-surface-variant uppercase tracking-widest block mb-2">Talla</span>
+                        <div class="flex gap-2" data-modal-sizes>${sizeBtns}</div>
+                    </div>
+                    ${dropLocked ? `<p class="font-label-mono text-[12px] text-secondary uppercase">Disponible el ${new Date(p.dropMeta.releaseAt).toLocaleDateString("es-ES")}</p>` : ""}
+                    <button id="pm-add" ${canBuy ? "" : "disabled"}
+                        class="w-full bg-secondary-container text-primary-container font-headline-lg text-[22px] uppercase py-3 hover:bg-on-surface transition-colors disabled:opacity-30 disabled:cursor-not-allowed mt-auto">
+                        ${soldOut ? "Agotado" : dropLocked ? "Próximamente" : "Añadir al carrito"}
+                    </button>
+                </div>
+            </div>`;
+
+        const panel = document.getElementById("pm-panel");
+        panel.querySelector("#pm-close").addEventListener("click", closeProductModal);
+        panel.querySelectorAll("[data-thumb]").forEach((b) =>
+            b.addEventListener("click", () => { pmImgIndex = Number(b.dataset.thumb); renderProductModal(); }));
+        panel.querySelectorAll("[data-size]:not(:disabled)").forEach((b) =>
+            b.addEventListener("click", () => { pmVariantId = b.dataset.size; renderProductModal(); }));
+        const addBtn = panel.querySelector("#pm-add");
+        if (canBuy) {
+            addBtn.addEventListener("click", async () => {
+                if (!pmVariantId) { ntToast("Elige una talla primero", true); return; }
+                addBtn.disabled = true;
+                try {
+                    await NTCart.add({ productId: p.id, productVariantId: pmVariantId, quantity: 1 });
+                    closeProductModal();
+                    ntToast("Añadido al carrito");
+                } catch (err) {
+                    ntToast(err.message, true);
+                    addBtn.disabled = false;
+                }
+            });
+        }
+    }
+
+    mountProductModal();
 
     document.getElementById("sort-select").addEventListener("change", renderCatalog);
     loadCatalog();
