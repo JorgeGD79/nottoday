@@ -26,12 +26,10 @@ services:
     plan: free             # el plan free "duerme" tras 15 min de inactividad
     healthCheckPath: /health
     autoDeploy: true
-    # Migra la BD y siembra el admin al arrancar (evita necesitar el Shell de pago).
-    # El seed es idempotente (upsert): en despliegues posteriores no duplica ni
-    # cambia la contraseña si el usuario ya existe.
-    # OJO: Render ya ejecuta este comando dentro de una shell, así que NO hay que
-    # envolverlo en `sh -c "..."` (eso anida comillas y rompe con exit 127).
-    dockerCommand: "npx prisma migrate deploy && npx tsx prisma/seed.ts && node dist/server.js"
+    # Aplica migraciones y arranca. El admin se siembra aparte (una sola vez)
+    # desde tu máquina contra la External Database URL, para no acoplar el
+    # arranque del servidor al seed. Render ya ejecuta esto dentro de una shell.
+    dockerCommand: "npx prisma migrate deploy && node dist/server.js"
     envVars:
       - key: NODE_ENV
         value: development          # demo: relaja validaciones y permite pago simulado
