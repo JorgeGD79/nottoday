@@ -10,8 +10,13 @@ const NT_API_BASE = "/api";
  */
 async function ntApi(path, options = {}) {
   const res = await fetch(`${NT_API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    // OJO con el orden: `headers` debe ir DESPUÉS de `...options`. Si va antes,
+    // cuando options trae sus propias headers (p. ej. el Authorization de las
+    // llamadas admin) el spread sobrescribe todo el objeto y se pierde el
+    // Content-Type: application/json → el body viajaría como text/plain y el
+    // backend no lo parsearía como JSON ("Expected object, received string").
     ...options,
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
   });
 
   const body = res.status === 204 ? null : await res.json().catch(() => null);

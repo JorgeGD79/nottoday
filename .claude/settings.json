@@ -63,7 +63,10 @@
       "Bash(curl -s -X DELETE \"http://localhost:4201/api/cart/cmtesttesttesttesttesttest/items/cmtesttesttesttesttesttest\" -w \"\\\\nHTTP %{http_code}\\\\n\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:4123/health)",
       "Bash(curl -s -X DELETE \"http://localhost:4123/api/cart/cmtesttesttesttesttesttest/items/cmtesttesttesttesttesttest\")",
-      "PowerShell(Get-Content \"C:\\\\Users\\\\jorge\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-jorge-Visual-Studio-nottoday\\\\82d69422-ace0-44ad-ae60-5d7b191d48f7\\\\tasks\\\\b2ndm8gr2.output\" -Tail 5; try { $r = Invoke-WebRequest -UseBasicParsing http://localhost:4123/health -TimeoutSec 3; \"health ahora: $\\($r.Content\\)\" } catch { \"health ahora: sin servidor en 4123\" })"
+      "PowerShell(Get-Content \"C:\\\\Users\\\\jorge\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-jorge-Visual-Studio-nottoday\\\\82d69422-ace0-44ad-ae60-5d7b191d48f7\\\\tasks\\\\b2ndm8gr2.output\" -Tail 5; try { $r = Invoke-WebRequest -UseBasicParsing http://localhost:4123/health -TimeoutSec 3; \"health ahora: $\\($r.Content\\)\" } catch { \"health ahora: sin servidor en 4123\" })",
+      "Bash(npx tsx *)",
+      "Bash(rm -f _test-artist.ts)",
+      "Bash(node --check public/assets/js/api.js)"
     ]
   }
 }
