@@ -111,6 +111,7 @@
         const frame = videoId
             ? `<iframe class="w-full h-full" src="https://www.youtube-nocookie.com/embed/${videoId}"
                  title="${ntEscapeHtml(session.title)}" frameborder="0"
+                 referrerpolicy="strict-origin-when-cross-origin"
                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                  allowfullscreen></iframe>`
             : `<div class="w-full h-full flex items-center justify-center">
