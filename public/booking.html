@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html class="dark" lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Booking - NOT TODAY</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Anton&amp;family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&amp;family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="assets/js/tailwind.config.js"></script>
+<link href="assets/css/site.css" rel="stylesheet"/>
+</head>
+<body class="antialiased min-h-screen flex flex-col">
+
+<!-- TopNavBar -->
+<header class="bg-background text-on-background fixed top-0 w-full z-50 border-b border-outline-variant/20 justify-between items-center px-margin-mobile md:px-margin-desktop py-4 hidden md:flex">
+    <a href="index.html" class="font-headline-lg text-headline-lg uppercase text-on-surface">NOT TODAY</a>
+    <nav class="flex gap-8 font-label-mono text-label-mono uppercase">
+        <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200 px-2 py-1" href="store.html">Store</a>
+        <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200 px-2 py-1" href="artists.html">Artists</a>
+        <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200 px-2 py-1" href="sessions.html">Sessions</a>
+        <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200 px-2 py-1" href="projects.html">Projects</a>
+        <a class="text-secondary font-bold border-b-2 border-secondary pb-1 px-2 py-1" href="booking.html">Booking</a>
+    </nav>
+    <div class="flex items-center gap-4">
+        <a href="booking.html" class="font-label-mono text-label-mono uppercase border border-outline-variant/20 px-4 py-2 hover:border-secondary transition-colors">Join Collective</a>
+        <button data-cart-toggle class="relative hover:text-secondary transition-colors p-2" aria-label="Abrir carrito">
+            <span class="material-symbols-outlined">shopping_bag</span>
+            <span data-cart-count class="hidden absolute -top-0.5 -right-0.5 bg-secondary-container text-primary-container font-label-mono text-[10px] w-4 h-4 items-center justify-center">0</span>
+        </button>
+    </div>
+</header>
+
+<!-- Nav móvil superior mínima -->
+<header class="md:hidden bg-background fixed top-0 w-full z-50 border-b border-outline-variant/20 flex justify-between items-center px-margin-mobile py-4">
+    <a href="index.html" class="font-headline-lg text-[28px] uppercase text-on-surface">NOT TODAY</a>
+    <button data-cart-toggle class="relative p-2 text-on-surface-variant" aria-label="Abrir carrito">
+        <span class="material-symbols-outlined">shopping_bag</span>
+        <span data-cart-count class="hidden absolute -top-0.5 -right-0.5 bg-secondary-container text-primary-container font-label-mono text-[10px] w-4 h-4 items-center justify-center">0</span>
+    </button>
+</header>
+
+<!-- Main -->
+<main class="flex-grow pt-24 md:pt-32 pb-24 px-margin-mobile md:px-margin-desktop grid grid-cols-1 md:grid-cols-12 gap-gutter">
+    <div class="md:col-span-12 mb-12">
+        <h1 class="font-display-lg text-display-lg uppercase mb-4">Make It<br/><span class="text-secondary-container">Happen</span></h1>
+        <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
+            Línea directa para contratar artistas, curar eventos y colaborar con la marca. Construimos con quien comparte la visión. Elige el tipo de solicitud.
+        </p>
+    </div>
+
+    <div class="md:col-span-8 md:col-start-3 lg:col-span-6 lg:col-start-4">
+        <!-- Tabs -->
+        <div class="flex gap-4 mb-8">
+            <button class="tab-btn active w-full" id="tab-booking" type="button">Artist Booking</button>
+            <button class="tab-btn w-full" id="tab-collab" type="button">Collab / Brand</button>
+        </div>
+
+        <!-- Formulario: contratación de artistas (type = CONTRATACION) -->
+        <div class="nt-card" id="form-booking">
+            <h2 class="font-headline-lg text-headline-lg uppercase mb-8">Booking Request</h2>
+            <form class="space-y-6" data-booking-type="CONTRATACION" novalidate>
+                <div>
+                    <label class="nt-label" for="bk-name">Nombre completo</label>
+                    <input class="nt-input" id="bk-name" name="requesterName" placeholder="Quién hace la solicitud" required minlength="2" maxlength="150" type="text"/>
+                </div>
+                <div>
+                    <label class="nt-label" for="bk-email">Email</label>
+                    <input class="nt-input" id="bk-email" name="email" placeholder="tu@email.com" required type="email"/>
+                </div>
+                <div>
+                    <label class="nt-label" for="bk-artist">Artista(s) objetivo</label>
+                    <input class="nt-input" id="bk-artist" name="targetArtist" placeholder="¿A quién quieres contratar?" type="text"/>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="nt-label" for="bk-date">Fecha del evento</label>
+                        <input class="nt-input text-on-surface-variant" id="bk-date" name="eventDate" type="date"/>
+                    </div>
+                    <div>
+                        <label class="nt-label" for="bk-budget">Presupuesto estimado (EUR)</label>
+                        <select class="nt-input text-on-surface-variant" id="bk-budget" name="budget">
+                            <option>5k - 10k €</option>
+                            <option>10k - 25k €</option>
+                            <option>25k - 50k €</option>
+                            <option>50k+ €</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="nt-label" for="bk-details">Detalles del evento</label>
+                    <textarea class="nt-input" id="bk-details" name="details" placeholder="Sala, aforo previsto, otros artistas del cartel..." rows="3" required minlength="10" maxlength="2000"></textarea>
+                </div>
+                <button class="btn-primary mt-8" type="submit">Submit Request <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">arrow_forward</span></button>
+            </form>
+        </div>
+
+        <!-- Formulario: colaboración / marca (type = COLABORACION) -->
+        <div class="nt-card hidden" id="form-collab">
+            <h2 class="font-headline-lg text-headline-lg uppercase mb-8">Partnership Inquiry</h2>
+            <form class="space-y-6" data-booking-type="COLABORACION" novalidate>
+                <div>
+                    <label class="nt-label" for="cl-brand">Empresa / Marca</label>
+                    <input class="nt-input" id="cl-brand" name="brandName" placeholder="Nombre de la marca" required type="text"/>
+                </div>
+                <div>
+                    <label class="nt-label" for="cl-name">Persona de contacto</label>
+                    <input class="nt-input" id="cl-name" name="requesterName" placeholder="Nombre completo" required minlength="2" maxlength="150" type="text"/>
+                </div>
+                <div>
+                    <label class="nt-label" for="cl-email">Email profesional</label>
+                    <input class="nt-input" id="cl-email" name="email" placeholder="work@company.com" required type="email"/>
+                </div>
+                <div>
+                    <label class="nt-label" for="cl-type">Tipo de colaboración</label>
+                    <select class="nt-input text-on-surface-variant" id="cl-type" name="partnershipType">
+                        <option>Event Sponsorship</option>
+                        <option>Apparel Collaboration</option>
+                        <option>Media Production</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="nt-label" for="cl-details">Propuesta</label>
+                    <textarea class="nt-input" id="cl-details" name="details" placeholder="Describe brevemente la colaboración propuesta..." rows="4" required minlength="10" maxlength="2000"></textarea>
+                </div>
+                <button class="btn-primary mt-8" type="submit">Send Proposal <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">arrow_forward</span></button>
+            </form>
+        </div>
+
+        <!-- Estado de éxito -->
+        <div class="nt-card hidden text-center" id="form-success">
+            <span class="material-symbols-outlined text-6xl text-secondary-container">check_circle</span>
+            <h2 class="font-headline-lg text-headline-lg uppercase mt-4">Recibido.</h2>
+            <p class="font-body-lg text-body-lg text-on-surface-variant mt-4">
+                Tu solicitud <span class="font-label-mono text-secondary" id="success-ref"></span> está en revisión.
+                Te contactaremos por email. Respondemos rápido.
+            </p>
+            <button class="btn-primary mt-8" id="success-again" type="button">Enviar otra solicitud</button>
+        </div>
+    </div>
+</main>
+
+<!-- BottomNavBar (móvil) -->
+<nav class="bg-background/95 backdrop-blur-md fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 md:hidden border-t border-outline-variant/30">
+    <a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high w-full h-full" href="sessions.html">
+        <span class="material-symbols-outlined">play_circle</span>
+        <span class="font-label-mono text-[10px] mt-1">Listen</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high w-full h-full" href="store.html">
+        <span class="material-symbols-outlined">shopping_cart</span>
+        <span class="font-label-mono text-[10px] mt-1">Shop</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high w-full h-full" href="projects.html">
+        <span class="material-symbols-outlined">grid_view</span>
+        <span class="font-label-mono text-[10px] mt-1">Work</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-secondary scale-110 w-full h-full" href="booking.html">
+        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">mail</span>
+        <span class="font-label-mono text-[10px] mt-1 font-bold">Book</span>
+    </a>
+</nav>
+
+<!-- Footer -->
+<footer class="bg-surface-container-lowest w-full border-t-2 border-on-surface grid grid-cols-1 md:grid-cols-12 gap-gutter px-margin-mobile md:px-margin-desktop py-stack-lg pb-24 md:pb-stack-lg">
+    <div class="md:col-span-4 flex flex-col justify-between">
+        <div class="font-headline-lg text-headline-lg text-on-surface mb-8">NOT TODAY</div>
+        <div class="font-body-md text-body-md uppercase text-on-surface-variant">© 2024 NOT TODAY COLLECTIVE. ALL RIGHTS RESERVED.</div>
+    </div>
+    <div class="md:col-span-8 flex flex-wrap gap-8 justify-start md:justify-end">
+        <a class="font-body-md text-body-md uppercase text-on-surface-variant hover:text-secondary transition-colors" href="#">Instagram</a>
+        <a class="font-body-md text-body-md uppercase text-on-surface-variant hover:text-secondary transition-colors" href="#">SoundCloud</a>
+        <a class="font-body-md text-body-md uppercase text-on-surface-variant hover:text-secondary transition-colors" href="#">Spotify</a>
+        <a class="font-body-md text-body-md uppercase text-on-surface-variant hover:text-secondary transition-colors" href="track.html">Seguimiento</a>
+        <a class="font-body-md text-body-md uppercase text-on-surface-variant hover:text-secondary transition-colors" href="terms.html">Terms</a>
+        <a class="font-body-md text-body-md uppercase text-on-surface-variant hover:text-secondary transition-colors" href="privacy.html">Privacy</a>
+    </div>
+</footer>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/cart.js"></script>
+<script>
+    // ------- Tabs -------
+    function switchTab(tabId) {
+        document.querySelectorAll(".tab-btn").forEach((btn) => btn.classList.remove("active"));
+        document.getElementById("tab-" + tabId).classList.add("active");
+        document.getElementById("form-booking").classList.add("hidden");
+        document.getElementById("form-collab").classList.add("hidden");
+        document.getElementById("form-success").classList.add("hidden");
+        document.getElementById("form-" + tabId).classList.remove("hidden");
+    }
+    document.getElementById("tab-booking").addEventListener("click", () => switchTab("booking"));
+    document.getElementById("tab-collab").addEventListener("click", () => switchTab("collab"));
+    document.getElementById("success-again").addEventListener("click", () => switchTab("booking"));
+
+    // ------- Envío a POST /api/bookings -------
+    // El schema del backend acepta { type, requesterName, email, details }.
+    // Los campos auxiliares (artista objetivo, fecha, presupuesto, marca...)
+    // se pliegan dentro de `details` para no perder contexto.
+    function composeDetails(form) {
+        const get = (name) => {
+            const el = form.elements[name];
+            return el ? el.value.trim() : "";
+        };
+        const lines = [get("details")];
+        if (get("targetArtist")) lines.push(`Artista(s) objetivo: ${get("targetArtist")}`);
+        if (get("eventDate")) lines.push(`Fecha del evento: ${get("eventDate")}`);
+        if (get("budget")) lines.push(`Presupuesto: ${get("budget")}`);
+        if (get("brandName")) lines.push(`Marca: ${get("brandName")}`);
+        if (get("partnershipType")) lines.push(`Tipo de colaboración: ${get("partnershipType")}`);
+        return lines.filter(Boolean).join("\n");
+    }
+
+    document.querySelectorAll("form[data-booking-type]").forEach((form) => {
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            if (!form.reportValidity()) return;
+
+            const button = form.querySelector("button[type=submit]");
+            const originalHtml = button.innerHTML;
+            button.disabled = true;
+            button.textContent = "Enviando...";
+
+            try {
+                const { booking } = await ntApi("/bookings", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        type: form.dataset.bookingType,
+                        requesterName: form.elements.requesterName.value.trim(),
+                        email: form.elements.email.value.trim(),
+                        details: composeDetails(form),
+                    }),
+                });
+                form.reset();
+                document.getElementById("form-booking").classList.add("hidden");
+                document.getElementById("form-collab").classList.add("hidden");
+                document.getElementById("success-ref").textContent = booking ? booking.id : "";
+                document.getElementById("form-success").classList.remove("hidden");
+            } catch (err) {
+                ntToast(err.message, true);
+            } finally {
+                button.disabled = false;
+                button.innerHTML = originalHtml;
+            }
+        });
+    });
+</script>
+</body>
+</html>

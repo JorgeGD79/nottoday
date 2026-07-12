@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html class="dark" lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NOT TODAY - Política de Privacidad</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Anton&amp;family=Hanken+Grotesk:wght@400;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="assets/js/tailwind.config.js"></script>
+<link href="assets/css/site.css" rel="stylesheet"/>
+<style>
+    .legal-section h2 {
+        font-family: "Anton", sans-serif;
+        font-size: 28px;
+        text-transform: uppercase;
+        color: #e5e2e1;
+        margin-top: 48px;
+        margin-bottom: 12px;
+        line-height: 1.1;
+    }
+    .legal-section h2 span.num {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 14px;
+        color: #ff8a00;
+        display: block;
+        margin-bottom: 4px;
+        letter-spacing: 0.1em;
+    }
+    .legal-section p, .legal-section li {
+        font-family: "Hanken Grotesk", sans-serif;
+        font-size: 16px;
+        line-height: 170%;
+        color: #c4c7c7;
+        margin-bottom: 12px;
+    }
+    .legal-section ul {
+        list-style: none;
+        padding-left: 0;
+    }
+    .legal-section li::before {
+        content: "—";
+        color: #ff8a00;
+        margin-right: 10px;
+    }
+    .legal-section strong { color: #e5e2e1; }
+    .legal-section .placeholder {
+        color: #ffb77f;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 14px;
+    }
+</style>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased pt-24 pb-20 md:pb-0">
+
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-background border-b border-outline-variant/20">
+    <div class="flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop py-4">
+        <a class="font-headline-lg text-headline-lg uppercase text-on-surface tracking-tighter" href="index.html">NOT TODAY</a>
+        <div class="hidden md:flex gap-gutter items-center font-label-mono text-label-mono uppercase">
+            <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200" href="store.html">Store</a>
+            <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200" href="artists.html">Artists</a>
+            <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200" href="sessions.html">Sessions</a>
+            <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200" href="projects.html">Projects</a>
+            <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200" href="booking.html">Booking</a>
+        </div>
+        <div class="flex items-center gap-gutter">
+            <a href="booking.html" class="hidden md:block bg-secondary-container text-primary-container font-headline-xl text-[24px] px-6 py-2 hover:bg-tertiary-fixed transition-colors uppercase">
+                Join Collective
+            </a>
+            <button data-cart-toggle class="relative text-on-surface hover:text-secondary transition-colors p-2" aria-label="Abrir carrito">
+                <span class="material-symbols-outlined">shopping_bag</span>
+                <span data-cart-count class="hidden absolute -top-0.5 -right-0.5 bg-secondary-container text-primary-container font-label-mono text-[10px] w-4 h-4 items-center justify-center">0</span>
+            </button>
+        </div>
+    </div>
+</nav>
+
+<main class="w-full max-w-[900px] mx-auto px-margin-mobile md:px-margin-desktop pt-stack-lg">
+    <header class="flex flex-col gap-stack-md border-b border-outline-variant/20 pb-stack-lg">
+        <h1 class="font-display-lg text-[56px] md:text-[80px] uppercase text-on-surface tracking-tighter leading-none">
+            Política de <br/><span class="text-secondary">Privacidad</span>
+        </h1>
+        <p class="font-label-mono text-[12px] text-on-surface-variant uppercase tracking-widest mt-4">
+            Última actualización: julio 2026 · Plantilla orientativa — revisar con asesoría legal antes de publicar
+        </p>
+    </header>
+
+    <article class="legal-section pb-stack-lg">
+        <h2><span class="num">01 /</span> Responsable del tratamiento</h2>
+        <p>
+            <span class="placeholder">[razón social / nombre]</span>, NIF
+            <span class="placeholder">[NIF]</span>, domicilio en
+            <span class="placeholder">[domicilio completo]</span>. Para cualquier cuestión sobre tus datos:
+            <span class="placeholder">[email de privacidad]</span>.
+        </p>
+
+        <h2><span class="num">02 /</span> Qué datos recogemos</h2>
+        <ul>
+            <li><strong>Compras</strong>: email, nombre, dirección de envío, ciudad, código postal, país y teléfono (opcional), junto con los productos y el importe del pedido.</li>
+            <li><strong>Bookings y colaboraciones</strong>: nombre, email y los detalles que incluyas en tu solicitud.</li>
+            <li><strong>Seguimiento de pedido</strong>: el número de pedido y email que introduces para consultar el estado.</li>
+        </ul>
+        <p>No pedimos ni almacenamos datos de tarjeta: el pago se realiza directamente con <strong>Stripe</strong>.</p>
+
+        <h2><span class="num">03 /</span> Para qué los usamos</h2>
+        <ul>
+            <li>Gestionar tu pedido: cobro, preparación, envío y comunicación de su estado.</li>
+            <li>Atender tus solicitudes de booking o colaboración.</li>
+            <li>Recordarte por email un carrito que dejaste a medias (puedes ignorar el correo; no se usa para otra cosa).</li>
+            <li>Cumplir obligaciones legales (facturación, fiscalidad, reclamaciones).</li>
+        </ul>
+
+        <h2><span class="num">04 /</span> Base legal</h2>
+        <p>
+            La ejecución del contrato de compraventa (pedidos y envíos), tu solicitud previa (bookings),
+            el interés legítimo en recuperar carritos abandonados de compras iniciadas por ti, y el
+            cumplimiento de obligaciones legales.
+        </p>
+
+        <h2><span class="num">05 /</span> Con quién compartimos datos</h2>
+        <ul>
+            <li><strong>Stripe</strong> (procesador de pagos) — recibe los datos necesarios para procesar el cobro. Los datos de tarjeta los introduces directamente en Stripe y nunca pasan por nuestros servidores.</li>
+            <li><strong>Empresas de transporte</strong> — reciben tu nombre, dirección y teléfono para entregar el pedido.</li>
+            <li><span class="placeholder">[Proveedor de hosting / infraestructura]</span> — aloja la web y la base de datos.</li>
+        </ul>
+        <p>No vendemos ni cedemos tus datos a terceros con fines comerciales.</p>
+
+        <h2><span class="num">06 /</span> Cuánto tiempo los conservamos</h2>
+        <p>
+            Los datos de pedidos se conservan durante los plazos exigidos por la normativa fiscal y de
+            consumo. Las solicitudes de booking se conservan mientras estén en revisión y durante un plazo
+            razonable posterior. Los carritos no convertidos se eliminan periódicamente.
+        </p>
+
+        <h2><span class="num">07 /</span> Tus derechos</h2>
+        <p>
+            Puedes ejercer en cualquier momento tus derechos de <strong>acceso, rectificación, supresión,
+            oposición, limitación y portabilidad</strong> escribiendo a
+            <span class="placeholder">[email de privacidad]</span>. Si consideras que no hemos tratado tus
+            datos correctamente, puedes reclamar ante la Agencia Española de Protección de Datos
+            (<a class="text-secondary hover:text-on-surface transition-colors" href="https://www.aepd.es" target="_blank" rel="noopener noreferrer">aepd.es</a>).
+        </p>
+
+        <h2><span class="num">08 /</span> Almacenamiento local y terceros embebidos</h2>
+        <ul>
+            <li>Usamos el <strong>almacenamiento local del navegador</strong> (localStorage) únicamente para recordar tu carrito entre visitas. No usamos cookies de seguimiento ni analítica de terceros.</li>
+            <li>Las N-TY Sessions se reproducen mediante <strong>YouTube en modo privacidad mejorada</strong> (youtube-nocookie.com): YouTube no instala cookies de seguimiento hasta que reproduces el vídeo. Al reproducirlo, aplica la <a class="text-secondary hover:text-on-surface transition-colors" href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">política de privacidad de Google</a>.</li>
+            <li>Las fuentes tipográficas se cargan desde Google Fonts y los estilos desde el CDN de Tailwind, que pueden registrar tu IP como parte de la entrega del contenido.</li>
+        </ul>
+    </article>
+</main>
+
+<!-- Footer -->
+<footer class="w-full bg-surface-container-lowest border-t-2 border-on-surface mt-margin-desktop">
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-gutter px-margin-mobile md:px-margin-desktop py-stack-lg">
+        <div class="md:col-span-4 flex flex-col gap-stack-sm">
+            <span class="font-headline-lg text-headline-lg text-on-surface uppercase">NOT TODAY</span>
+            <span class="font-body-md text-body-md uppercase text-on-surface-variant">© 2024 NOT TODAY COLLECTIVE. ALL RIGHTS RESERVED.</span>
+        </div>
+        <div class="md:col-span-8 flex flex-wrap gap-x-8 gap-y-4 md:justify-end items-end font-body-md text-body-md uppercase text-on-surface-variant">
+            <a class="hover:text-secondary transition-colors" href="#">Instagram</a>
+            <a class="hover:text-secondary transition-colors" href="#">SoundCloud</a>
+            <a class="hover:text-secondary transition-colors" href="#">Spotify</a>
+            <a class="hover:text-secondary transition-colors" href="track.html">Seguimiento</a>
+            <a class="hover:text-secondary transition-colors" href="terms.html">Terms</a>
+            <a class="text-secondary" href="privacy.html">Privacy</a>
+        </div>
+    </div>
+</footer>
+
+<!-- BottomNavBar (móvil) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 md:hidden bg-background/95 backdrop-blur-md border-t border-outline-variant/30">
+    <a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high w-full h-full" href="sessions.html">
+        <span class="material-symbols-outlined">play_circle</span>
+        <span class="font-label-mono text-[10px] uppercase mt-1">Listen</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high w-full h-full" href="store.html">
+        <span class="material-symbols-outlined">shopping_cart</span>
+        <span class="font-label-mono text-[10px] uppercase mt-1">Shop</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high w-full h-full" href="artists.html">
+        <span class="material-symbols-outlined">group</span>
+        <span class="font-label-mono text-[10px] uppercase mt-1">Artists</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high w-full h-full" href="booking.html">
+        <span class="material-symbols-outlined">mail</span>
+        <span class="font-label-mono text-[10px] uppercase mt-1">Book</span>
+    </a>
+</nav>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/cart.js"></script>
+</body>
+</html>

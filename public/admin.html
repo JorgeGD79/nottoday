@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html class="dark" lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="noindex, nofollow" name="robots"/>
+<title>NOT TODAY - Admin</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Anton&amp;family=Hanken+Grotesk:wght@400;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="assets/js/tailwind.config.js"></script>
+<link href="assets/css/site.css" rel="stylesheet"/>
+<style>
+    /* Tabla admin brutalist */
+    .adm-table { width: 100%; border-collapse: collapse; }
+    .adm-table th {
+        font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: 0.08em;
+        text-transform: uppercase; color: #8e9192; text-align: left;
+        padding: 10px 12px; border-bottom: 2px solid #e5e2e1;
+        white-space: nowrap;
+    }
+    .adm-table td {
+        font-family: "Hanken Grotesk", sans-serif; font-size: 14px; color: #e5e2e1;
+        padding: 10px 12px; border-bottom: 1px solid rgba(68, 71, 72, 0.4);
+        vertical-align: middle;
+    }
+    .adm-table tbody tr { transition: background 0.15s ease; }
+    .adm-table tbody tr:hover { background: #1c1b1b; }
+
+    .adm-badge {
+        font-family: "JetBrains Mono", monospace; font-size: 10px; text-transform: uppercase;
+        letter-spacing: 0.05em; padding: 2px 8px; border: 1px solid;
+        display: inline-block; white-space: nowrap;
+    }
+    .adm-badge.ok    { color: #ff8a00; border-color: #ff8a00; }
+    .adm-badge.muted { color: #8e9192; border-color: #444748; }
+    .adm-badge.warn  { color: #ffb4ab; border-color: #ffb4ab; }
+
+    .adm-icon-btn {
+        padding: 6px; color: #8e9192; transition: color 0.15s ease; line-height: 0;
+    }
+    .adm-icon-btn:hover { color: #ff8a00; }
+    .adm-icon-btn.danger:hover { color: #ffb4ab; }
+
+    .adm-nav-btn {
+        font-family: "JetBrains Mono", monospace; font-size: 13px; text-transform: uppercase;
+        letter-spacing: 0.05em; text-align: left; padding: 12px 16px; width: 100%;
+        color: #c4c7c7; border-left: 2px solid transparent;
+        transition: all 0.15s ease; white-space: nowrap;
+    }
+    .adm-nav-btn:hover { color: #e5e2e1; background: #1c1b1b; }
+    .adm-nav-btn.active { color: #ff8a00; border-left-color: #ff8a00; background: #1a1a1a; }
+
+    .nt-input option { background: #131313; color: #e5e2e1; }
+
+    /* datetime-local / number en dark */
+    input[type="datetime-local"].nt-input::-webkit-calendar-picker-indicator { filter: invert(0.8); }
+</style>
+</head>
+<body class="antialiased min-h-screen">
+
+<!-- ========== VISTA LOGIN ========== -->
+<div id="login-view" class="hidden min-h-screen flex flex-col items-center justify-center px-margin-mobile">
+    <div class="w-full max-w-md">
+        <h1 class="font-display-lg text-[56px] md:text-[72px] uppercase text-on-surface leading-none tracking-tighter mb-2">
+            Back<br/><span class="text-secondary-container">Office</span>
+        </h1>
+        <p class="font-label-mono text-label-mono text-on-surface-variant uppercase mb-stack-lg">NOT TODAY — acceso restringido</p>
+        <div class="nt-card">
+            <form id="login-form" class="space-y-6" novalidate>
+                <div>
+                    <label class="nt-label" for="login-email">Email</label>
+                    <input class="nt-input" id="login-email" type="email" placeholder="admin@nottoday.com" required autocomplete="username"/>
+                </div>
+                <div>
+                    <label class="nt-label" for="login-password">Contraseña</label>
+                    <input class="nt-input" id="login-password" type="password" placeholder="••••••••" required autocomplete="current-password"/>
+                </div>
+                <button class="btn-primary" type="submit">Entrar <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">arrow_forward</span></button>
+                <p id="login-error" class="hidden font-label-mono text-[12px] text-error uppercase"></p>
+            </form>
+        </div>
+        <a href="index.html" class="inline-block mt-stack-lg font-label-mono text-[12px] text-on-surface-variant uppercase hover:text-secondary transition-colors">&lt;- Volver a la web</a>
+    </div>
+</div>
+
+<!-- ========== VISTA PANEL ========== -->
+<div id="panel-view" class="hidden min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="border-b border-outline-variant/20 bg-background flex justify-between items-center px-margin-mobile md:px-8 py-3 sticky top-0 z-40">
+        <div class="flex items-center gap-4">
+            <a href="index.html" class="font-headline-lg text-[24px] uppercase text-on-surface tracking-tighter">NOT TODAY</a>
+            <span class="bg-secondary-container text-primary-container font-label-mono text-[10px] uppercase px-2 py-0.5 font-bold">Admin</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <span class="hidden md:inline font-label-mono text-[12px] text-on-surface-variant uppercase" id="user-chip"></span>
+            <button id="logout-btn" class="font-label-mono text-[12px] uppercase border border-outline-variant/30 px-3 py-1.5 text-on-surface-variant hover:border-secondary hover:text-secondary transition-colors">
+                Salir
+            </button>
+        </div>
+    </header>
+
+    <div class="flex flex-col md:flex-row flex-grow">
+        <!-- Sidebar / tabs -->
+        <nav class="md:w-56 flex md:flex-col overflow-x-auto md:overflow-visible border-b md:border-b-0 md:border-r border-outline-variant/20 bg-surface-container-lowest flex-shrink-0" id="admin-nav"></nav>
+
+        <!-- Contenido -->
+        <main class="flex-grow p-margin-mobile md:p-8 min-w-0">
+            <div class="flex items-end justify-between border-b border-on-surface pb-stack-sm mb-stack-lg gap-4 flex-wrap">
+                <h1 class="font-headline-xl text-[36px] md:text-[48px] text-on-surface uppercase tracking-tighter leading-none" id="section-title"></h1>
+                <div class="flex items-center gap-3" id="section-actions"></div>
+            </div>
+            <div id="section-host" class="overflow-x-auto"></div>
+        </main>
+    </div>
+</div>
+
+<!-- ========== DRAWER DE FORMULARIO ========== -->
+<div class="fixed inset-0 bg-primary-container/90 backdrop-blur-sm z-[60] hidden opacity-0 transition-opacity duration-300" id="drawer-backdrop"></div>
+<div class="fixed top-0 right-0 h-full w-full md:w-[520px] bg-surface-container-lowest border-l-2 border-on-surface transform translate-x-full transition-transform duration-300 ease-in-out z-[61] flex flex-col shadow-2xl" id="form-drawer">
+    <div class="p-stack-md border-b border-outline-variant/20 flex justify-between items-center bg-primary-container">
+        <h2 class="font-display-lg text-[28px] uppercase text-on-surface m-0 leading-none" id="drawer-title"></h2>
+        <button class="text-on-surface hover:text-secondary transition-colors" id="drawer-close" aria-label="Cerrar">
+            <span class="material-symbols-outlined text-3xl">close</span>
+        </button>
+    </div>
+    <form class="flex-grow overflow-y-auto p-stack-md space-y-5" id="drawer-form" novalidate></form>
+    <div class="p-stack-md border-t border-outline-variant/20 bg-primary-container">
+        <button class="btn-primary" id="drawer-submit" type="submit" form="drawer-form">Guardar</button>
+    </div>
+</div>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/admin.js"></script>
+</body>
+</html>

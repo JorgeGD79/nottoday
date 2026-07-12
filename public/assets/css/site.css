@@ -1,0 +1,216 @@
+/* ============================================================
+   NOT TODAY — estilos compartidos del design system brutalist
+   ============================================================ */
+
+body {
+    background-color: #131313;
+    color: #e5e2e1;
+    position: relative;
+}
+
+/* Grain overlay */
+body::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
+    z-index: 9999;
+    mix-blend-mode: overlay;
+}
+
+/* Scrollbar brutalist */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #131313;
+}
+::-webkit-scrollbar-thumb {
+    background: #353535;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #ff8a00;
+}
+
+/* Cards */
+.brutal-card {
+    background-color: #050505;
+    border: 1px solid rgba(229, 226, 225, 0.2);
+    transition: all 0.2s ease-in-out;
+}
+.brutal-card:hover {
+    border-color: #ff8a00;
+}
+.brutal-card:hover img {
+    transform: scale(1.05);
+}
+
+/* Glitch hover (hero) */
+.glitch-hover:hover {
+    animation: glitch-anim 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite;
+}
+@keyframes glitch-anim {
+    0% { transform: translate(0); }
+    20% { transform: translate(-2px, 2px); }
+    40% { transform: translate(-2px, -2px); }
+    60% { transform: translate(2px, 2px); }
+    80% { transform: translate(2px, -2px); }
+    100% { transform: translate(0); }
+}
+
+/* Inputs subrayados (booking / checkout) */
+.nt-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(229, 226, 225, 0.2);
+    color: #e5e2e1;
+    font-family: "Hanken Grotesk", sans-serif;
+    font-size: 18px;
+    padding: 8px 0;
+    width: 100%;
+    transition: all 0.2s ease;
+}
+.nt-input:focus {
+    outline: none;
+    border-bottom: 2px solid #ff8a00;
+    box-shadow: none;
+}
+.nt-input::placeholder {
+    color: #8e9192;
+}
+.nt-label {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 14px;
+    text-transform: uppercase;
+    color: #e5e2e1;
+    margin-bottom: 4px;
+    display: block;
+    letter-spacing: 0.05em;
+}
+
+/* Botón principal brutalist */
+.btn-primary {
+    background-color: #ff8a00;
+    color: #050505;
+    font-family: "Anton", sans-serif;
+    font-size: 24px;
+    text-transform: uppercase;
+    padding: 16px 32px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+}
+.btn-primary:hover {
+    background-color: #e5ded5;
+}
+.btn-primary:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Tabs (booking) */
+.tab-btn {
+    background: transparent;
+    border: 1px solid rgba(229, 226, 225, 0.2);
+    color: #e5e2e1;
+    font-family: "JetBrains Mono", monospace;
+    text-transform: uppercase;
+    padding: 12px 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.tab-btn.active {
+    border-color: #ff8a00;
+    background: #1a1a1a;
+    color: #ff8a00;
+}
+
+/* Card contenedor (booking) */
+.nt-card {
+    background-color: #050505;
+    border: 1px solid rgba(229, 226, 225, 0.2);
+    padding: 32px;
+    transition: border-color 0.2s ease;
+}
+.nt-card:hover {
+    border-color: #ff8a00;
+}
+
+/* Selector de talla en las cards de producto */
+.size-btn {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    text-transform: uppercase;
+    border: 1px solid rgba(229, 226, 225, 0.3);
+    color: #c4c7c7;
+    padding: 6px 0;
+    min-width: 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    background: transparent;
+}
+.size-btn:hover:not(:disabled) {
+    border-color: #ff8a00;
+    color: #ff8a00;
+}
+.size-btn.selected {
+    background: #ff8a00;
+    border-color: #ff8a00;
+    color: #050505;
+    font-weight: 700;
+}
+.size-btn:disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+    text-decoration: line-through;
+}
+
+/* Toast de feedback */
+.nt-toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #050505;
+    border: 1px solid #ff8a00;
+    color: #e5e2e1;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 12px 24px;
+    z-index: 10000;
+    opacity: 0;
+    transition: all 0.25s ease;
+    pointer-events: none;
+    max-width: 90vw;
+    text-align: center;
+}
+.nt-toast.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+.nt-toast.error {
+    border-color: #ffb4ab;
+    color: #ffb4ab;
+}
+
+/* Skeleton de carga */
+@keyframes nt-pulse {
+    0%, 100% { opacity: 0.35; }
+    50% { opacity: 0.15; }
+}
+.nt-skeleton {
+    background: #353535;
+    animation: nt-pulse 1.4s ease-in-out infinite;
+}

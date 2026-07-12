@@ -1,0 +1,97 @@
+# Render Blueprint — despliegue en modo DEMO (sin Stripe real).
+# Crea: base de datos Postgres + Redis (Key Value) + el servicio web (API + tienda).
+# Los 2 workers van comentados al final: son OPCIONALES en demo y requieren plan de pago.
+
+databases:
+  - name: nottoday-db
+    databaseName: nottoday
+    user: nottoday
+    plan: free            # gratis ~30 días; súbelo a un plan de pago para producción
+    region: frankfurt
+
+services:
+  # Redis / Key Value — cola de BullMQ + almacén del rate-limit
+  - type: redis
+    name: nottoday-redis
+    plan: free
+    region: frankfurt
+    ipAllowList: []        # [] = accesible solo desde tus servicios (red interna)
+
+  # API Fastify + frontend estático (public/). Aplica migraciones al arrancar.
+  - type: web
+    name: nottoday-web
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    region: frankfurt
+    plan: free             # el plan free "duerme" tras 15 min de inactividad
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: development          # demo: relaja validaciones y permite pago simulado
+      - key: CHECKOUT_SKIP_STRIPE
+        value: "true"               # pagos simulados (pedidos marcados PAGADO)
+      - key: CORS_ORIGIN
+        value: "*"                  # válido en development; el frontend es same-origin
+      - key: JWT_SECRET
+        generateValue: true         # Render genera un secreto fuerte automáticamente
+      - key: JWT_EXPIRES_IN
+        value: "8h"
+      - key: STRIPE_SECRET_KEY
+        value: sk_test_dummy        # no se usa en demo, pero el schema exige que exista
+      - key: SEED_ADMIN_EMAIL
+        value: admin@nottoday.com
+      - key: SEED_ADMIN_PASSWORD
+        generateValue: true         # léela en el panel de Render para el primer login
+      - key: DATABASE_URL
+        fromDatabase:
+          name: nottoday-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: nottoday-redis
+          type: redis
+          property: connectionString
+
+# --- WORKERS (opcionales en demo; requieren plan de pago en Render) ---
+# En modo demo los pedidos se marcan PAGADO al instante, así que el barrido de
+# pedidos pendientes no es crítico y el de carritos abandonados es solo limpieza.
+# Descoméntalos (y ajusta el plan) al pasar a producción o si quieres el barrido.
+#
+#  - type: worker
+#    name: nottoday-worker-carts
+#    runtime: docker
+#    dockerfilePath: ./Dockerfile
+#    dockerCommand: node dist/workers/abandoned-cart.worker.js
+#    region: frankfurt
+#    plan: starter
+#    envVars:
+#      - key: NODE_ENV
+#        value: development
+#      - key: JWT_SECRET
+#        generateValue: true
+#      - key: STRIPE_SECRET_KEY
+#        value: sk_test_dummy
+#      - key: DATABASE_URL
+#        fromDatabase: { name: nottoday-db, property: connectionString }
+#      - key: REDIS_URL
+#        fromService: { name: nottoday-redis, type: redis, property: connectionString }
+#
+#  - type: worker
+#    name: nottoday-worker-orders
+#    runtime: docker
+#    dockerfilePath: ./Dockerfile
+#    dockerCommand: node dist/workers/expire-orders.worker.js
+#    region: frankfurt
+#    plan: starter
+#    envVars:
+#      - key: NODE_ENV
+#        value: development
+#      - key: JWT_SECRET
+#        generateValue: true
+#      - key: STRIPE_SECRET_KEY
+#        value: sk_test_dummy
+#      - key: DATABASE_URL
+#        fromDatabase: { name: nottoday-db, property: connectionString }
+#      - key: REDIS_URL
+#        fromService: { name: nottoday-redis, type: redis, property: connectionString }

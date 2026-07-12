@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html class="dark" lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NOT TODAY - Projects &amp; Portfolio</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Anton&amp;family=Hanken+Grotesk:wght@400;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="assets/js/tailwind.config.js"></script>
+<link href="assets/css/site.css" rel="stylesheet"/>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased pt-24 pb-20 md:pb-0">
+
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-background border-b border-outline-variant/20">
+    <div class="flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop py-4">
+        <a class="font-headline-lg text-headline-lg uppercase text-on-surface tracking-tighter" href="index.html">NOT TODAY</a>
+        <div class="hidden md:flex gap-gutter items-center font-label-mono text-label-mono uppercase">
+            <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200" href="store.html">Store</a>
+            <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200" href="artists.html">Artists</a>
+            <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200" href="sessions.html">Sessions</a>
+            <a class="text-secondary font-bold border-b-2 border-secondary pb-1" href="projects.html">Projects</a>
+            <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200" href="booking.html">Booking</a>
+        </div>
+        <div class="flex items-center gap-gutter">
+            <a href="booking.html" class="hidden md:block bg-secondary-container text-primary-container font-headline-xl text-[24px] px-6 py-2 hover:bg-tertiary-fixed transition-colors uppercase">
+                Join Collective
+            </a>
+            <button data-cart-toggle class="relative text-on-surface hover:text-secondary transition-colors p-2" aria-label="Abrir carrito">
+                <span class="material-symbols-outlined">shopping_bag</span>
+                <span data-cart-count class="hidden absolute -top-0.5 -right-0.5 bg-secondary-container text-primary-container font-label-mono text-[10px] w-4 h-4 items-center justify-center">0</span>
+            </button>
+        </div>
+    </div>
+</nav>
+
+<main class="w-full max-w-[1440px] mx-auto px-margin-mobile md:px-margin-desktop pt-stack-lg flex flex-col gap-margin-desktop">
+    <!-- Header -->
+    <header class="flex flex-col gap-stack-md border-b border-outline-variant/20 pb-stack-lg">
+        <h1 class="font-display-lg text-display-lg uppercase text-on-surface max-w-4xl tracking-tighter leading-none">
+            Sonic <br/><span class="text-secondary">Architecture</span>
+        </h1>
+        <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mt-4">
+            El archivo visual y sonoro de Not Today. Desarrollamos nuestros visuales con nuestra propia visión: cada plano forma parte de lo que somos.
+        </p>
+    </header>
+
+    <!-- Agenda (datos reales de /api/events) -->
+    <section class="grid grid-cols-1 md:grid-cols-12 gap-gutter" id="projects-grid">
+        <div class="nt-skeleton md:col-span-8 h-[420px]"></div>
+        <div class="nt-skeleton md:col-span-4 h-[420px]"></div>
+        <div class="nt-skeleton md:col-span-4 aspect-square"></div>
+        <div class="nt-skeleton md:col-span-4 aspect-square"></div>
+        <div class="nt-skeleton md:col-span-4 aspect-square"></div>
+    </section>
+
+    <!-- Marca -->
+    <section class="w-full flex justify-center py-margin-desktop border-t border-outline-variant/20">
+        <span class="font-display-lg text-[64px] md:text-[120px] text-surface-variant uppercase leading-none tracking-tighter mix-blend-lighten grayscale hover:grayscale-0 hover:text-secondary transition-all duration-500 select-none">
+            NOT TODAY
+        </span>
+    </section>
+</main>
+
+<!-- Footer -->
+<footer class="w-full bg-surface-container-lowest border-t-2 border-on-surface mt-margin-desktop">
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-gutter px-margin-mobile md:px-margin-desktop py-stack-lg">
+        <div class="md:col-span-4 flex flex-col gap-stack-sm">
+            <span class="font-headline-lg text-headline-lg text-on-surface uppercase">NOT TODAY</span>
+            <span class="font-body-md text-body-md uppercase text-on-surface-variant">© 2024 NOT TODAY COLLECTIVE. ALL RIGHTS RESERVED.</span>
+        </div>
+        <div class="md:col-span-8 flex flex-wrap gap-x-8 gap-y-4 md:justify-end items-end font-body-md text-body-md uppercase text-on-surface-variant">
+            <a class="hover:text-secondary transition-colors" href="#">Instagram</a>
+            <a class="hover:text-secondary transition-colors" href="#">SoundCloud</a>
+            <a class="hover:text-secondary transition-colors" href="#">Spotify</a>
+            <a class="hover:text-secondary transition-colors" href="track.html">Seguimiento</a>
+            <a class="hover:text-secondary transition-colors" href="terms.html">Terms</a>
+            <a class="hover:text-secondary transition-colors" href="privacy.html">Privacy</a>
+        </div>
+    </div>
+</footer>
+
+<!-- BottomNavBar (móvil) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 md:hidden bg-background/95 backdrop-blur-md border-t border-outline-variant/30">
+    <a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high w-full h-full" href="sessions.html">
+        <span class="material-symbols-outlined">play_circle</span>
+        <span class="font-label-mono text-[10px] uppercase mt-1">Listen</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high w-full h-full" href="store.html">
+        <span class="material-symbols-outlined">shopping_cart</span>
+        <span class="font-label-mono text-[10px] uppercase mt-1">Shop</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-secondary scale-110 w-full h-full" href="projects.html">
+        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">grid_view</span>
+        <span class="font-label-mono text-[10px] uppercase mt-1">Work</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high w-full h-full" href="booking.html">
+        <span class="material-symbols-outlined">mail</span>
+        <span class="font-label-mono text-[10px] uppercase mt-1">Book</span>
+    </a>
+</nav>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/cart.js"></script>
+<script>
+    function lineupLabel(ev) {
+        const names = ev.lineup.map((l) => l.artist.stageName);
+        return names.length ? names.join(" · ") : "Line-up TBA";
+    }
+
+    function featuredCard(ev) {
+        return `
+        <div class="project-card group relative block md:col-span-8 min-h-[420px] bg-primary-container border border-outline-variant/20 hover:border-secondary transition-colors overflow-hidden brutal-card">
+            <div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 ease-out opacity-80 group-hover:opacity-100 mix-blend-luminosity group-hover:mix-blend-normal"
+                 style="background-image: url('${ev.posterUrl || ntPlaceholderImage(ev.title)}')"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent"></div>
+            <div class="absolute bottom-0 left-0 p-stack-lg w-full flex justify-between items-end">
+                <div class="flex flex-col gap-stack-sm">
+                    <span class="inline-block bg-primary-container text-on-surface border border-on-surface/20 font-label-mono text-[12px] px-2 py-1 uppercase w-fit">Event / ${ntEscapeHtml(ev.venue)}</span>
+                    <h2 class="font-headline-lg text-headline-lg text-on-surface uppercase tracking-tight">${ntEscapeHtml(ev.title)}</h2>
+                    <p class="font-label-mono text-label-mono text-on-surface-variant uppercase">${ntFormatEventDate(ev.date)} — ${ntEscapeHtml(lineupLabel(ev))}</p>
+                </div>
+                <span class="material-symbols-outlined text-on-surface group-hover:text-secondary text-4xl transition-colors">arrow_outward</span>
+            </div>
+        </div>`;
+    }
+
+    function squareCard(ev, colSpan) {
+        return `
+        <div class="project-card group relative block ${colSpan} aspect-square bg-primary-container border border-outline-variant/20 hover:border-secondary transition-colors overflow-hidden brutal-card">
+            <div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 ease-out opacity-80 group-hover:opacity-100 mix-blend-luminosity group-hover:mix-blend-normal"
+                 style="background-image: url('${ev.posterUrl || ntPlaceholderImage(ev.title)}')"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent"></div>
+            <div class="absolute bottom-0 left-0 p-stack-md">
+                <span class="font-label-mono text-[12px] text-secondary uppercase">${ntFormatEventDate(ev.date)}</span>
+                <h3 class="font-headline-lg text-[24px] leading-none text-on-surface uppercase tracking-tight mt-1">${ntEscapeHtml(ev.title)}</h3>
+                <p class="font-label-mono text-[12px] text-on-surface-variant uppercase mt-1">${ntEscapeHtml(ev.venue)}</p>
+            </div>
+        </div>`;
+    }
+
+    const streamTile = `
+        <div class="md:col-span-4 aspect-square bg-surface-container-highest border border-outline-variant/20 p-stack-lg flex flex-col justify-center items-center text-center gap-stack-md hover:border-secondary transition-colors">
+            <h3 class="font-headline-lg text-[32px] text-on-surface uppercase leading-none">Stream<br/>The Archive</h3>
+            <p class="font-label-mono text-[14px] text-on-surface-variant">Toda nuestra música, en las plataformas de siempre.</p>
+            <div class="flex gap-4 mt-4">
+                <a href="#" aria-label="Play" class="w-12 h-12 rounded-full border border-on-surface flex items-center justify-center hover:bg-secondary hover:text-primary-container hover:border-secondary transition-all">
+                    <span class="material-symbols-outlined">play_arrow</span>
+                </a>
+                <a href="#" aria-label="Mixes" class="w-12 h-12 rounded-full border border-on-surface flex items-center justify-center hover:bg-secondary hover:text-primary-container hover:border-secondary transition-all">
+                    <span class="material-symbols-outlined">graphic_eq</span>
+                </a>
+            </div>
+        </div>`;
+
+    async function loadProjects() {
+        const grid = document.getElementById("projects-grid");
+        try {
+            const { events } = await ntApi("/events");
+            if (!events.length) {
+                grid.innerHTML = `
+                    <div class="md:col-span-8 border border-outline-variant/20 p-stack-lg flex items-center justify-center min-h-[300px]">
+                        <p class="font-label-mono text-label-mono text-on-surface-variant uppercase">Nada programado todavía. El archivo crece pronto.</p>
+                    </div>${streamTile}`;
+                return;
+            }
+            const [first, ...rest] = events;
+            let html = featuredCard(first);
+            if (rest.length) {
+                html += squareCard(rest[0], "md:col-span-4");
+                html += rest.slice(1).map((ev) => squareCard(ev, "md:col-span-4")).join("");
+            }
+            html += streamTile;
+            grid.innerHTML = html;
+        } catch (err) {
+            grid.innerHTML = `<div class="md:col-span-12 border border-error/40 p-stack-lg text-center">
+                <p class="font-label-mono text-label-mono text-error uppercase">${ntEscapeHtml(err.message)}</p>
+            </div>`;
+        }
+    }
+
+    loadProjects();
+</script>
+</body>
+</html>

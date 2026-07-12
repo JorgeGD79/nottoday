@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html class="dark" lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NOT TODAY COLLECTIVE - Home</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Anton&amp;family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&amp;family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="assets/js/tailwind.config.js"></script>
+<link href="assets/css/site.css" rel="stylesheet"/>
+</head>
+<body class="antialiased min-h-screen pb-16 md:pb-0 pt-20">
+
+<!-- TopNavBar -->
+<nav class="bg-background text-on-background fixed top-0 w-full z-50 border-b border-outline-variant/20 flex justify-between items-center px-margin-mobile md:px-margin-desktop py-4">
+    <a href="index.html" class="font-headline-lg text-headline-lg uppercase text-on-surface tracking-tighter">NOT TODAY</a>
+    <div class="hidden md:flex gap-gutter items-center font-label-mono text-label-mono uppercase">
+        <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200" href="store.html">Store</a>
+        <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200" href="artists.html">Artists</a>
+        <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200" href="sessions.html">Sessions</a>
+        <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200" href="projects.html">Projects</a>
+        <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200" href="booking.html">Booking</a>
+    </div>
+    <div class="flex items-center gap-gutter">
+        <a href="booking.html" class="hidden md:block bg-secondary-container text-primary-container font-headline-xl text-[24px] uppercase px-4 py-2 hover:bg-on-surface transition-colors">
+            Join Collective
+        </a>
+        <button data-cart-toggle class="relative hover:bg-surface-container-highest transition-all p-2 flex items-center justify-center" aria-label="Abrir carrito">
+            <span class="material-symbols-outlined">shopping_bag</span>
+            <span data-cart-count class="hidden absolute -top-0.5 -right-0.5 bg-secondary-container text-primary-container font-label-mono text-[10px] w-4 h-4 items-center justify-center">0</span>
+        </button>
+    </div>
+</nav>
+
+<main class="w-full">
+    <!-- Hero -->
+    <section class="min-h-[80vh] flex flex-col md:flex-row items-center justify-center px-margin-mobile md:px-margin-desktop py-stack-lg gap-margin-desktop">
+        <div class="flex-1 flex flex-col items-start gap-stack-lg">
+            <h1 class="font-display-lg text-display-lg uppercase text-on-surface leading-none tracking-tighter mix-blend-difference">
+                <span class="text-secondary-container block">CREAMOS</span>
+                DESDE CERO.
+            </h1>
+            <p class="font-body-lg text-body-lg text-on-surface-variant max-w-md">
+                Not Today nace de la necesidad de crear algo propio. Música, moda e imagen mezcladas en una identidad que se siente auténtica y real.
+            </p>
+            <div class="flex gap-gutter mt-stack-md w-full md:w-auto">
+                <a href="sessions.html" class="bg-secondary-container text-primary-container font-headline-lg text-[24px] uppercase px-8 py-4 hover:bg-on-surface transition-colors w-full md:w-auto text-center">
+                    Listen Now
+                </a>
+                <a href="store.html" class="bg-transparent border-2 border-on-surface text-on-surface font-headline-lg text-[24px] uppercase px-8 py-4 hover:bg-surface-container-highest transition-colors w-full md:w-auto flex items-center justify-center">
+                    <span class="material-symbols-outlined mr-2">arrow_forward</span> Enter
+                </a>
+            </div>
+        </div>
+        <div class="flex-1 w-full h-[50vh] md:h-[70vh] relative group overflow-hidden border border-outline-variant/20 bg-primary-container">
+            <div class="w-full h-full glitch-hover grayscale hover:grayscale-0 transition-all duration-500 flex items-center justify-center">
+                <span class="font-display-lg text-[120px] md:text-[180px] text-surface-variant uppercase leading-none tracking-tighter select-none -rotate-6">NT</span>
+            </div>
+            <div class="absolute inset-0 bg-primary-container/20 pointer-events-none group-hover:bg-transparent transition-all"></div>
+            <div class="absolute bottom-4 right-4 bg-primary-container border border-on-surface px-2 py-1">
+                <span class="font-label-mono text-label-mono text-on-surface uppercase">Est. 2024</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Next Drop bar (datos reales de /api/drops) -->
+    <section id="drop-banner" class="hidden bg-surface-container-lowest border-y border-outline-variant/20 py-stack-md px-margin-mobile md:px-margin-desktop flex-col md:flex-row items-center justify-between gap-gutter sticky top-[80px] z-40 backdrop-blur-md bg-opacity-90">
+        <div class="flex items-center gap-gutter w-full md:w-auto">
+            <div class="flex flex-col">
+                <span class="font-label-mono text-[12px] text-secondary-container uppercase tracking-widest" id="drop-banner-label">Next Drop</span>
+                <span class="font-headline-lg text-[24px] text-on-surface uppercase leading-none mt-1" id="drop-banner-name"></span>
+            </div>
+        </div>
+        <div class="flex items-center gap-gutter">
+            <span class="font-label-mono text-label-mono text-secondary uppercase tracking-widest" id="drop-banner-countdown"></span>
+            <a href="store.html#drops" class="bg-secondary-container text-primary-container font-headline-lg text-[20px] uppercase px-6 py-2 hover:bg-on-surface transition-colors" id="drop-banner-cta">View Drop</a>
+        </div>
+    </section>
+
+    <!-- Manifiesto -->
+    <section class="bg-surface-container-lowest border-y border-outline-variant/20 px-margin-mobile md:px-margin-desktop py-[80px] flex flex-col gap-stack-lg">
+        <span class="font-label-mono text-label-mono text-secondary-container uppercase tracking-widest">Manifiesto / Est. 2024</span>
+        <h2 class="font-headline-xl text-[36px] md:text-[64px] text-on-surface uppercase leading-[110%] tracking-tighter max-w-5xl">
+            Not Today nace de la necesidad de crear <span class="text-secondary-container">algo propio</span>.
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-margin-desktop max-w-5xl">
+            <p class="font-body-lg text-body-lg text-on-surface-variant border-l-2 border-secondary-container pl-4">
+                Un espacio donde la música, la moda y la imagen se mezclan para construir una identidad que se siente auténtica y real.
+            </p>
+            <p class="font-body-lg text-body-lg text-on-surface-variant border-l-2 border-outline-variant pl-4">
+                Creamos desde cero. Producimos nuestra música, diseñamos nuestras piezas y desarrollamos nuestros visuales con nuestra propia visión.
+                <span class="text-on-surface">Cada beat, cada plano y cada textura forman parte de lo que somos.</span>
+            </p>
+        </div>
+    </section>
+
+    <!-- Live Sets (datos reales de /api/events) -->
+    <section class="px-margin-mobile md:px-margin-desktop py-stack-lg flex flex-col gap-stack-lg">
+        <div class="flex items-end justify-between border-b border-on-surface pb-stack-sm">
+            <h2 class="font-headline-xl text-headline-xl text-on-surface uppercase tracking-tighter">Live Sets</h2>
+            <a class="font-label-mono text-label-mono text-secondary-container hover:text-on-surface uppercase transition-colors" href="projects.html">View All Schedule -&gt;</a>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-gutter" id="events-grid">
+            <!-- skeleton -->
+            <div class="nt-skeleton md:col-span-2 h-[400px]"></div>
+            <div class="flex flex-col gap-gutter">
+                <div class="nt-skeleton h-[192px]"></div>
+                <div class="nt-skeleton h-[192px]"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA / Roster -->
+    <section class="px-margin-mobile md:px-margin-desktop py-[100px] flex flex-col items-center justify-center text-center gap-stack-md border-y border-outline-variant/20 bg-surface-container-highest">
+        <h2 class="font-headline-xl text-[48px] md:text-[80px] text-on-surface uppercase leading-none tracking-tighter">
+            Sonido Propio.
+        </h2>
+        <p class="font-body-lg text-body-lg text-on-surface-variant max-w-lg mb-stack-md">
+            Producimos nuestra música. Representamos a un roster que empuja los límites del industrial, el hard techno y el bass experimental — cada beat forma parte de lo que somos.
+        </p>
+        <div class="flex flex-col md:flex-row gap-gutter w-full md:w-auto justify-center">
+            <a href="booking.html" class="bg-transparent border-2 border-secondary-container text-secondary-container font-headline-lg text-[24px] uppercase px-8 py-4 hover:bg-secondary-container hover:text-primary-container transition-colors w-full md:w-auto flex items-center justify-center">
+                Book an Artist
+            </a>
+            <a href="artists.html" class="bg-transparent border-2 border-on-surface text-on-surface font-headline-lg text-[24px] uppercase px-8 py-4 hover:bg-on-surface hover:text-primary-container transition-colors w-full md:w-auto flex items-center justify-center">
+                View Roster
+            </a>
+        </div>
+    </section>
+</main>
+
+<!-- Footer -->
+<footer class="bg-surface-container-lowest text-on-surface font-body-md text-body-md uppercase w-full border-t-2 border-on-surface grid grid-cols-1 md:grid-cols-12 gap-gutter px-margin-mobile md:px-margin-desktop py-stack-lg">
+    <div class="md:col-span-4 flex flex-col gap-stack-sm">
+        <span class="font-headline-lg text-headline-lg text-on-surface">NOT TODAY</span>
+        <p class="text-on-surface-variant mt-auto">© 2024 NOT TODAY COLLECTIVE. ALL RIGHTS RESERVED.</p>
+    </div>
+    <div class="md:col-span-8 flex flex-wrap gap-gutter md:justify-end items-end">
+        <a class="text-on-surface-variant hover:text-secondary transition-colors border border-transparent hover:border-on-surface px-2 py-1" href="#">Instagram</a>
+        <a class="text-on-surface-variant hover:text-secondary transition-colors border border-transparent hover:border-on-surface px-2 py-1" href="#">SoundCloud</a>
+        <a class="text-on-surface-variant hover:text-secondary transition-colors border border-transparent hover:border-on-surface px-2 py-1" href="#">Spotify</a>
+        <a class="text-on-surface-variant hover:text-secondary transition-colors border border-transparent hover:border-on-surface px-2 py-1" href="track.html">Seguimiento</a>
+        <a class="text-on-surface-variant hover:text-secondary transition-colors border border-transparent hover:border-on-surface px-2 py-1" href="terms.html">Terms</a>
+        <a class="text-on-surface-variant hover:text-secondary transition-colors border border-transparent hover:border-on-surface px-2 py-1" href="privacy.html">Privacy</a>
+    </div>
+</footer>
+
+<!-- BottomNavBar (móvil) -->
+<nav class="bg-background/95 backdrop-blur-md text-secondary font-label-mono text-label-mono fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 md:hidden border-t border-outline-variant/30">
+    <a href="sessions.html" class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high w-full h-full transition-colors">
+        <span class="material-symbols-outlined mb-1">play_circle</span>
+        <span class="text-[10px]">Listen</span>
+    </a>
+    <a href="store.html" class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high w-full h-full transition-colors">
+        <span class="material-symbols-outlined mb-1">shopping_cart</span>
+        <span class="text-[10px]">Shop</span>
+    </a>
+    <a href="projects.html" class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high w-full h-full transition-colors">
+        <span class="material-symbols-outlined mb-1">grid_view</span>
+        <span class="text-[10px]">Work</span>
+    </a>
+    <a href="booking.html" class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high w-full h-full transition-colors">
+        <span class="material-symbols-outlined mb-1">mail</span>
+        <span class="text-[10px]">Book</span>
+    </a>
+</nav>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/cart.js"></script>
+<script>
+    // ------- Live Sets: eventos publicados -------
+    function eventCity(venue) {
+        // Convención "Sala / Ciudad" o solo venue: mostramos el último tramo.
+        const parts = String(venue).split("/").map((s) => s.trim());
+        return parts[parts.length - 1] || venue;
+    }
+
+    function bigEventCard(ev) {
+        const lineup = ev.lineup.map((l) => l.artist.stageName).join(" · ");
+        return `
+        <a href="projects.html" class="brutal-card md:col-span-2 group relative overflow-hidden h-[400px] flex flex-col justify-end p-stack-md cursor-pointer">
+            <div class="absolute inset-0 z-0">
+                <img class="w-full h-full object-cover transition-transform duration-500" src="${ev.posterUrl || ntPlaceholderImage(ev.title)}" alt="${ntEscapeHtml(ev.title)}"/>
+                <div class="absolute inset-0 bg-gradient-to-t from-primary-container via-primary-container/50 to-transparent"></div>
+            </div>
+            <div class="relative z-10 flex flex-col gap-stack-sm">
+                <div class="flex gap-2">
+                    <span class="bg-primary-container border border-on-surface px-2 py-1 font-label-mono text-[12px] text-on-surface uppercase">${ntEscapeHtml(eventCity(ev.venue))}</span>
+                    <span class="bg-secondary-container text-primary-container px-2 py-1 font-label-mono text-[12px] uppercase font-bold">${Number(ev.price) > 0 ? ntFormatMoney(ev.price) : "Free"}</span>
+                </div>
+                <h3 class="font-headline-xl text-[48px] md:text-[64px] text-on-surface uppercase leading-none">${ntEscapeHtml(ev.title)}</h3>
+                <p class="font-label-mono text-label-mono text-on-surface-variant uppercase mt-2">${ntFormatEventDate(ev.date)}${lineup ? " — " + ntEscapeHtml(lineup) : ""}</p>
+            </div>
+        </a>`;
+    }
+
+    function smallEventCard(ev) {
+        return `
+        <a href="projects.html" class="brutal-card flex-1 p-stack-md flex flex-col justify-between group relative overflow-hidden cursor-pointer h-[192px]">
+            <div class="absolute inset-0 z-0 opacity-20 group-hover:opacity-40 transition-opacity">
+                <img class="w-full h-full object-cover grayscale" src="${ev.posterUrl || ntPlaceholderImage(ev.title)}" alt=""/>
+            </div>
+            <div class="relative z-10 flex justify-between items-start">
+                <span class="bg-primary-container border border-on-surface px-2 py-1 font-label-mono text-[12px] text-on-surface uppercase">${ntEscapeHtml(eventCity(ev.venue))}</span>
+                <span class="material-symbols-outlined text-on-surface-variant group-hover:text-secondary-container transition-colors">arrow_outward</span>
+            </div>
+            <div class="relative z-10">
+                <h3 class="font-headline-lg text-[32px] text-on-surface uppercase leading-tight">${ntEscapeHtml(ev.title)}</h3>
+                <p class="font-label-mono text-label-mono text-on-surface-variant uppercase mt-1">${ntFormatEventDate(ev.date)}</p>
+            </div>
+        </a>`;
+    }
+
+    async function loadEvents() {
+        const grid = document.getElementById("events-grid");
+        try {
+            const { events } = await ntApi("/events");
+            if (!events.length) {
+                grid.innerHTML = `
+                <div class="md:col-span-3 border border-outline-variant/20 p-stack-lg text-center">
+                    <p class="font-label-mono text-label-mono text-on-surface-variant uppercase">Nada programado todavía.</p>
+                </div>`;
+                return;
+            }
+            const [first, ...rest] = events;
+            grid.innerHTML =
+                bigEventCard(first) +
+                `<div class="flex flex-col gap-gutter">${rest.slice(0, 2).map(smallEventCard).join("") ||
+                    `<div class="brutal-card flex-1 p-stack-md flex items-center justify-center h-[400px]">
+                        <span class="font-label-mono text-label-mono text-on-surface-variant uppercase">Más fechas pronto</span>
+                     </div>`}</div>`;
+        } catch (err) {
+            grid.innerHTML = `<div class="md:col-span-3 border border-error/40 p-stack-lg text-center">
+                <p class="font-label-mono text-label-mono text-error uppercase">${ntEscapeHtml(err.message)}</p>
+            </div>`;
+        }
+    }
+
+    // ------- Banner del próximo drop -------
+    let dropCountdownTimer = null;
+    async function loadDropBanner() {
+        try {
+            const { drops } = await ntApi("/drops");
+            const open = drops.find((d) => d.dropMeta.dropStatus === "ABIERTO");
+            const upcoming = drops.find((d) => d.dropMeta.dropStatus === "PROXIMAMENTE");
+            const drop = open || upcoming;
+            if (!drop) return;
+
+            const banner = document.getElementById("drop-banner");
+            banner.classList.remove("hidden");
+            banner.classList.add("flex");
+            document.getElementById("drop-banner-name").textContent = drop.name;
+
+            if (open) {
+                document.getElementById("drop-banner-label").textContent = "Drop abierto — Limited";
+                document.getElementById("drop-banner-countdown").textContent = "LIVE NOW";
+                document.getElementById("drop-banner-cta").textContent = "Shop Drop";
+                return;
+            }
+
+            document.getElementById("drop-banner-label").textContent = "Próximo drop";
+            const target = new Date(drop.dropMeta.releaseAt).getTime();
+            const tick = () => {
+                const diff = target - Date.now();
+                const el = document.getElementById("drop-banner-countdown");
+                if (diff <= 0) {
+                    el.textContent = "LIVE NOW";
+                    clearInterval(dropCountdownTimer);
+                    return;
+                }
+                const d = Math.floor(diff / 86400000);
+                const h = Math.floor((diff % 86400000) / 3600000);
+                const m = Math.floor((diff % 3600000) / 60000);
+                const s = Math.floor((diff % 60000) / 1000);
+                el.textContent = `${d}D ${String(h).padStart(2, "0")}H ${String(m).padStart(2, "0")}M ${String(s).padStart(2, "0")}S`;
+            };
+            tick();
+            dropCountdownTimer = setInterval(tick, 1000);
+        } catch {
+            /* el banner simplemente no se muestra si la API falla */
+        }
+    }
+
+    loadEvents();
+    loadDropBanner();
+</script>
+</body>
+</html>

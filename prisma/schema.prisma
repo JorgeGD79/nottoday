@@ -1,0 +1,427 @@
+// ============================================================================
+// NOTTODAY — Esquema de datos principal
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ----------------------------------------------------------------------------
+// 1. USUARIOS Y ROLES
+// ----------------------------------------------------------------------------
+
+enum Role {
+  ADMIN
+  STAFF
+  ARTISTA
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String // hash bcrypt, nunca texto plano
+  role      Role     @default(STAFF)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Un usuario con rol ARTISTA puede estar vinculado a su ficha pública de Artista
+  artist    Artist?
+  carts     Cart[]
+  auditLogs AuditLog[]
+
+  @@index([role])
+}
+
+// ----------------------------------------------------------------------------
+// 2. ARTISTAS
+// ----------------------------------------------------------------------------
+
+enum ArtistStatus {
+  ACTIVO
+  INACTIVO
+}
+
+model Artist {
+  id          String       @id @default(cuid())
+  stageName   String
+  bio         String?      @db.Text
+  spotifyId   String?
+  soundcloudId String?
+  instagram   String?
+  youtube     String? // URL del canal/perfil de YouTube del artista
+  images      String[]     @default([])
+  status      ArtistStatus @default(ACTIVO)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  userId   String? @unique
+  user     User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  lineups  EventLineup[]
+  bookings Booking[]
+  sessions Session[]
+
+  @@index([status])
+}
+
+// ----------------------------------------------------------------------------
+// 2b. N-TY SESSIONS (sesiones grabadas, alojadas en YouTube)
+// ----------------------------------------------------------------------------
+
+model Session {
+  id          String   @id @default(cuid())
+  title       String // "N-TY Session 001"
+  youtubeUrl  String // URL completa del vídeo en YouTube
+  description String?  @db.Text
+  publishedAt DateTime @default(now())
+  artistId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@index([publishedAt])
+  @@index([artistId])
+}
+
+// ----------------------------------------------------------------------------
+// 3. EVENTOS (con line-up de artistas invitados)
+// ----------------------------------------------------------------------------
+
+enum EventStatus {
+  BORRADOR
+  PUBLICADO
+  CANCELADO
+  FINALIZADO
+}
+
+model Event {
+  id          String      @id @default(cuid())
+  title       String
+  date        DateTime
+  venue       String
+  description String?     @db.Text
+  posterUrl   String?
+  price       Decimal     @default(0) @db.Decimal(10, 2)
+  status      EventStatus @default(BORRADOR)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  lineup EventLineup[]
+
+  @@index([date])
+  @@index([status])
+}
+
+// Tabla puente explícita Evento <-> Artista (permite añadir orden de actuación, hora, etc.)
+model EventLineup {
+  id        String   @id @default(cuid())
+  eventId   String
+  artistId  String
+  setTime   DateTime?
+  billing   Int       @default(0) // 0 = headliner, mayor número = menor jerarquía en el cartel
+
+  event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, artistId])
+  @@index([eventId])
+  @@index([artistId])
+}
+
+// ----------------------------------------------------------------------------
+// 4. PRODUCTOS (Tienda general vs Drops exclusivos) + Inventario por talla
+// ----------------------------------------------------------------------------
+
+enum ProductType {
+  TIENDA_GENERAL
+  DROP_EXCLUSIVO
+}
+
+enum ProductStatus {
+  BORRADOR
+  ACTIVO
+  AGOTADO
+}
+
+model Product {
+  id          String        @id @default(cuid())
+  name        String
+  description String?       @db.Text
+  price       Decimal       @db.Decimal(10, 2)
+  images      String[]      @default([])
+  productType ProductType   @default(TIENDA_GENERAL)
+  status      ProductStatus @default(BORRADOR)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  variants ProductVariant[]
+  dropMeta DropMetadata?
+  cartItems CartItem[]
+  orderItems OrderItem[]
+
+  @@index([productType, status])
+}
+
+// Metadatos exclusivos para productos tipo DROP_EXCLUSIVO (cuenta atrás / apertura)
+enum DropStatus {
+  PROXIMAMENTE
+  ABIERTO
+  FINALIZADO
+}
+
+model DropMetadata {
+  id            String     @id @default(cuid())
+  productId     String     @unique
+  releaseAt     DateTime // fecha/hora de lanzamiento -> alimenta la cuenta atrás en el frontend
+  dropStatus    DropStatus @default(PROXIMAMENTE)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([dropStatus, releaseAt])
+}
+
+// Inventario por talla — la unidad real de stock/reserva/checkout
+enum Size {
+  S
+  M
+  L
+  XL
+}
+
+model ProductVariant {
+  id               String   @id @default(cuid())
+  productId        String
+  size             Size
+  stockAvailable   Int      @default(0)
+  stockReserved    Int      @default(0)
+  updatedAt        DateTime @updatedAt
+
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+
+  @@unique([productId, size])
+  @@index([productId])
+}
+
+// ----------------------------------------------------------------------------
+// 5. DESCUENTOS Y CUPONES
+// ----------------------------------------------------------------------------
+
+enum DiscountType {
+  PORCENTAJE
+  MONTO_FIJO
+  ENVIO_GRATIS
+}
+
+enum DiscountStatus {
+  ACTIVO
+  INACTIVO
+}
+
+model Discount {
+  id                    String         @id @default(cuid())
+  code                  String         @unique
+  type                  DiscountType
+  value                 Decimal        @db.Decimal(10, 2) // ignorado si type = ENVIO_GRATIS
+  startDate             DateTime
+  endDate               DateTime
+  maxUses               Int?
+  currentUses           Int            @default(0)
+  minPurchaseAmount     Decimal        @default(0) @db.Decimal(10, 2)
+  status                DiscountStatus @default(ACTIVO)
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  carts  Cart[]
+  orders Order[]
+
+  @@index([code])
+  @@index([status, startDate, endDate])
+}
+
+// ----------------------------------------------------------------------------
+// 6. CARRITOS Y SESIONES
+// ----------------------------------------------------------------------------
+
+enum CartStatus {
+  ACTIVO
+  ABANDONADO
+  CONVERTIDO
+}
+
+model Cart {
+  id             String     @id @default(cuid())
+  userId         String?
+  email          String?
+  discountCodeId String?
+  status         CartStatus @default(ACTIVO)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  // marca de la última vez que se notificó al cliente por carrito abandonado
+  abandonedNotifiedAt DateTime?
+
+  user         User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  discountCode Discount? @relation(fields: [discountCodeId], references: [id], onDelete: SetNull)
+  items        CartItem[]
+
+  @@index([status, updatedAt])
+  @@index([userId])
+}
+
+model CartItem {
+  id               String @id @default(cuid())
+  cartId           String
+  productId        String
+  productVariantId String
+  quantity         Int    @default(1)
+
+  cart           Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product        Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, productVariantId])
+}
+
+// ----------------------------------------------------------------------------
+// MÉTODOS DE ENVÍO (definidos por el admin en su panel: tipo + coste)
+// ----------------------------------------------------------------------------
+
+model ShippingMethod {
+  id          String   @id @default(cuid())
+  name        String // "Estándar 48/72h"
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orders Order[]
+
+  @@index([active, sortOrder])
+}
+
+// ----------------------------------------------------------------------------
+// PEDIDOS (resultado del checkout — necesario para Stripe + trazabilidad de stock)
+// ----------------------------------------------------------------------------
+
+enum OrderStatus {
+  PENDIENTE
+  PAGADO
+  FALLIDO
+  CANCELADO
+}
+
+// Estado logístico del pedido, independiente del estado del pago.
+enum FulfillmentStatus {
+  PENDIENTE
+  ENVIADO
+  ENTREGADO
+}
+
+model Order {
+  id                    String      @id @default(cuid())
+  userId                String?
+  email                 String
+  subtotal              Decimal     @db.Decimal(10, 2)
+  discountAmount        Decimal     @default(0) @db.Decimal(10, 2)
+  total                 Decimal     @db.Decimal(10, 2)
+  discountCodeId        String?
+  status                OrderStatus @default(PENDIENTE)
+  stripePaymentIntentId String?     @unique
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  // --- Envío: snapshot del método (nombre/coste cobrados) + dirección ---
+  shippingMethodId   String?
+  shippingMethodName String?
+  shippingCost       Decimal @default(0) @db.Decimal(10, 2)
+  shippingName       String?
+  shippingAddress    String?
+  shippingCity       String?
+  shippingPostalCode String?
+  shippingCountry    String?
+  shippingPhone      String?
+
+  fulfillmentStatus FulfillmentStatus @default(PENDIENTE)
+  trackingCode      String?
+
+  shippingMethod ShippingMethod? @relation(fields: [shippingMethodId], references: [id], onDelete: SetNull)
+  discountCode   Discount?       @relation(fields: [discountCodeId], references: [id], onDelete: SetNull)
+  items          OrderItem[]
+
+  @@index([status])
+  @@index([fulfillmentStatus])
+  @@index([email])
+}
+
+model OrderItem {
+  id               String  @id @default(cuid())
+  orderId          String
+  productId        String
+  productVariantId String
+  quantity         Int
+  unitPrice        Decimal @db.Decimal(10, 2)
+
+  order          Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product        Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
+}
+
+// ----------------------------------------------------------------------------
+// 7. COLABORACIONES Y BOOKINGS
+// ----------------------------------------------------------------------------
+
+enum BookingType {
+  CONTRATACION
+  COLABORACION
+}
+
+enum BookingStatus {
+  NUEVA
+  EN_REVISION
+  ACEPTADA
+  RECHAZADA
+}
+
+model Booking {
+  id            String        @id @default(cuid())
+  type          BookingType
+  requesterName String
+  email         String
+  details       String        @db.Text
+  status        BookingStatus @default(NUEVA)
+  artistId      String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  artist Artist? @relation(fields: [artistId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+}
+
+// ----------------------------------------------------------------------------
+// 8. LOGS DE AUDITORÍA
+// ----------------------------------------------------------------------------
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  ip        String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+}

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html class="dark" lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NOT TODAY - Checkout</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Anton&amp;family=Hanken+Grotesk:wght@400;600&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="assets/js/tailwind.config.js"></script>
+<link href="assets/css/site.css" rel="stylesheet"/>
+</head>
+<body class="min-h-screen flex flex-col font-body-md antialiased selection:bg-secondary selection:text-primary-container">
+
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-background border-b border-outline-variant/20 flex justify-between items-center px-margin-mobile md:px-margin-desktop py-4">
+    <a href="index.html" class="font-headline-lg text-headline-lg uppercase text-on-surface flex items-center">NOT TODAY</a>
+    <div class="hidden md:flex gap-gutter items-center">
+        <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200 font-label-mono text-label-mono uppercase tracking-widest px-2" href="store.html">Store</a>
+        <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200 font-label-mono text-label-mono uppercase tracking-widest px-2" href="artists.html">Artists</a>
+        <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200 font-label-mono text-label-mono uppercase tracking-widest px-2" href="sessions.html">Sessions</a>
+        <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200 font-label-mono text-label-mono uppercase tracking-widest px-2" href="projects.html">Projects</a>
+        <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200 font-label-mono text-label-mono uppercase tracking-widest px-2" href="booking.html">Booking</a>
+    </div>
+    <div class="flex items-center gap-base">
+        <button data-cart-toggle class="relative p-2 text-on-surface-variant hover:text-secondary transition-colors" aria-label="Abrir carrito">
+            <span class="material-symbols-outlined">shopping_bag</span>
+            <span data-cart-count class="hidden absolute -top-0.5 -right-0.5 bg-secondary-container text-primary-container font-label-mono text-[10px] w-4 h-4 items-center justify-center">0</span>
+        </button>
+    </div>
+</nav>
+
+<main class="flex-grow pt-[100px] pb-stack-lg px-margin-mobile md:px-margin-desktop">
+    <header class="py-stack-lg border-b border-outline-variant/20 mb-stack-lg">
+        <a href="store.html" class="font-label-mono text-label-mono text-on-surface-variant hover:text-secondary uppercase tracking-widest inline-flex items-center gap-2 mb-stack-md transition-colors">
+            <span class="material-symbols-outlined text-[18px]">arrow_back</span> Seguir comprando
+        </a>
+        <h1 class="font-display-lg text-display-lg uppercase text-on-background tracking-tighter leading-none">
+            Check<span class="text-secondary opacity-80">out</span>
+        </h1>
+    </header>
+
+    <!-- Estado: carrito vacío -->
+    <div id="empty-state" class="hidden py-stack-lg text-center">
+        <span class="material-symbols-outlined text-6xl text-on-surface-variant">shopping_bag</span>
+        <p class="font-label-mono text-label-mono text-on-surface-variant uppercase mt-stack-md">Tu carrito está vacío</p>
+        <a href="store.html" class="inline-block mt-stack-md font-headline-lg text-[22px] uppercase text-secondary hover:text-on-surface transition-colors">Ir a la tienda -&gt;</a>
+    </div>
+
+    <!-- Skeleton de carga -->
+    <div id="loading-state" class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+        <div class="lg:col-span-7 space-y-stack-md"><div class="nt-skeleton h-64"></div></div>
+        <div class="lg:col-span-5"><div class="nt-skeleton h-96"></div></div>
+    </div>
+
+    <!-- Flujo de checkout -->
+    <div id="checkout-view" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-gutter items-start">
+        <!-- Columna izquierda: datos -->
+        <form id="checkout-form" class="lg:col-span-7 space-y-stack-lg" novalidate>
+            <!-- Dirección de envío -->
+            <section class="nt-card">
+                <h2 class="font-headline-lg text-headline-lg-mobile text-on-surface uppercase mb-stack-md flex items-center gap-2">
+                    <span class="material-symbols-outlined text-secondary">local_shipping</span> Dirección de envío
+                </h2>
+                <div class="space-y-stack-md">
+                    <div><label class="nt-label" for="ship-name">Nombre completo</label>
+                        <input type="text" id="ship-name" class="nt-input" required autocomplete="name"/></div>
+                    <div><label class="nt-label" for="ship-address">Dirección</label>
+                        <input type="text" id="ship-address" class="nt-input" placeholder="Calle, número, piso" required autocomplete="street-address"/></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-stack-md">
+                        <div><label class="nt-label" for="ship-city">Ciudad</label>
+                            <input type="text" id="ship-city" class="nt-input" required autocomplete="address-level2"/></div>
+                        <div><label class="nt-label" for="ship-postal">Código postal</label>
+                            <input type="text" id="ship-postal" class="nt-input" required autocomplete="postal-code"/></div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-stack-md">
+                        <div><label class="nt-label" for="ship-country">País</label>
+                            <input type="text" id="ship-country" class="nt-input" value="España" required autocomplete="country-name"/></div>
+                        <div><label class="nt-label" for="ship-phone">Teléfono (opcional)</label>
+                            <input type="tel" id="ship-phone" class="nt-input" autocomplete="tel"/></div>
+                    </div>
+                    <div><label class="nt-label" for="checkout-email">Email</label>
+                        <input type="email" id="checkout-email" class="nt-input" placeholder="tu@email.com" required autocomplete="email"/></div>
+                </div>
+            </section>
+
+            <!-- Método de pago -->
+            <section class="nt-card">
+                <h2 class="font-headline-lg text-headline-lg-mobile text-on-surface uppercase mb-stack-md flex items-center gap-2">
+                    <span class="material-symbols-outlined text-secondary">credit_card</span> Método de pago
+                </h2>
+                <div id="payment-methods" class="grid grid-cols-1 sm:grid-cols-3 gap-stack-md"></div>
+            </section>
+
+            <!-- Método de envío -->
+            <section class="nt-card">
+                <h2 class="font-headline-lg text-headline-lg-mobile text-on-surface uppercase mb-stack-md flex items-center gap-2">
+                    <span class="material-symbols-outlined text-secondary">inventory_2</span> Método de envío
+                </h2>
+                <div id="shipping-options" class="space-y-stack-sm"></div>
+            </section>
+        </form>
+
+        <!-- Columna derecha: resumen -->
+        <aside class="lg:col-span-5 lg:sticky lg:top-[100px]">
+            <div class="nt-card">
+                <h2 class="font-headline-lg text-headline-lg-mobile text-on-surface uppercase mb-stack-md">Tu pedido</h2>
+                <div id="order-items" class="space-y-stack-sm mb-stack-md"></div>
+                <div id="order-totals" class="border-t border-outline-variant/30 pt-stack-md"></div>
+                <button type="submit" form="checkout-form" id="pay-btn" class="btn-primary mt-stack-md">Pagar</button>
+                <p class="font-label-mono text-[10px] text-on-surface-variant uppercase tracking-wide mt-stack-sm text-center">Pago seguro · No almacenamos datos de tarjeta</p>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Confirmación -->
+    <div id="confirmation" class="hidden max-w-2xl mx-auto py-stack-lg">
+        <div class="nt-card text-center">
+            <span class="material-symbols-outlined text-6xl text-secondary" style="font-variation-settings:'FILL' 1;">check_circle</span>
+            <h2 class="font-display-lg text-headline-xl uppercase text-on-surface mt-stack-md leading-none">Pedido confirmado</h2>
+            <p id="confirmation-sub" class="font-body-md text-body-md text-on-surface-variant mt-stack-md"></p>
+            <div class="border border-outline-variant/30 p-stack-md mt-stack-lg text-left space-y-2">
+                <div class="flex justify-between"><span class="font-label-mono text-[12px] text-on-surface-variant uppercase">Nº de pedido</span>
+                    <span id="confirmation-order" class="font-label-mono text-[13px] text-secondary"></span></div>
+                <div class="flex justify-between"><span class="font-label-mono text-[12px] text-on-surface-variant uppercase">Total</span>
+                    <span id="confirmation-total" class="font-label-mono text-[13px] text-on-surface"></span></div>
+                <div class="flex justify-between"><span class="font-label-mono text-[12px] text-on-surface-variant uppercase">Email</span>
+                    <span id="confirmation-email" class="font-label-mono text-[13px] text-on-surface"></span></div>
+            </div>
+            <div id="confirmation-payment-host" class="mt-stack-md"></div>
+            <div class="flex flex-col sm:flex-row gap-stack-md mt-stack-lg">
+                <a id="confirmation-track" href="#" class="btn-primary">Seguir mi pedido</a>
+                <a href="store.html" class="flex-1 inline-flex items-center justify-center border-2 border-on-surface text-on-surface font-headline-lg text-[20px] uppercase py-3 hover:bg-on-surface hover:text-primary-container transition-colors">Volver a la tienda</a>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Footer -->
+<footer class="bg-surface-container-lowest border-t-2 border-on-surface w-full grid grid-cols-1 md:grid-cols-12 gap-gutter px-margin-mobile md:px-margin-desktop py-stack-lg relative z-10">
+    <div class="md:col-span-4 flex flex-col justify-between">
+        <div class="font-headline-lg text-headline-lg text-on-surface uppercase">NOT TODAY</div>
+        <div class="font-label-mono text-label-mono text-on-surface-variant mt-stack-md max-w-xs">
+            Colectivo independiente. Música, moda e imagen creadas desde cero.
+        </div>
+    </div>
+    <div class="md:col-span-4 flex flex-col gap-base mt-stack-md md:mt-0">
+        <h4 class="font-label-mono text-label-mono text-on-surface uppercase mb-2">Connect</h4>
+        <a class="font-body-md text-body-md uppercase text-on-surface-variant hover:text-secondary transition-colors w-fit" href="#">Instagram</a>
+        <a class="font-body-md text-body-md uppercase text-on-surface-variant hover:text-secondary transition-colors w-fit" href="#">SoundCloud</a>
+        <a class="font-body-md text-body-md uppercase text-on-surface-variant hover:text-secondary transition-colors w-fit" href="#">Spotify</a>
+    </div>
+    <div class="md:col-span-4 flex flex-col justify-between items-start md:items-end mt-stack-md md:mt-0">
+        <div class="flex flex-col gap-base items-start md:items-end">
+            <h4 class="font-label-mono text-label-mono text-on-surface uppercase mb-2">Legal</h4>
+            <a class="font-body-md text-body-md uppercase text-on-surface-variant hover:text-secondary transition-colors w-fit" href="track.html">Seguimiento</a>
+            <a class="font-body-md text-body-md uppercase text-on-surface-variant hover:text-secondary transition-colors w-fit" href="terms.html">Terms</a>
+            <a class="font-body-md text-body-md uppercase text-on-surface-variant hover:text-secondary transition-colors w-fit" href="privacy.html">Privacy</a>
+        </div>
+        <div class="font-label-mono text-[10px] text-on-surface-variant mt-stack-lg uppercase tracking-widest text-left md:text-right">
+            © 2024 NOT TODAY COLLECTIVE. ALL RIGHTS RESERVED.
+        </div>
+    </div>
+</footer>
+
+<!-- BottomNavBar (móvil) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 md:hidden bg-background/95 backdrop-blur-md border-t border-outline-variant/30">
+    <a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-all w-full h-full" href="sessions.html">
+        <span class="material-symbols-outlined">play_circle</span>
+        <span class="font-label-mono text-[10px] uppercase mt-1">Listen</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-secondary scale-110 hover:bg-surface-container-high transition-all w-full h-full relative" href="store.html">
+        <span class="absolute top-0 w-8 h-0.5 bg-secondary"></span>
+        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">shopping_cart</span>
+        <span class="font-label-mono text-[10px] uppercase mt-1 font-bold">Shop</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-all w-full h-full" href="projects.html">
+        <span class="material-symbols-outlined">grid_view</span>
+        <span class="font-label-mono text-[10px] uppercase mt-1">Work</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-all w-full h-full" href="booking.html">
+        <span class="material-symbols-outlined">mail</span>
+        <span class="font-label-mono text-[10px] uppercase mt-1">Book</span>
+    </a>
+</nav>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/cart.js"></script>
+<script src="assets/js/checkout.js"></script>
+</body>
+</html>

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html class="dark" lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NOT TODAY - N-TY Sessions</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Anton&amp;family=Hanken+Grotesk:wght@400;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="assets/js/tailwind.config.js"></script>
+<link href="assets/css/site.css" rel="stylesheet"/>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased pt-24 pb-20 md:pb-0">
+
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-background border-b border-outline-variant/20">
+    <div class="flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop py-4">
+        <a class="font-headline-lg text-headline-lg uppercase text-on-surface tracking-tighter" href="index.html">NOT TODAY</a>
+        <div class="hidden md:flex gap-gutter items-center font-label-mono text-label-mono uppercase">
+            <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200" href="store.html">Store</a>
+            <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200" href="artists.html">Artists</a>
+            <a class="text-secondary font-bold border-b-2 border-secondary pb-1" href="sessions.html">Sessions</a>
+            <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200" href="projects.html">Projects</a>
+            <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200" href="booking.html">Booking</a>
+        </div>
+        <div class="flex items-center gap-gutter">
+            <a href="booking.html" class="hidden md:block bg-secondary-container text-primary-container font-headline-xl text-[24px] px-6 py-2 hover:bg-tertiary-fixed transition-colors uppercase">
+                Join Collective
+            </a>
+            <button data-cart-toggle class="relative text-on-surface hover:text-secondary transition-colors p-2" aria-label="Abrir carrito">
+                <span class="material-symbols-outlined">shopping_bag</span>
+                <span data-cart-count class="hidden absolute -top-0.5 -right-0.5 bg-secondary-container text-primary-container font-label-mono text-[10px] w-4 h-4 items-center justify-center">0</span>
+            </button>
+        </div>
+    </div>
+</nav>
+
+<main class="w-full max-w-[1440px] mx-auto px-margin-mobile md:px-margin-desktop pt-stack-lg flex flex-col gap-margin-desktop">
+    <!-- Header -->
+    <header class="flex flex-col gap-stack-md border-b border-outline-variant/20 pb-stack-lg">
+        <h1 class="font-display-lg text-display-lg uppercase text-on-surface max-w-4xl tracking-tighter leading-none">
+            N-TY <br/><span class="text-secondary">Sessions</span>
+        </h1>
+        <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mt-4">
+            Nuestra música, grabada con nuestra propia visión. Un artista, una sala, una toma — sin ediciones. Sets completos en YouTube.
+        </p>
+    </header>
+
+    <!-- Reproductor destacado + lista (datos reales de /api/sessions) -->
+    <section id="sessions-section">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter" id="sessions-layout">
+            <div class="nt-skeleton lg:col-span-8 aspect-video"></div>
+            <div class="flex flex-col gap-gutter lg:col-span-4">
+                <div class="nt-skeleton h-[120px]"></div>
+                <div class="nt-skeleton h-[120px]"></div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<!-- Footer -->
+<footer class="w-full bg-surface-container-lowest border-t-2 border-on-surface mt-margin-desktop">
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-gutter px-margin-mobile md:px-margin-desktop py-stack-lg">
+        <div class="md:col-span-4 flex flex-col gap-stack-sm">
+            <span class="font-headline-lg text-headline-lg text-on-surface uppercase">NOT TODAY</span>
+            <span class="font-body-md text-body-md uppercase text-on-surface-variant">© 2024 NOT TODAY COLLECTIVE. ALL RIGHTS RESERVED.</span>
+        </div>
+        <div class="md:col-span-8 flex flex-wrap gap-x-8 gap-y-4 md:justify-end items-end font-body-md text-body-md uppercase text-on-surface-variant">
+            <a class="hover:text-secondary transition-colors" href="#">Instagram</a>
+            <a class="hover:text-secondary transition-colors" href="#">SoundCloud</a>
+            <a class="hover:text-secondary transition-colors" href="#">Spotify</a>
+            <a class="hover:text-secondary transition-colors" href="track.html">Seguimiento</a>
+            <a class="hover:text-secondary transition-colors" href="terms.html">Terms</a>
+            <a class="hover:text-secondary transition-colors" href="privacy.html">Privacy</a>
+        </div>
+    </div>
+</footer>
+
+<!-- BottomNavBar (móvil) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 md:hidden bg-background/95 backdrop-blur-md border-t border-outline-variant/30">
+    <a class="flex flex-col items-center justify-center text-secondary scale-110 w-full h-full" href="sessions.html">
+        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">play_circle</span>
+        <span class="font-label-mono text-[10px] uppercase mt-1 font-bold">Listen</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high w-full h-full" href="store.html">
+        <span class="material-symbols-outlined">shopping_cart</span>
+        <span class="font-label-mono text-[10px] uppercase mt-1">Shop</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high w-full h-full" href="artists.html">
+        <span class="material-symbols-outlined">group</span>
+        <span class="font-label-mono text-[10px] uppercase mt-1">Artists</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high w-full h-full" href="booking.html">
+        <span class="material-symbols-outlined">mail</span>
+        <span class="font-label-mono text-[10px] uppercase mt-1">Book</span>
+    </a>
+</nav>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/cart.js"></script>
+<script>
+    let allSessions = [];
+
+    function playerHtml(session) {
+        const videoId = ntYoutubeId(session.youtubeUrl);
+        const date = new Date(session.publishedAt).toLocaleDateString("en-GB", {
+            year: "numeric", month: "short", day: "2-digit",
+        }).toUpperCase();
+        const frame = videoId
+            ? `<iframe class="w-full h-full" src="https://www.youtube-nocookie.com/embed/${videoId}"
+                 title="${ntEscapeHtml(session.title)}" frameborder="0"
+                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                 allowfullscreen></iframe>`
+            : `<div class="w-full h-full flex items-center justify-center">
+                 <a href="${ntEscapeHtml(session.youtubeUrl)}" target="_blank" rel="noopener noreferrer"
+                    class="font-label-mono text-label-mono text-secondary uppercase">Watch on YouTube -&gt;</a>
+               </div>`;
+        return `
+        <div class="lg:col-span-8 flex flex-col">
+            <div class="relative w-full aspect-video bg-primary-container border-2 border-on-surface overflow-hidden" id="player-frame">
+                ${frame}
+            </div>
+            <div class="flex flex-col md:flex-row md:items-end justify-between gap-stack-md border-b border-outline-variant/20 py-stack-md">
+                <div>
+                    <span class="font-label-mono text-[12px] text-secondary-container uppercase tracking-widest">Now Playing</span>
+                    <h2 class="font-headline-xl text-[36px] md:text-[48px] text-on-surface uppercase leading-none mt-2">${ntEscapeHtml(session.title)}</h2>
+                    <p class="font-label-mono text-label-mono text-on-surface-variant uppercase mt-2">
+                        <a href="artists.html" class="text-secondary hover:text-on-surface transition-colors">${ntEscapeHtml(session.artist.stageName)}</a> — ${date}
+                    </p>
+                    ${session.description ? `<p class="font-body-md text-body-md text-on-surface-variant mt-3 max-w-xl">${ntEscapeHtml(session.description)}</p>` : ""}
+                </div>
+                <a href="${ntEscapeHtml(session.youtubeUrl)}" target="_blank" rel="noopener noreferrer"
+                   class="font-label-mono text-label-mono uppercase border border-outline-variant/30 px-4 py-2 text-on-surface-variant hover:border-secondary hover:text-secondary transition-colors whitespace-nowrap flex items-center gap-1 w-fit">
+                    Open on YouTube <span class="material-symbols-outlined text-[16px]">arrow_outward</span>
+                </a>
+            </div>
+        </div>`;
+    }
+
+    function sessionTile(session, isActive) {
+        const thumb = ntYoutubeThumb(session.youtubeUrl) || ntPlaceholderImage(session.title);
+        const date = new Date(session.publishedAt).toLocaleDateString("en-GB", {
+            month: "short", day: "2-digit",
+        }).toUpperCase();
+        return `
+        <button data-session="${session.id}" id="${session.id}"
+            class="brutal-card group flex gap-stack-md p-stack-sm text-left w-full ${isActive ? "!border-secondary-container" : ""}">
+            <div class="w-32 aspect-video bg-surface-container flex-shrink-0 border border-outline-variant/20 overflow-hidden relative">
+                <img class="w-full h-full object-cover ${isActive ? "" : "grayscale group-hover:grayscale-0"} transition-all duration-300" src="${thumb}" alt=""/>
+                <span class="material-symbols-outlined absolute inset-0 m-auto w-fit h-fit text-on-surface ${isActive ? "text-secondary" : ""}" style="font-variation-settings: 'FILL' 1;">${isActive ? "equalizer" : "play_arrow"}</span>
+            </div>
+            <div class="flex flex-col justify-center min-w-0">
+                <h3 class="font-headline-lg text-[20px] text-on-surface uppercase leading-tight truncate">${ntEscapeHtml(session.title)}</h3>
+                <p class="font-label-mono text-[12px] text-on-surface-variant uppercase mt-1 truncate">${ntEscapeHtml(session.artist.stageName)} — ${date}</p>
+            </div>
+        </button>`;
+    }
+
+    function render(activeId) {
+        const layout = document.getElementById("sessions-layout");
+        const active = allSessions.find((s) => s.id === activeId) || allSessions[0];
+        const tiles = allSessions.map((s) => sessionTile(s, s.id === active.id)).join("");
+        layout.innerHTML =
+            playerHtml(active) +
+            `<aside class="lg:col-span-4 flex flex-col gap-gutter">
+                <div class="flex items-end justify-between border-b border-on-surface pb-stack-sm">
+                    <h2 class="font-headline-lg text-[24px] text-on-surface uppercase tracking-tighter">Archive</h2>
+                    <span class="font-label-mono text-[12px] text-on-surface-variant uppercase">${allSessions.length} set${allSessions.length === 1 ? "" : "s"}</span>
+                </div>
+                ${tiles}
+            </aside>`;
+
+        layout.querySelectorAll("[data-session]").forEach((btn) =>
+            btn.addEventListener("click", () => {
+                render(btn.dataset.session);
+                document.getElementById("player-frame").scrollIntoView({ behavior: "smooth", block: "center" });
+            })
+        );
+    }
+
+    async function loadSessions() {
+        const layout = document.getElementById("sessions-layout");
+        try {
+            const { sessions } = await ntApi("/sessions");
+            if (!sessions.length) {
+                layout.innerHTML = `
+                <div class="lg:col-span-12 border border-outline-variant/20 p-stack-lg text-center">
+                    <p class="font-label-mono text-label-mono text-on-surface-variant uppercase">Primera sesión muy pronto.</p>
+                </div>`;
+                return;
+            }
+            allSessions = sessions;
+            // Enlace directo desde artists.html (#sessionId)
+            const anchor = window.location.hash.slice(1);
+            render(anchor || null);
+        } catch (err) {
+            layout.innerHTML = `<div class="lg:col-span-12 border border-error/40 p-stack-lg text-center">
+                <p class="font-label-mono text-label-mono text-error uppercase">${ntEscapeHtml(err.message)}</p>
+            </div>`;
+        }
+    }
+
+    loadSessions();
+</script>
+</body>
+</html>
