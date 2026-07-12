@@ -69,7 +69,9 @@
       "Bash(node --check public/assets/js/api.js)",
       "Bash(node --check public/assets/js/admin.js)",
       "Bash(curl -s -X POST http://localhost:4123/api/admin/uploads -w \"\\\\nHTTP %{http_code}\\\\n\")",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(curl -s \"http://localhost:4123/assets/css/site.css?v=2\")",
+      "Bash(curl -s \"http://localhost:4123/admin.html\")"
     ]
   }
 }

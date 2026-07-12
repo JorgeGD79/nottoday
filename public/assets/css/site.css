@@ -62,8 +62,16 @@ body::after {
     100% { transform: translate(0); }
 }
 
-/* Inputs subrayados (booking / checkout) */
-.nt-input {
+/* Inputs subrayados (booking / checkout).
+   Nota: el plugin @tailwindcss/forms aplica fondo blanco y borde a los inputs con
+   selectores de atributo ([type='text'], ...) de la MISMA especificidad que .nt-input,
+   y gana por orden de carga (su CSS se inyecta después). Por eso listamos también
+   input/textarea/select.nt-input (especificidad 0,1,1) para ganar siempre y que el
+   fondo transparente + texto claro del tema oscuro se apliquen de verdad. */
+.nt-input,
+input.nt-input,
+textarea.nt-input,
+select.nt-input {
     background: transparent;
     border: none;
     border-bottom: 1px solid rgba(229, 226, 225, 0.2);
@@ -83,14 +91,23 @@ body::after {
     color: #8e9192;
 }
 /* El autofill del navegador pinta un fondo claro y deja el texto en color claro
-   (invisible). Forzamos texto claro + fondo del tema en los campos autocompletados. */
+   (invisible). Forzamos texto claro + fondo del tema en los campos autocompletados.
+   Regla -webkit separada de :autofill para que un navegador que no entienda una
+   no invalide la otra. */
 .nt-input:-webkit-autofill,
 .nt-input:-webkit-autofill:hover,
-.nt-input:-webkit-autofill:focus {
-    -webkit-text-fill-color: #e5e2e1;
-    -webkit-box-shadow: 0 0 0 1000px #131313 inset;
-    caret-color: #e5e2e1;
+.nt-input:-webkit-autofill:focus,
+.nt-input:-webkit-autofill:active {
+    -webkit-text-fill-color: #e5e2e1 !important;
+    -webkit-box-shadow: 0 0 0 1000px #131313 inset !important;
+    box-shadow: 0 0 0 1000px #131313 inset !important;
+    caret-color: #e5e2e1 !important;
     transition: background-color 9999s ease-in-out 0s;
+}
+.nt-input:autofill {
+    -webkit-text-fill-color: #e5e2e1 !important;
+    box-shadow: 0 0 0 1000px #131313 inset !important;
+    caret-color: #e5e2e1 !important;
 }
 .nt-label {
     font-family: "JetBrains Mono", monospace;
