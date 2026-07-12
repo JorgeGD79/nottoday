@@ -29,7 +29,9 @@ services:
     # Migra la BD y siembra el admin al arrancar (evita necesitar el Shell de pago).
     # El seed es idempotente (upsert): en despliegues posteriores no duplica ni
     # cambia la contraseña si el usuario ya existe.
-    dockerCommand: sh -c "npx prisma migrate deploy && npx tsx prisma/seed.ts && node dist/server.js"
+    # OJO: Render ya ejecuta este comando dentro de una shell, así que NO hay que
+    # envolverlo en `sh -c "..."` (eso anida comillas y rompe con exit 127).
+    dockerCommand: "npx prisma migrate deploy && npx tsx prisma/seed.ts && node dist/server.js"
     envVars:
       - key: NODE_ENV
         value: development          # demo: relaja validaciones y permite pago simulado
