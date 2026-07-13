@@ -35,10 +35,13 @@ nav .md\:flex a {
     font-family: "Recoleta", Georgia, serif;
 }
 
-/* Utilidad para forzar Recoleta en un elemento y todos sus descendientes,
-   por encima de las utilidades de fuente de Tailwind (font-body-md, font-label-mono). */
+/* Utilidad para forzar Recoleta en un elemento y sus descendientes, por encima de
+   las utilidades de fuente de Tailwind (font-body-md, font-label-mono). Se EXCLUYEN
+   los iconos (.material-symbols-outlined), que dependen de su propia fuente: si se
+   les pisa la font-family, el ligature deja de renderizar y se ve el texto crudo
+   (p. ej. "arrow_outward" en vez del icono). */
 .nt-recoleta,
-.nt-recoleta * {
+.nt-recoleta *:not(.material-symbols-outlined) {
     font-family: "Recoleta", Georgia, serif !important;
 }
 
