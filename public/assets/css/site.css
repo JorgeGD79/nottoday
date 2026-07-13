@@ -28,6 +28,20 @@
     font-display: swap;
 }
 
+/* Enlaces de navegación del header (Store / Artists / Sessions / Projects / Booking).
+   Selecciona solo los del menú central (contenedor .md:flex); el logo y "Join
+   Collective" quedan fuera. La especificidad ya gana a font-label-mono. */
+nav .md\:flex a {
+    font-family: "Recoleta", Georgia, serif;
+}
+
+/* Utilidad para forzar Recoleta en un elemento y todos sus descendientes,
+   por encima de las utilidades de fuente de Tailwind (font-body-md, font-label-mono). */
+.nt-recoleta,
+.nt-recoleta * {
+    font-family: "Recoleta", Georgia, serif !important;
+}
+
 body {
     background-color: #131313;
     color: #e5e2e1;
