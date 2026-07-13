@@ -69,13 +69,13 @@ tailwind.config = {
         gutter: "16px",
       },
       fontFamily: {
-        "headline-xl": ["Anton"],
+        "headline-xl": ["Recoleta", "Georgia", "serif"],
         "body-lg": ["Hanken Grotesk"],
-        "display-lg": ["Anton"],
-        "headline-lg": ["Anton"],
+        "display-lg": ["Recoleta", "Georgia", "serif"],
+        "headline-lg": ["Recoleta", "Georgia", "serif"],
         "label-mono": ["JetBrains Mono"],
         "body-md": ["Hanken Grotesk"],
-        "headline-lg-mobile": ["Anton"],
+        "headline-lg-mobile": ["Recoleta", "Georgia", "serif"],
       },
       fontSize: {
         "headline-xl": ["64px", { lineHeight: "100%", letterSpacing: "-0.02em", fontWeight: "400" }],

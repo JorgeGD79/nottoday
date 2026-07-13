@@ -2,6 +2,32 @@
    NOT TODAY — estilos compartidos del design system brutalist
    ============================================================ */
 
+/* --- Recoleta (titulares) — fuente self-hosted ---
+   Coloca los .woff2 en public/assets/fonts/ con estos nombres. Si solo tienes
+   un peso, deja al menos Recoleta-Regular.woff2. Mientras no existan los
+   archivos, los titulares caen a la serif del sistema (Georgia). */
+@font-face {
+    font-family: "Recoleta";
+    src: url("../fonts/Recoleta-Regular.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: "Recoleta";
+    src: url("../fonts/Recoleta-SemiBold.woff2") format("woff2");
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: "Recoleta";
+    src: url("../fonts/Recoleta-Bold.woff2") format("woff2");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
 body {
     background-color: #131313;
     color: #e5e2e1;
@@ -123,7 +149,7 @@ select.nt-input {
 .btn-primary {
     background-color: #ff8a00;
     color: #050505;
-    font-family: "Anton", sans-serif;
+    font-family: "Recoleta", Georgia, serif;
     font-size: 24px;
     text-transform: uppercase;
     padding: 16px 32px;
