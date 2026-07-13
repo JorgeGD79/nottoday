@@ -7,5 +7,7 @@ export async function adminUploadsRoutes(fastify: FastifyInstance) {
   fastify.addHook("preHandler", authenticate);
   fastify.addHook("preHandler", isStaffOrAdmin);
 
-  fastify.post("/", uploadImagesHandler);
+  // Rate-limit propio (además del auth): evita abuso/coste en Cloudinary aunque
+  // la cuenta sea de staff.
+  fastify.post("/", { config: { rateLimit: { max: 30, timeWindow: "1 minute" } } }, uploadImagesHandler);
 }

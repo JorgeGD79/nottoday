@@ -34,6 +34,8 @@ services:
         value: development          # demo: relaja validaciones y permite pago simulado
       - key: CHECKOUT_SKIP_STRIPE
         value: "true"               # pagos simulados (pedidos marcados PAGADO)
+      - key: TRUST_PROXY
+        value: "1"                  # Render sirve tras su proxy: 1 salto de confianza (IP real)
       - key: CORS_ORIGIN
         value: "*"                  # válido en development; el frontend es same-origin
       - key: JWT_SECRET

@@ -21,6 +21,12 @@ const envSchema = z
     // Sin comodín por defecto: en producción se exige un origen explícito (ver superRefine).
     CORS_ORIGIN: z.string().default("http://localhost:4000"),
 
+    // Confianza en proxies para obtener la IP real del cliente (rate-limit, audit logs).
+    // "false" (por defecto) = NO confiar en X-Forwarded-For (evita spoofing). Detrás de
+    // un proxy/CDN (Render, etc.) pon el nº de saltos de confianza, p. ej. "1". También
+    // admite una lista de subredes/IPs. NUNCA "true" en producción (confía en el XFF del cliente).
+    TRUST_PROXY: z.string().default("false"),
+
     DATABASE_URL: z.string().min(1, "DATABASE_URL es obligatorio"),
     REDIS_URL: z.string().min(1, "REDIS_URL es obligatorio"),
 
@@ -87,6 +93,14 @@ const envSchema = z
             "CHECKOUT_SKIP_STRIPE no puede estar activo en producción: saltaría el cobro real y confirmaría pedidos sin pagar.",
         });
       }
+      if (data.TRUST_PROXY.trim().toLowerCase() === "true") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["TRUST_PROXY"],
+          message:
+            "TRUST_PROXY='true' confía en el X-Forwarded-For del cliente (falsificable). Usa el nº de saltos de proxy (p. ej. '1') o una lista de IPs.",
+        });
+      }
     }
   });
 
@@ -102,3 +116,18 @@ export const corsOrigin: string | string[] =
   env.CORS_ORIGIN.trim() === "*"
     ? "*"
     : env.CORS_ORIGIN.split(",").map((o) => o.trim()).filter(Boolean);
+
+/**
+ * Valor para `trustProxy` de Fastify:
+ *   "false" → false (no confiar en XFF)
+ *   "true"  → true (solo dev; confía en el XFF del cliente, falsificable)
+ *   número  → nº de saltos de proxy de confianza (recomendado detrás de un CDN/proxy)
+ *   otro    → lista de subredes/IPs (se pasa tal cual)
+ */
+export const trustProxy: boolean | number | string = (() => {
+  const raw = env.TRUST_PROXY.trim();
+  if (raw.toLowerCase() === "false") return false;
+  if (raw.toLowerCase() === "true") return true;
+  if (/^\d+$/.test(raw)) return Number(raw);
+  return raw;
+})();

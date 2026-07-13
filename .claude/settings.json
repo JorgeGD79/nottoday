@@ -71,7 +71,8 @@
       "Bash(curl -s -X POST http://localhost:4123/api/admin/uploads -w \"\\\\nHTTP %{http_code}\\\\n\")",
       "Bash(node -e ' *)",
       "Bash(curl -s \"http://localhost:4123/assets/css/site.css?v=2\")",
-      "Bash(curl -s \"http://localhost:4123/admin.html\")"
+      "Bash(curl -s \"http://localhost:4123/admin.html\")",
+      "Bash(curl -s -D - -o /dev/null http://localhost:4123/store.html)"
     ]
   }
 }

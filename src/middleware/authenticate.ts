@@ -1,5 +1,6 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import { AppError } from "@/utils/AppError";
+import { isTokenRevoked } from "@/services/token-denylist.service";
 
 /**
  * Hook de autenticación: verifica el JWT firmado (@fastify/jwt) y, si es válido,
@@ -16,5 +17,11 @@ export async function authenticate(request: FastifyRequest, _reply: FastifyReply
     await request.jwtVerify();
   } catch {
     throw AppError.unauthorized("Token inválido o expirado");
+  }
+
+  // Revocación: un token cuyo jti esté en la denylist (logout) se rechaza aunque
+  // la firma sea válida y no haya caducado.
+  if (await isTokenRevoked(request.user.jti)) {
+    throw AppError.unauthorized("Sesión cerrada");
   }
 }

@@ -2,11 +2,13 @@ import "fastify";
 import "@fastify/jwt";
 import { Role } from "@prisma/client";
 
-// Payload que firmamos dentro del JWT (ver auth.service.ts)
+// Payload que firmamos dentro del JWT (ver auth.controller.ts)
 export interface JwtUserPayload {
   id: string;
   role: Role;
   email: string;
+  jti?: string; // id único del token, para poder revocarlo (denylist en Redis)
+  exp?: number; // expiración (epoch segundos), la añade @fastify/jwt al firmar
 }
 
 declare module "@fastify/jwt" {

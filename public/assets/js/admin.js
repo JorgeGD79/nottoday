@@ -961,8 +961,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Logout
-  document.getElementById("logout-btn").addEventListener("click", () => {
+  // Logout: revoca el token en el servidor (denylist) y luego limpia el cliente.
+  document.getElementById("logout-btn").addEventListener("click", async () => {
+    try {
+      await adminApi("/auth/logout", { method: "POST" });
+    } catch {
+      /* aunque falle la revocación, limpiamos la sesión local igualmente */
+    }
     Auth.clear();
     showLogin();
   });

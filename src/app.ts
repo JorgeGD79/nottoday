@@ -10,7 +10,7 @@ import multipart from "@fastify/multipart";
 import { ZodError } from "zod";
 import { Prisma } from "@prisma/client";
 
-import { env, corsOrigin } from "@/config/env";
+import { env, corsOrigin, trustProxy } from "@/config/env";
 import { redis } from "@/lib/redis";
 import { AppError } from "@/utils/AppError";
 
@@ -48,7 +48,9 @@ export async function buildApp(): Promise<FastifyInstance> {
           ? undefined
           : { target: "pino-pretty", options: { colorize: true } },
     },
-    trustProxy: true,
+    // Configurable: por defecto NO confía en X-Forwarded-For (evita spoofing de IP
+    // y bypass del rate-limit). Detrás de un proxy/CDN se pone TRUST_PROXY=<nº de saltos>.
+    trustProxy,
   });
 
   // --- Content-Type parser custom: conservamos el body crudo (Buffer) para
@@ -81,6 +83,13 @@ export async function buildApp(): Promise<FastifyInstance> {
         imgSrc: ["'self'", "data:", "https:"],
         connectSrc: ["'self'", "https://api.stripe.com"],
         frameSrc: ["https://js.stripe.com", "https://www.youtube-nocookie.com"],
+        // Endurecido: sin plugins/embeds arbitrarios, sin secuestro de <base>, sin
+        // que la página se pueda enmarcar (clickjacking), y los formularios solo
+        // pueden enviar al propio origen.
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+        frameAncestors: ["'none'"],
+        formAction: ["'self'"],
         // En desarrollo se accede por http (localhost o IP de la LAN desde el móvil):
         // esta directiva forzaría todas las subresources a https y rompería css/js.
         upgradeInsecureRequests: env.NODE_ENV === "production" ? [] : null,
