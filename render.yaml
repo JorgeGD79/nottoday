@@ -1,13 +1,6 @@
 # Render Blueprint — despliegue en modo DEMO (sin Stripe real).
-# Crea: base de datos Postgres + Redis (Key Value) + el servicio web (API + tienda).
+# Base de datos: Neon (externa, fuera de Render) + Redis (Key Value) + el servicio web (API + tienda).
 # Los 2 workers van comentados al final: son OPCIONALES en demo y requieren plan de pago.
-
-databases:
-  - name: nottoday-db
-    databaseName: nottoday
-    user: nottoday
-    plan: free            # gratis ~30 días; súbelo a un plan de pago para producción
-    region: frankfurt
 
 services:
   # Redis / Key Value — cola de BullMQ + almacén del rate-limit
@@ -56,10 +49,10 @@ services:
         sync: false
       - key: CLOUDINARY_API_SECRET
         sync: false
+      # Neon (externa a Render). sync:false = se mete a mano en el dashboard de
+      # Render (Environment), no se guarda en git.
       - key: DATABASE_URL
-        fromDatabase:
-          name: nottoday-db
-          property: connectionString
+        sync: false
       - key: REDIS_URL
         fromService:
           name: nottoday-redis
@@ -86,7 +79,7 @@ services:
 #      - key: STRIPE_SECRET_KEY
 #        value: sk_test_dummy
 #      - key: DATABASE_URL
-#        fromDatabase: { name: nottoday-db, property: connectionString }
+#        sync: false   # Neon, se mete a mano en el dashboard
 #      - key: REDIS_URL
 #        fromService: { name: nottoday-redis, type: redis, property: connectionString }
 #
@@ -105,6 +98,6 @@ services:
 #      - key: STRIPE_SECRET_KEY
 #        value: sk_test_dummy
 #      - key: DATABASE_URL
-#        fromDatabase: { name: nottoday-db, property: connectionString }
+#        sync: false   # Neon, se mete a mano en el dashboard
 #      - key: REDIS_URL
 #        fromService: { name: nottoday-redis, type: redis, property: connectionString }
