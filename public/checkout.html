@@ -6,33 +6,15 @@
 <title>NOT TODAY - Checkout</title>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Anton&amp;family=Hanken+Grotesk:wght@400;600&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&amp;family=Archivo:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script src="assets/js/tailwind.config.js?v=1"></script>
-<link href="assets/css/site.css?v=4" rel="stylesheet"/>
+<script src="assets/js/tailwind.config.js?v=2"></script>
+<link href="assets/css/site.css?v=5" rel="stylesheet"/>
 </head>
 <body class="min-h-screen flex flex-col font-body-md antialiased selection:bg-secondary selection:text-primary-container">
 
-<!-- TopNavBar -->
-<nav class="fixed top-0 w-full z-50 bg-background border-b border-outline-variant/20 flex justify-between items-center px-margin-mobile md:px-margin-desktop py-4">
-    <a href="index.html" class="font-headline-lg text-headline-lg uppercase text-on-surface flex items-center">NOT TODAY</a>
-    <div class="hidden md:flex gap-gutter items-center">
-        <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200 font-label-mono text-label-mono uppercase tracking-widest px-2" href="store.html">Store</a>
-        <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200 font-label-mono text-label-mono uppercase tracking-widest px-2" href="artists.html">Artists</a>
-        <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200 font-label-mono text-label-mono uppercase tracking-widest px-2" href="sessions.html">Sessions</a>
-        <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200 font-label-mono text-label-mono uppercase tracking-widest px-2" href="projects.html">Projects</a>
-        <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200 font-label-mono text-label-mono uppercase tracking-widest px-2" href="booking.html">Booking</a>
-    </div>
-    <div class="flex items-center gap-base">
-        <button data-cart-toggle class="relative p-2 text-on-surface-variant hover:text-secondary transition-colors" aria-label="Abrir carrito">
-            <span class="material-symbols-outlined">shopping_bag</span>
-            <span data-cart-count class="hidden absolute -top-0.5 -right-0.5 bg-secondary-container text-primary-container font-label-mono text-[10px] w-4 h-4 items-center justify-center">0</span>
-        </button>
-    </div>
-</nav>
-
-<main class="flex-grow pt-[100px] pb-stack-lg px-margin-mobile md:px-margin-desktop">
+<main class="flex-grow pt-[140px] pb-stack-lg px-margin-mobile md:px-margin-desktop">
     <header class="py-stack-lg border-b border-outline-variant/20 mb-stack-lg">
         <a href="store.html" class="font-label-mono text-label-mono text-on-surface-variant hover:text-secondary uppercase tracking-widest inline-flex items-center gap-2 mb-stack-md transition-colors">
             <span class="material-symbols-outlined text-[18px]">arrow_back</span> Seguir comprando
@@ -138,55 +120,9 @@
     </div>
 </main>
 
-<!-- Footer -->
-<footer class="bg-surface-container-lowest border-t-2 border-on-surface w-full grid grid-cols-1 md:grid-cols-12 gap-gutter px-margin-mobile md:px-margin-desktop py-stack-lg relative z-10">
-    <div class="md:col-span-4 flex flex-col justify-between">
-        <div class="font-headline-lg text-headline-lg text-on-surface uppercase">NOT TODAY</div>
-        <div class="font-label-mono text-label-mono text-on-surface-variant mt-stack-md max-w-xs">
-            Colectivo independiente. Música, moda e imagen creadas desde cero.
-        </div>
-    </div>
-    <div class="md:col-span-4 flex flex-col gap-base mt-stack-md md:mt-0">
-        <h4 class="font-label-mono text-label-mono text-on-surface uppercase mb-2">Connect</h4>
-        <a class="font-body-md text-body-md uppercase text-on-surface-variant hover:text-secondary transition-colors w-fit" href="https://www.instagram.com/nottoday.nty/" target="_blank" rel="noopener noreferrer">Instagram</a>
-        <a class="font-body-md text-body-md uppercase text-on-surface-variant hover:text-secondary transition-colors w-fit" href="#">SoundCloud</a>
-        <a class="font-body-md text-body-md uppercase text-on-surface-variant hover:text-secondary transition-colors w-fit" href="#">Spotify</a>
-    </div>
-    <div class="md:col-span-4 flex flex-col justify-between items-start md:items-end mt-stack-md md:mt-0">
-        <div class="flex flex-col gap-base items-start md:items-end">
-            <h4 class="font-label-mono text-label-mono text-on-surface uppercase mb-2">Legal</h4>
-            <a class="font-body-md text-body-md uppercase text-on-surface-variant hover:text-secondary transition-colors w-fit" href="track.html">Seguimiento</a>
-            <a class="font-body-md text-body-md uppercase text-on-surface-variant hover:text-secondary transition-colors w-fit" href="terms.html">Terms</a>
-            <a class="font-body-md text-body-md uppercase text-on-surface-variant hover:text-secondary transition-colors w-fit" href="privacy.html">Privacy</a>
-        </div>
-        <div class="font-label-mono text-[10px] text-on-surface-variant mt-stack-lg uppercase tracking-widest text-left md:text-right">
-            © 2026 NOT TODAY COLLECTIVE. ALL RIGHTS RESERVED.
-        </div>
-    </div>
-</footer>
-
-<!-- BottomNavBar (móvil) -->
-<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 md:hidden bg-background/95 backdrop-blur-md border-t border-outline-variant/30">
-    <a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-all w-full h-full" href="sessions.html">
-        <span class="material-symbols-outlined">play_circle</span>
-        <span class="font-label-mono text-[10px] uppercase mt-1">Listen</span>
-    </a>
-    <a class="flex flex-col items-center justify-center text-secondary scale-110 hover:bg-surface-container-high transition-all w-full h-full relative" href="store.html">
-        <span class="absolute top-0 w-8 h-0.5 bg-secondary"></span>
-        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">shopping_cart</span>
-        <span class="font-label-mono text-[10px] uppercase mt-1 font-bold">Shop</span>
-    </a>
-    <a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-all w-full h-full" href="projects.html">
-        <span class="material-symbols-outlined">grid_view</span>
-        <span class="font-label-mono text-[10px] uppercase mt-1">Work</span>
-    </a>
-    <a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-all w-full h-full" href="booking.html">
-        <span class="material-symbols-outlined">mail</span>
-        <span class="font-label-mono text-[10px] uppercase mt-1">Book</span>
-    </a>
-</nav>
-
 <script src="assets/js/api.js"></script>
+<script src="assets/js/chrome.js"></script>
+<script>NTChrome.mount({ active: "checkout", showFooter: false });</script>
 <script src="assets/js/cart.js"></script>
 <script src="assets/js/checkout.js"></script>
 </body>

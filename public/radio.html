@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html class="dark scroll-smooth" lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NOT TODAY COLLECTIVE - N-TY Radio</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&amp;family=Archivo:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="assets/js/tailwind.config.js?v=2"></script>
+<link href="assets/css/site.css?v=5" rel="stylesheet"/>
+</head>
+<body class="antialiased min-h-screen pb-24 md:pb-0">
+
+<main class="w-full">
+    <div class="px-margin-mobile md:px-margin-desktop pt-[140px] pb-[100px]">
+        <div class="font-label-mono text-[11px] tracking-[0.18em] text-secondary-container uppercase mb-3">LAB</div>
+        <h1 class="font-display-lg font-extrabold uppercase tracking-tighter text-on-surface mb-10" style="font-size:clamp(40px,6vw,80px);">N-TY RADIO</h1>
+
+        <div class="nt-grid-lines grid-cols-[repeat(auto-fit,minmax(300px,1fr))]">
+            <!-- ON AIR -->
+            <div class="p-10 flex flex-col justify-between gap-8 min-h-[340px]">
+                <div class="flex items-center gap-2.5 font-label-mono text-[10px] tracking-[0.14em] text-secondary-container uppercase">
+                    <span class="w-[7px] h-[7px] bg-secondary-container block"></span>ON AIR
+                </div>
+                <div>
+                    <div id="radio-title" class="font-display-lg font-extrabold uppercase leading-[1.05] tracking-tighter text-on-surface" style="font-size:clamp(28px,3.4vw,44px);">BLOQUE CERO</div>
+                    <div id="radio-host" class="font-label-mono text-[12px] text-on-surface-variant tracking-[0.08em] mt-3">KOLD BENNETT</div>
+                </div>
+                <button id="radio-toggle" type="button" class="self-start flex items-center gap-3 px-6 py-4 font-label-mono text-[12px] tracking-[0.12em] uppercase cursor-pointer transition-colors bg-secondary-container text-on-secondary border border-secondary-container hover:bg-on-surface hover:text-primary-container hover:border-on-surface">
+                    <span id="radio-icon" class="material-symbols-outlined text-[18px]">play_arrow</span>
+                    <span id="radio-label">ESCUCHAR AHORA</span>
+                </button>
+            </div>
+
+            <!-- Programación -->
+            <div>
+                <div class="px-6 py-5 font-label-mono text-[10px] tracking-[0.14em] text-outline uppercase border-b border-outline-variant">PROGRAMACIÓN</div>
+                <div class="flex gap-[18px] px-6 py-[18px] items-baseline border-b border-[#20201f] hover:bg-[#161615] transition-colors">
+                    <div class="font-label-mono text-[11px] text-secondary-container w-14 flex-shrink-0">18:00</div>
+                    <div>
+                        <div class="font-headline-lg font-semibold uppercase text-[15px] text-on-surface">BLOQUE CERO</div>
+                        <div class="font-label-mono text-[10px] text-outline tracking-[0.06em] mt-1">KOLD BENNETT</div>
+                    </div>
+                </div>
+                <div class="flex gap-[18px] px-6 py-[18px] items-baseline border-b border-[#20201f] hover:bg-[#161615] transition-colors">
+                    <div class="font-label-mono text-[11px] text-secondary-container w-14 flex-shrink-0">20:00</div>
+                    <div>
+                        <div class="font-headline-lg font-semibold uppercase text-[15px] text-on-surface">SLOW PERREO</div>
+                        <div class="font-label-mono text-[10px] text-outline tracking-[0.06em] mt-1">DUENDE 45</div>
+                    </div>
+                </div>
+                <div class="flex gap-[18px] px-6 py-[18px] items-baseline border-b border-[#20201f] hover:bg-[#161615] transition-colors">
+                    <div class="font-label-mono text-[11px] text-secondary-container w-14 flex-shrink-0">22:00</div>
+                    <div>
+                        <div class="font-headline-lg font-semibold uppercase text-[15px] text-on-surface">NOCHE TEMPLADA</div>
+                        <div class="font-label-mono text-[10px] text-outline tracking-[0.06em] mt-1">MAR NOVA</div>
+                    </div>
+                </div>
+                <div class="flex gap-[18px] px-6 py-[18px] items-baseline border-b border-[#20201f] hover:bg-[#161615] transition-colors last:border-b-0">
+                    <div class="font-label-mono text-[11px] text-secondary-container w-14 flex-shrink-0">00:00</div>
+                    <div>
+                        <div class="font-headline-lg font-semibold uppercase text-[15px] text-on-surface">GUARDIA NOCTURNA</div>
+                        <div class="font-label-mono text-[10px] text-outline tracking-[0.06em] mt-1">RUDO</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/chrome.js"></script>
+<script>NTChrome.mount({ active: "radio" });</script>
+<script src="assets/js/cart.js"></script>
+<script>
+    // ------- N-TY Radio: toggle visual-only, sin audio real -------
+    const radioSchedule = [
+        { time: "18:00", title: "BLOQUE CERO", host: "KOLD BENNETT" },
+        { time: "20:00", title: "SLOW PERREO", host: "DUENDE 45" },
+    ];
+    let radioPlaying = false;
+
+    const radioTitleEl = document.getElementById("radio-title");
+    const radioHostEl = document.getElementById("radio-host");
+    const radioToggleEl = document.getElementById("radio-toggle");
+    const radioIconEl = document.getElementById("radio-icon");
+    const radioLabelEl = document.getElementById("radio-label");
+
+    function renderRadio() {
+        const now = radioPlaying ? radioSchedule[1] : radioSchedule[0];
+        radioTitleEl.textContent = now.title;
+        radioHostEl.textContent = now.host;
+        radioIconEl.textContent = radioPlaying ? "pause" : "play_arrow";
+        radioLabelEl.textContent = radioPlaying ? "EN DIRECTO" : "ESCUCHAR AHORA";
+        radioToggleEl.classList.toggle("bg-secondary-container", !radioPlaying);
+        radioToggleEl.classList.toggle("text-on-secondary", !radioPlaying);
+        radioToggleEl.classList.toggle("bg-transparent", radioPlaying);
+        radioToggleEl.classList.toggle("text-secondary-container", radioPlaying);
+    }
+
+    radioToggleEl.addEventListener("click", () => {
+        radioPlaying = !radioPlaying;
+        renderRadio();
+    });
+</script>
+</body>
+</html>

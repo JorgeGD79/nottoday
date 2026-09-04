@@ -1,73 +1,63 @@
 <!DOCTYPE html>
-<html class="dark" lang="es">
+<html class="dark scroll-smooth" lang="es">
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>NOT TODAY COLLECTIVE - Home</title>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Anton&amp;family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&amp;family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&amp;family=Archivo:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script src="assets/js/tailwind.config.js?v=1"></script>
-<link href="assets/css/site.css?v=4" rel="stylesheet"/>
+<script src="assets/js/tailwind.config.js?v=2"></script>
+<link href="assets/css/site.css?v=5" rel="stylesheet"/>
+<style>
+  /* Glitch de dos capas del titular del hero (activo al pasar el ratón),
+     reutiliza los keyframes nty-glitch-1/2 de site.css. */
+  .nty-hero-title:hover .nty-glitch-a,
+  .nty-hero-title:hover .nty-glitch-b { opacity: 1; }
+  .nty-hero-title:hover .nty-glitch-a { animation: nty-glitch-1 0.4s steps(2, end); }
+  .nty-hero-title:hover .nty-glitch-b { animation: nty-glitch-2 0.4s steps(2, end); }
+</style>
 </head>
-<body class="antialiased min-h-screen pb-16 md:pb-0 pt-20">
-
-<!-- TopNavBar -->
-<nav class="bg-background text-on-background fixed top-0 w-full z-50 border-b border-outline-variant/20 flex justify-between items-center px-margin-mobile md:px-margin-desktop py-4">
-    <a href="index.html" class="font-headline-lg text-headline-lg uppercase text-on-surface tracking-tighter">NOT TODAY</a>
-    <div class="hidden md:flex gap-gutter items-center font-label-mono text-label-mono uppercase">
-        <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200" href="store.html">Store</a>
-        <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200" href="artists.html">Artists</a>
-        <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200" href="sessions.html">Sessions</a>
-        <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200" href="projects.html">Projects</a>
-        <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200" href="booking.html">Booking</a>
-    </div>
-    <div class="flex items-center gap-gutter">
-        <a href="booking.html" class="hidden md:block bg-secondary-container text-primary-container font-headline-xl text-[24px] uppercase px-4 py-2 hover:bg-on-surface transition-colors">
-            Join Collective
-        </a>
-        <button data-cart-toggle class="relative hover:bg-surface-container-highest transition-all p-2 flex items-center justify-center" aria-label="Abrir carrito">
-            <span class="material-symbols-outlined">shopping_bag</span>
-            <span data-cart-count class="hidden absolute -top-0.5 -right-0.5 bg-secondary-container text-primary-container font-label-mono text-[10px] w-4 h-4 items-center justify-center">0</span>
-        </button>
-    </div>
-</nav>
+<body class="antialiased min-h-screen pb-16 md:pb-0">
 
 <main class="w-full">
     <!-- Hero -->
-    <section class="min-h-[80vh] flex flex-col md:flex-row items-center justify-center px-margin-mobile md:px-margin-desktop py-stack-lg gap-margin-desktop">
-        <div class="flex-1 flex flex-col items-start gap-stack-lg">
-            <h1 class="font-display-lg text-display-lg uppercase text-on-surface leading-none tracking-tighter mix-blend-difference">
-                <span class="text-secondary-container block">CREAMOS</span>
-                DESDE CERO.
-            </h1>
-            <p class="font-body-lg text-body-lg text-on-surface-variant max-w-md">
+    <section class="relative min-h-screen flex flex-col justify-center overflow-hidden bg-[#050505]">
+        <div class="absolute inset-0" style="background: radial-gradient(120% 80% at 50% 40%, #2a2a2a 0%, #131313 45%, #050505 100%);"></div>
+        <div class="absolute inset-0" style="background: linear-gradient(to bottom, rgba(5,5,5,0.55) 0%, rgba(5,5,5,0.15) 38%, rgba(5,5,5,0.88) 100%);"></div>
+
+        <div class="relative flex flex-col items-start px-margin-mobile md:px-margin-desktop py-24">
+            <span class="font-label-mono text-[11px] tracking-[0.24em] text-secondary-container" style="animation: nty-rise-soft 1s cubic-bezier(.22,1,.36,1) .2s both;">NOT TODAY COLLECTIVE — EST. 2024</span>
+
+            <div class="nty-hero-title relative mt-4" style="animation: nty-rise 1.4s cubic-bezier(.22,1,.36,1) .45s both;">
+                <span aria-hidden="true" class="nty-glitch-a absolute inset-0 font-display-lg uppercase leading-[0.94] tracking-tighter text-secondary-container opacity-0 pointer-events-none" style="font-size:clamp(38px,min(9.5vw,11vh),146px);">CREAMOS<br/>DESDE CERO.</span>
+                <span aria-hidden="true" class="nty-glitch-b absolute inset-0 font-display-lg uppercase leading-[0.94] tracking-tighter text-[#7fe8ff] opacity-0 pointer-events-none" style="font-size:clamp(38px,min(9.5vw,11vh),146px);">CREAMOS<br/>DESDE CERO.</span>
+                <h1 class="relative font-display-lg uppercase leading-[0.94] tracking-tighter text-on-surface m-0" style="font-size:clamp(38px,min(9.5vw,11vh),146px);">CREAMOS<br/>DESDE CERO.</h1>
+            </div>
+
+            <div class="h-px bg-secondary-container origin-left mt-[30px] mb-[26px]" style="width:min(420px,60%);animation: nty-line 1.2s cubic-bezier(.22,1,.36,1) 1.1s both;"></div>
+
+            <p class="max-w-[520px] font-body-lg text-[clamp(14px,1.3vw,17px)] leading-[1.7] text-on-surface-variant" style="animation: nty-rise-soft 1.2s cubic-bezier(.22,1,.36,1) 1.25s both;">
                 Not Today nace de la necesidad de crear algo propio. Música, moda e imagen mezcladas en una identidad que se siente auténtica y real.
             </p>
-            <div class="flex gap-gutter mt-stack-md w-full md:w-auto">
-                <a href="sessions.html" class="bg-secondary-container text-primary-container font-headline-lg text-[24px] uppercase px-8 py-4 hover:bg-on-surface transition-colors w-full md:w-auto text-center">
-                    Listen Now
+
+            <div class="flex flex-wrap gap-gutter mt-11" style="animation: nty-rise-soft 1.2s cubic-bezier(.22,1,.36,1) 1.5s both;">
+                <a href="store.html" class="flex items-center gap-3 bg-secondary-container text-on-secondary font-label-mono text-[11px] tracking-[0.14em] uppercase font-bold px-6 py-4 hover:bg-on-surface hover:text-primary-container transition-colors">
+                    ENTRAR A LA TIENDA<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </a>
-                <a href="store.html" class="bg-transparent border-2 border-on-surface text-on-surface font-headline-lg text-[24px] uppercase px-8 py-4 hover:bg-surface-container-highest transition-colors w-full md:w-auto flex items-center justify-center">
-                    <span class="material-symbols-outlined mr-2">arrow_forward</span> Enter
+                <a href="sessions.html" class="flex items-center gap-3 border border-outline-variant text-on-surface font-label-mono text-[11px] tracking-[0.14em] uppercase px-6 py-4 hover:border-secondary-container hover:text-secondary-container hover:bg-secondary-container/10 transition-colors">
+                    VER MÁS<span class="material-symbols-outlined text-[18px]">south</span>
                 </a>
             </div>
         </div>
-        <div class="flex-1 w-full h-[50vh] md:h-[70vh] relative group overflow-hidden border border-outline-variant/20 bg-primary-container">
-            <div class="w-full h-full glitch-hover grayscale hover:grayscale-0 transition-all duration-500 flex items-center justify-center">
-                <span class="font-display-lg text-[120px] md:text-[180px] text-surface-variant uppercase leading-none tracking-tighter select-none -rotate-6">NT</span>
-            </div>
-            <div class="absolute inset-0 bg-primary-container/20 pointer-events-none group-hover:bg-transparent transition-all"></div>
-            <div class="absolute bottom-4 right-4 bg-primary-container border border-on-surface px-2 py-1">
-                <span class="font-label-mono text-label-mono text-on-surface uppercase">Est. 2024</span>
-            </div>
-        </div>
+
+        <a href="#manifesto" class="absolute left-margin-mobile md:left-margin-desktop bottom-8 font-label-mono text-[9px] tracking-[0.2em] text-on-surface-variant" style="animation: nty-cue 2.6s ease-in-out 2s infinite;">SCROLL</a>
     </section>
 
     <!-- Next Drop bar (datos reales de /api/drops) -->
-    <section id="drop-banner" class="hidden bg-surface-container-lowest border-y border-outline-variant/20 py-stack-md px-margin-mobile md:px-margin-desktop flex-col md:flex-row items-center justify-between gap-gutter sticky top-[80px] z-40 backdrop-blur-md bg-opacity-90">
+    <section id="drop-banner" class="hidden bg-surface-container-lowest border-y border-outline-variant/20 py-stack-md px-margin-mobile md:px-margin-desktop flex-col md:flex-row items-center justify-between gap-gutter sticky top-[92px] z-40 backdrop-blur-md bg-opacity-90">
         <div class="flex items-center gap-gutter w-full md:w-auto">
             <div class="flex flex-col">
                 <span class="font-label-mono text-[12px] text-secondary-container uppercase tracking-widest" id="drop-banner-label">Next Drop</span>
@@ -76,12 +66,12 @@
         </div>
         <div class="flex items-center gap-gutter">
             <span class="font-label-mono text-label-mono text-secondary uppercase tracking-widest" id="drop-banner-countdown"></span>
-            <a href="store.html#drops" class="bg-secondary-container text-primary-container font-headline-lg text-[20px] uppercase px-6 py-2 hover:bg-on-surface transition-colors" id="drop-banner-cta">View Drop</a>
+            <a href="store.html#drops" class="bg-secondary-container text-on-secondary font-headline-lg text-[20px] uppercase px-6 py-2 hover:bg-on-surface hover:text-primary-container transition-colors" id="drop-banner-cta">View Drop</a>
         </div>
     </section>
 
     <!-- Manifiesto -->
-    <section class="bg-surface-container-lowest border-y border-outline-variant/20 px-margin-mobile md:px-margin-desktop py-[80px] flex flex-col gap-stack-lg">
+    <section id="manifesto" class="bg-surface-container-lowest border-y border-outline-variant/20 px-margin-mobile md:px-margin-desktop py-[80px] flex flex-col gap-stack-lg">
         <span class="font-label-mono text-label-mono text-secondary-container uppercase tracking-widest">Manifiesto / Est. 2024</span>
         <h2 class="font-headline-xl text-[36px] md:text-[64px] text-on-surface uppercase leading-[110%] tracking-tighter max-w-5xl">
             Not Today nace de la necesidad de crear <span class="text-secondary-container">algo propio</span>.
@@ -119,10 +109,10 @@
             Sonido Propio.
         </h2>
         <p class="font-body-lg text-body-lg text-on-surface-variant max-w-lg mb-stack-md">
-            Producimos nuestra música. Representamos a un roster que empuja los límites del industrial, el hard techno y el bass experimental — cada beat forma parte de lo que somos.
+            Producimos nuestra música. Representamos a un roster que empuja los límites del hip hop, el R&amp;B y el reggaetón — cada beat forma parte de lo que somos.
         </p>
         <div class="flex flex-col md:flex-row gap-gutter w-full md:w-auto justify-center">
-            <a href="booking.html" class="bg-transparent border-2 border-secondary-container text-secondary-container font-headline-lg text-[24px] uppercase px-8 py-4 hover:bg-secondary-container hover:text-primary-container transition-colors w-full md:w-auto flex items-center justify-center">
+            <a href="booking.html" class="bg-transparent border-2 border-secondary-container text-secondary-container font-headline-lg text-[24px] uppercase px-8 py-4 hover:bg-secondary-container hover:text-on-secondary transition-colors w-full md:w-auto flex items-center justify-center">
                 Book an Artist
             </a>
             <a href="artists.html" class="bg-transparent border-2 border-on-surface text-on-surface font-headline-lg text-[24px] uppercase px-8 py-4 hover:bg-on-surface hover:text-primary-container transition-colors w-full md:w-auto flex items-center justify-center">
@@ -132,43 +122,9 @@
     </section>
 </main>
 
-<!-- Footer -->
-<footer class="bg-surface-container-lowest text-on-surface font-body-md text-body-md uppercase w-full border-t-2 border-on-surface grid grid-cols-1 md:grid-cols-12 gap-gutter px-margin-mobile md:px-margin-desktop py-stack-lg">
-    <div class="md:col-span-4 flex flex-col gap-stack-sm">
-        <span class="font-headline-lg text-headline-lg text-on-surface">NOT TODAY</span>
-        <p class="text-on-surface-variant mt-auto">© 2026 NOT TODAY COLLECTIVE. ALL RIGHTS RESERVED.</p>
-    </div>
-    <div class="md:col-span-8 flex flex-wrap gap-gutter md:justify-end items-end">
-        <a class="text-on-surface-variant hover:text-secondary transition-colors border border-transparent hover:border-on-surface px-2 py-1" href="https://www.instagram.com/nottoday.nty/" target="_blank" rel="noopener noreferrer">Instagram</a>
-        <a class="text-on-surface-variant hover:text-secondary transition-colors border border-transparent hover:border-on-surface px-2 py-1" href="#">SoundCloud</a>
-        <a class="text-on-surface-variant hover:text-secondary transition-colors border border-transparent hover:border-on-surface px-2 py-1" href="#">Spotify</a>
-        <a class="text-on-surface-variant hover:text-secondary transition-colors border border-transparent hover:border-on-surface px-2 py-1" href="track.html">Seguimiento</a>
-        <a class="text-on-surface-variant hover:text-secondary transition-colors border border-transparent hover:border-on-surface px-2 py-1" href="terms.html">Terms</a>
-        <a class="text-on-surface-variant hover:text-secondary transition-colors border border-transparent hover:border-on-surface px-2 py-1" href="privacy.html">Privacy</a>
-    </div>
-</footer>
-
-<!-- BottomNavBar (móvil) -->
-<nav class="bg-background/95 backdrop-blur-md text-secondary font-label-mono text-label-mono fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 md:hidden border-t border-outline-variant/30">
-    <a href="sessions.html" class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high w-full h-full transition-colors">
-        <span class="material-symbols-outlined mb-1">play_circle</span>
-        <span class="text-[10px]">Listen</span>
-    </a>
-    <a href="store.html" class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high w-full h-full transition-colors">
-        <span class="material-symbols-outlined mb-1">shopping_cart</span>
-        <span class="text-[10px]">Shop</span>
-    </a>
-    <a href="projects.html" class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high w-full h-full transition-colors">
-        <span class="material-symbols-outlined mb-1">grid_view</span>
-        <span class="text-[10px]">Work</span>
-    </a>
-    <a href="booking.html" class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high w-full h-full transition-colors">
-        <span class="material-symbols-outlined mb-1">mail</span>
-        <span class="text-[10px]">Book</span>
-    </a>
-</nav>
-
 <script src="assets/js/api.js"></script>
+<script src="assets/js/chrome.js"></script>
+<script>NTChrome.mount({ active: "home" });</script>
 <script src="assets/js/cart.js"></script>
 <script>
     // ------- Live Sets: eventos publicados -------
@@ -183,13 +139,13 @@
         return `
         <a href="projects.html" class="brutal-card md:col-span-2 group relative overflow-hidden h-[400px] flex flex-col justify-end p-stack-md cursor-pointer">
             <div class="absolute inset-0 z-0">
-                <img class="w-full h-full object-cover transition-transform duration-500" src="${ev.posterUrl || ntPlaceholderImage(ev.title)}" alt="${ntEscapeHtml(ev.title)}"/>
+                <img class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" src="${ev.posterUrl || ntPlaceholderImage(ev.title)}" alt="${ntEscapeHtml(ev.title)}"/>
                 <div class="absolute inset-0 bg-gradient-to-t from-primary-container via-primary-container/50 to-transparent"></div>
             </div>
             <div class="relative z-10 flex flex-col gap-stack-sm">
                 <div class="flex gap-2">
                     <span class="bg-primary-container border border-on-surface px-2 py-1 font-label-mono text-[12px] text-on-surface uppercase">${ntEscapeHtml(eventCity(ev.venue))}</span>
-                    <span class="bg-secondary-container text-primary-container px-2 py-1 font-label-mono text-[12px] uppercase font-bold">${Number(ev.price) > 0 ? ntFormatMoney(ev.price) : "Free"}</span>
+                    <span class="bg-secondary-container text-on-secondary px-2 py-1 font-label-mono text-[12px] uppercase font-bold">${Number(ev.price) > 0 ? ntFormatMoney(ev.price) : "Free"}</span>
                 </div>
                 <h3 class="font-headline-xl text-[48px] md:text-[64px] text-on-surface uppercase leading-none">${ntEscapeHtml(ev.title)}</h3>
                 <p class="font-label-mono text-label-mono text-on-surface-variant uppercase mt-2">${ntFormatEventDate(ev.date)}${lineup ? " — " + ntEscapeHtml(lineup) : ""}</p>

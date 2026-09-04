@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html class="dark scroll-smooth" lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NOT TODAY COLLECTIVE - Newsletter</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&amp;family=Archivo:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="assets/js/tailwind.config.js?v=2"></script>
+<link href="assets/css/site.css?v=5" rel="stylesheet"/>
+</head>
+<body class="antialiased min-h-screen pb-24 md:pb-0">
+
+<main class="w-full">
+    <div class="px-margin-mobile md:px-margin-desktop pt-[140px] pb-[120px] max-w-[760px] mx-auto">
+        <div class="font-label-mono text-[11px] tracking-[0.18em] text-secondary-container uppercase mb-3.5">NEWSLETTER</div>
+        <h1 class="font-display-lg font-extrabold uppercase leading-[1.02] tracking-tighter text-on-surface mb-5" style="font-size:clamp(36px,5.6vw,72px);">PRIMERO TÚ,<br/>DESPUÉS EL RESTO.</h1>
+        <p class="font-body-lg text-on-surface-variant text-[16px] leading-[1.7] max-w-[520px] mb-9">
+            Lanzamientos, fechas y acceso anticipado a las piezas de merch antes de que salgan públicas. Un correo cada dos semanas. Sin ruido.
+        </p>
+
+        <div id="newsletter-form-wrap">
+            <div class="flex gap-px bg-outline-variant border border-outline-variant max-w-[520px]">
+                <input id="newsletter-email" type="email" placeholder="TU EMAIL" class="flex-1 bg-surface-container-lowest border-none outline-none text-on-surface px-[18px] py-[18px] font-body-lg text-[15px] placeholder:text-outline"/>
+                <button id="newsletter-submit" type="button" class="bg-secondary-container text-on-secondary px-[26px] py-[18px] cursor-pointer font-label-mono text-[12px] tracking-[0.1em] font-bold uppercase whitespace-nowrap hover:bg-on-surface hover:text-primary-container transition-colors">SUSCRIBIRME</button>
+            </div>
+            <div id="newsletter-hint" class="font-label-mono text-[9px] text-outline tracking-[0.06em] uppercase mt-3.5">SIN SPAM. BAJA EN UN CLICK.</div>
+        </div>
+
+        <div id="newsletter-success" class="hidden border border-secondary-container p-8 items-center gap-[18px] max-w-[520px]">
+            <span class="material-symbols-outlined text-secondary-container text-[32px]">mark_email_read</span>
+            <div>
+                <div class="font-headline-lg font-bold uppercase text-[18px] text-on-surface">DENTRO</div>
+                <div class="font-label-mono text-[11px] text-on-surface-variant mt-1.5 uppercase">Confirma en tu bandeja de entrada</div>
+            </div>
+        </div>
+
+        <div class="nt-grid-lines grid-cols-[repeat(auto-fit,minmax(180px,1fr))] mt-[60px]">
+            <div class="p-6">
+                <div class="font-label-mono text-[10px] text-secondary-container tracking-[0.12em] mb-2.5">01</div>
+                <div class="font-headline-lg font-semibold uppercase text-[16px] text-on-surface mb-2">ACCESO ANTICIPADO</div>
+                <div class="font-body-lg text-[13px] text-outline leading-[1.6]">Compra las piezas 24h antes del público.</div>
+            </div>
+            <div class="p-6">
+                <div class="font-label-mono text-[10px] text-secondary-container tracking-[0.12em] mb-2.5">02</div>
+                <div class="font-headline-lg font-semibold uppercase text-[16px] text-on-surface mb-2">FECHAS PRIMERO</div>
+                <div class="font-body-lg text-[13px] text-outline leading-[1.6]">Shows y entradas antes de que se anuncien.</div>
+            </div>
+            <div class="p-6">
+                <div class="font-label-mono text-[10px] text-secondary-container tracking-[0.12em] mb-2.5">03</div>
+                <div class="font-headline-lg font-semibold uppercase text-[16px] text-on-surface mb-2">SESSIONS INÉDITAS</div>
+                <div class="font-body-lg text-[13px] text-outline leading-[1.6]">Grabaciones que no suben a ninguna plataforma.</div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/chrome.js"></script>
+<script>NTChrome.mount({ active: "newsletter" });</script>
+<script src="assets/js/cart.js"></script>
+<script>
+    // ------- Newsletter: validación cliente, sin llamada a backend -------
+    const nlFormWrap = document.getElementById("newsletter-form-wrap");
+    const nlSuccess = document.getElementById("newsletter-success");
+    const nlEmailInput = document.getElementById("newsletter-email");
+
+    function subscribeNewsletter() {
+        const email = nlEmailInput.value.trim();
+        if (!/.+@.+\..+/.test(email)) {
+            ntToast("EMAIL NO VÁLIDO", true);
+            return;
+        }
+        nlFormWrap.classList.add("hidden");
+        nlSuccess.classList.remove("hidden");
+        nlSuccess.classList.add("flex");
+    }
+
+    document.getElementById("newsletter-submit").addEventListener("click", subscribeNewsletter);
+    nlEmailInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") subscribeNewsletter();
+    });
+</script>
+</body>
+</html>

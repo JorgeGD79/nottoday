@@ -2,47 +2,53 @@
    NOT TODAY — estilos compartidos del design system brutalist
    ============================================================ */
 
-/* --- Recoleta (titulares) — fuente self-hosted ---
-   Coloca los .woff2 en public/assets/fonts/ con estos nombres. Si solo tienes
-   un peso, deja al menos Recoleta-Regular.woff2. Mientras no existan los
-   archivos, los titulares caen a la serif del sistema (Georgia). */
-@font-face {
-    font-family: "Recoleta";
-    src: url("../fonts/Recoleta-Regular.woff2") format("woff2");
-    font-weight: 400;
-    font-style: normal;
-    font-display: swap;
+/* Titulares: Sora / cuerpo: Archivo / labels: JetBrains Mono — cargadas vía
+   Google Fonts en el <head> de cada página y mapeadas en tailwind.config.js.
+   (Recoleta self-hosted quedó retirada del rediseño; los .woff2 siguen en
+   public/assets/fonts/ sin referenciar por si se retoma en el futuro.) */
+
+@keyframes nty-glitch-1 {
+    0% { transform: translate(0, 0); opacity: 1; }
+    20% { transform: translate(-4px, 2px); opacity: 0.8; }
+    40% { transform: translate(3px, -2px); opacity: 0.9; }
+    60% { transform: translate(-2px, 0); opacity: 0.7; }
+    80% { transform: translate(2px, 1px); opacity: 0.9; }
+    100% { transform: translate(0, 0); opacity: 1; }
 }
-@font-face {
-    font-family: "Recoleta";
-    src: url("../fonts/Recoleta-SemiBold.woff2") format("woff2");
-    font-weight: 600;
-    font-style: normal;
-    font-display: swap;
+@keyframes nty-glitch-2 {
+    0% { transform: translate(0, 0); }
+    25% { transform: translate(3px, -1px); }
+    50% { transform: translate(-3px, 2px); }
+    75% { transform: translate(2px, 1px); }
+    100% { transform: translate(0, 0); }
 }
-@font-face {
-    font-family: "Recoleta";
-    src: url("../fonts/Recoleta-Bold.woff2") format("woff2");
-    font-weight: 700;
-    font-style: normal;
-    font-display: swap;
+@keyframes nty-rise {
+    from { transform: translateY(28px); opacity: 0; filter: blur(6px); }
+    to { transform: translateY(0); opacity: 1; filter: blur(0); }
+}
+@keyframes nty-rise-soft {
+    from { transform: translateY(14px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+@keyframes nty-line {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+}
+@keyframes nty-cue {
+    0%, 100% { opacity: 0.35; transform: translateY(0); }
+    50% { opacity: 1; transform: translateY(4px); }
 }
 
-/* Enlaces de navegación del header (Store / Artists / Sessions / Projects / Booking).
-   Selecciona solo los del menú central (contenedor .md:flex); el logo y "Join
-   Collective" quedan fuera. La especificidad ya gana a font-label-mono. */
-nav .md\:flex a {
-    font-family: "Recoleta", Georgia, serif;
+/* Grid "brutalist" de líneas de 1px: fondo del contenedor = color de línea,
+   gap:1px + celdas opacas simulan bordes compartidos entre celdas. */
+.nt-grid-lines {
+    display: grid;
+    gap: 1px;
+    background-color: #444748;
+    border: 1px solid #444748;
 }
-
-/* Utilidad para forzar Recoleta en un elemento y sus descendientes, por encima de
-   las utilidades de fuente de Tailwind (font-body-md, font-label-mono). Se EXCLUYEN
-   los iconos (.material-symbols-outlined), que dependen de su propia fuente: si se
-   les pisa la font-family, el ligature deja de renderizar y se ve el texto crudo
-   (p. ej. "arrow_outward" en vez del icono). */
-.nt-recoleta,
-.nt-recoleta *:not(.material-symbols-outlined) {
-    font-family: "Recoleta", Georgia, serif !important;
+.nt-grid-lines > * {
+    background-color: #0e0e0e;
 }
 
 body {
@@ -119,7 +125,7 @@ select.nt-input {
     border: none;
     border-bottom: 1px solid rgba(229, 226, 225, 0.2);
     color: #e5e2e1;
-    font-family: "Hanken Grotesk", sans-serif;
+    font-family: "Archivo", sans-serif;
     font-size: 18px;
     padding: 8px 0;
     width: 100%;
@@ -166,7 +172,8 @@ select.nt-input {
 .btn-primary {
     background-color: #ff8a00;
     color: #050505;
-    font-family: "Recoleta", Georgia, serif;
+    font-family: "Sora", sans-serif;
+    font-weight: 700;
     font-size: 24px;
     text-transform: uppercase;
     padding: 16px 32px;

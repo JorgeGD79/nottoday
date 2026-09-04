@@ -6,61 +6,40 @@
 <title>NOT TODAY - Store</title>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Anton&amp;family=Hanken+Grotesk:wght@400;600&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&amp;family=Archivo:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script src="assets/js/tailwind.config.js?v=1"></script>
-<link href="assets/css/site.css?v=4" rel="stylesheet"/>
+<script src="assets/js/tailwind.config.js?v=2"></script>
+<link href="assets/css/site.css?v=5" rel="stylesheet"/>
 </head>
-<body class="min-h-screen flex flex-col font-body-md antialiased selection:bg-secondary selection:text-primary-container">
+<body class="min-h-screen flex flex-col font-body-md antialiased selection:bg-secondary-container selection:text-on-secondary pb-24 md:pb-0">
 
-<!-- TopNavBar -->
-<nav class="fixed top-0 w-full z-50 bg-background border-b border-outline-variant/20 flex justify-between items-center px-margin-mobile md:px-margin-desktop py-4">
-    <a href="index.html" class="font-headline-lg text-headline-lg uppercase text-on-surface flex items-center">NOT TODAY</a>
-    <div class="hidden md:flex gap-gutter items-center">
-        <a class="text-secondary font-bold border-b-2 border-secondary pb-1 font-label-mono text-label-mono uppercase tracking-widest" href="store.html">Store</a>
-        <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200 font-label-mono text-label-mono uppercase tracking-widest px-2" href="artists.html">Artists</a>
-        <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200 font-label-mono text-label-mono uppercase tracking-widest px-2" href="sessions.html">Sessions</a>
-        <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200 font-label-mono text-label-mono uppercase tracking-widest px-2" href="projects.html">Projects</a>
-        <a class="text-on-surface-variant hover:text-on-surface transition-colors duration-200 font-label-mono text-label-mono uppercase tracking-widest px-2" href="booking.html">Booking</a>
-    </div>
-    <div class="flex items-center gap-base">
-        <a href="booking.html" class="hidden md:block bg-surface-container-highest text-on-surface hover:bg-secondary hover:text-primary-container px-4 py-2 font-label-mono text-label-mono uppercase border border-outline-variant/20 transition-colors">
-            Join Collective
-        </a>
-        <button data-cart-toggle class="relative p-2 text-on-surface-variant hover:text-secondary transition-colors" aria-label="Abrir carrito">
-            <span class="material-symbols-outlined">shopping_bag</span>
-            <span data-cart-count class="hidden absolute -top-0.5 -right-0.5 bg-secondary-container text-primary-container font-label-mono text-[10px] w-4 h-4 items-center justify-center">0</span>
-        </button>
-    </div>
-</nav>
-
-<main class="flex-grow pt-[100px] pb-stack-lg">
+<main class="flex-grow pt-[140px] pb-stack-lg">
     <!-- Header -->
-    <header class="px-margin-mobile md:px-margin-desktop py-stack-lg border-b border-outline-variant/20 bg-surface-container-lowest">
-        <h1 class="font-display-lg text-display-lg uppercase text-on-background tracking-tighter leading-none mb-stack-sm">
-            Gear <br class="md:hidden"/><span class="text-secondary opacity-80">Supply</span>
+    <header class="px-margin-mobile md:px-margin-desktop pb-stack-lg border-b border-outline-variant/20">
+        <h1 class="font-display-lg text-display-lg uppercase text-on-surface tracking-tighter leading-none mb-stack-sm">
+            Gear <br class="md:hidden"/><span class="text-secondary-container opacity-80">Supply</span>
         </h1>
-        <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl border-l-2 border-secondary pl-4 mt-stack-md">
+        <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl border-l-2 border-secondary-container pl-4 mt-stack-md">
             Diseñamos nuestras piezas desde cero, con nuestra propia visión. Algodón pesado, bordes crudos, cada textura parte de lo que somos. Sin concesiones.
         </p>
     </header>
 
     <!-- Drops exclusivos -->
-    <section id="drops" class="hidden px-margin-mobile md:px-margin-desktop py-stack-lg border-b border-outline-variant/20 bg-surface-container-highest">
+    <section id="drops" class="hidden px-margin-mobile md:px-margin-desktop py-stack-lg border-b border-outline-variant/20">
         <div class="flex items-end justify-between border-b border-on-surface pb-stack-sm mb-stack-lg">
             <h2 class="font-headline-xl text-headline-xl text-on-surface uppercase tracking-tighter">Drops</h2>
             <span class="font-label-mono text-label-mono text-secondary-container uppercase">Limited — no restock</span>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter" id="drops-grid"></div>
+        <div class="nt-grid-lines grid-cols-1 md:grid-cols-2 lg:grid-cols-3" id="drops-grid"></div>
     </section>
 
     <!-- Ordenación -->
-    <div class="sticky top-[73px] z-40 bg-background/95 backdrop-blur-md border-b border-outline-variant/20 px-margin-mobile md:px-margin-desktop py-stack-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-stack-md">
+    <div class="sticky top-[104px] z-40 bg-background/95 backdrop-blur-md border-b border-outline-variant/20 px-margin-mobile md:px-margin-desktop py-stack-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-stack-md">
         <span class="font-label-mono text-label-mono text-on-surface-variant uppercase" id="catalog-count">Cargando catálogo...</span>
         <div class="flex items-center gap-base">
             <span class="font-label-mono text-label-mono text-on-surface-variant uppercase">Sort:</span>
-            <select id="sort-select" class="bg-surface-container border border-outline-variant/20 text-on-surface font-label-mono text-label-mono uppercase p-2 focus:ring-0 focus:border-secondary outline-none appearance-none cursor-pointer">
+            <select id="sort-select" class="bg-surface-container-lowest border border-outline-variant text-on-surface font-label-mono text-label-mono uppercase p-2 focus:ring-0 focus:border-secondary-container outline-none appearance-none cursor-pointer">
                 <option value="latest">Latest</option>
                 <option value="price-desc">Price: High to Low</option>
                 <option value="price-asc">Price: Low to High</option>
@@ -69,62 +48,16 @@
     </div>
 
     <!-- Grid de productos -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0 border-b border-outline-variant/20" id="products-grid">
+    <div class="nt-grid-lines grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mt-px" id="products-grid">
         <div class="p-stack-md"><div class="nt-skeleton aspect-[4/5]"></div></div>
         <div class="p-stack-md hidden md:block"><div class="nt-skeleton aspect-[4/5]"></div></div>
         <div class="p-stack-md hidden lg:block"><div class="nt-skeleton aspect-[4/5]"></div></div>
     </div>
 </main>
 
-<!-- Footer -->
-<footer class="bg-surface-container-lowest border-t-2 border-on-surface w-full grid grid-cols-1 md:grid-cols-12 gap-gutter px-margin-mobile md:px-margin-desktop py-stack-lg relative z-10">
-    <div class="md:col-span-4 flex flex-col justify-between">
-        <div class="font-headline-lg text-headline-lg text-on-surface uppercase">NOT TODAY</div>
-        <div class="font-label-mono text-label-mono text-on-surface-variant mt-stack-md max-w-xs">
-            Colectivo independiente. Música, moda e imagen creadas desde cero.
-        </div>
-    </div>
-    <div class="md:col-span-4 flex flex-col gap-base mt-stack-md md:mt-0">
-        <h4 class="font-label-mono text-label-mono text-on-surface uppercase mb-2">Connect</h4>
-        <a class="font-body-md text-body-md uppercase text-on-surface-variant hover:text-secondary transition-colors w-fit" href="https://www.instagram.com/nottoday.nty/" target="_blank" rel="noopener noreferrer">Instagram</a>
-        <a class="font-body-md text-body-md uppercase text-on-surface-variant hover:text-secondary transition-colors w-fit" href="#">SoundCloud</a>
-        <a class="font-body-md text-body-md uppercase text-on-surface-variant hover:text-secondary transition-colors w-fit" href="#">Spotify</a>
-    </div>
-    <div class="md:col-span-4 flex flex-col justify-between items-start md:items-end mt-stack-md md:mt-0">
-        <div class="flex flex-col gap-base items-start md:items-end">
-            <h4 class="font-label-mono text-label-mono text-on-surface uppercase mb-2">Legal</h4>
-            <a class="font-body-md text-body-md uppercase text-on-surface-variant hover:text-secondary transition-colors w-fit" href="track.html">Seguimiento</a>
-            <a class="font-body-md text-body-md uppercase text-on-surface-variant hover:text-secondary transition-colors w-fit" href="terms.html">Terms</a>
-            <a class="font-body-md text-body-md uppercase text-on-surface-variant hover:text-secondary transition-colors w-fit" href="privacy.html">Privacy</a>
-        </div>
-        <div class="font-label-mono text-[10px] text-on-surface-variant mt-stack-lg uppercase tracking-widest text-left md:text-right">
-            © 2026 NOT TODAY COLLECTIVE. ALL RIGHTS RESERVED.
-        </div>
-    </div>
-</footer>
-
-<!-- BottomNavBar (móvil) -->
-<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 md:hidden bg-background/95 backdrop-blur-md border-t border-outline-variant/30">
-    <a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-all w-full h-full" href="sessions.html">
-        <span class="material-symbols-outlined">play_circle</span>
-        <span class="font-label-mono text-[10px] uppercase mt-1">Listen</span>
-    </a>
-    <a class="flex flex-col items-center justify-center text-secondary scale-110 hover:bg-surface-container-high transition-all w-full h-full relative" href="store.html">
-        <span class="absolute top-0 w-8 h-0.5 bg-secondary"></span>
-        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">shopping_cart</span>
-        <span class="font-label-mono text-[10px] uppercase mt-1 font-bold">Shop</span>
-    </a>
-    <a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-all w-full h-full" href="projects.html">
-        <span class="material-symbols-outlined">grid_view</span>
-        <span class="font-label-mono text-[10px] uppercase mt-1">Work</span>
-    </a>
-    <a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-all w-full h-full" href="booking.html">
-        <span class="material-symbols-outlined">mail</span>
-        <span class="font-label-mono text-[10px] uppercase mt-1">Book</span>
-    </a>
-</nav>
-
 <script src="assets/js/api.js"></script>
+<script src="assets/js/chrome.js"></script>
+<script>NTChrome.mount({ active: "store" });</script>
 <script src="assets/js/cart.js"></script>
 <script>
     // Índice producto/variantes para resolver la talla elegida al añadir al carrito.
@@ -153,26 +86,28 @@
         const soldOut = product.status === "AGOTADO" ||
             product.variants.every((v) => v.stockAvailable <= 0);
         const isBlocked = disabled || soldOut;
+        const badgeText = badge || (soldOut ? "Agotado" : "Activo");
+        const badgeClasses = soldOut
+            ? "border-outline text-outline"
+            : "border-secondary-container text-secondary-container";
         return `
-        <article class="group relative flex flex-col bg-primary-container border-b md:border-b-0 md:border-r border-outline-variant/20 hover:border-secondary hover:z-10 transition-colors overflow-hidden p-stack-md" data-product-card="${product.id}">
-            <div data-view="${product.id}" class="relative w-full aspect-[4/5] bg-surface-container overflow-hidden border border-outline-variant/20 cursor-pointer">
-                <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03] opacity-90 group-hover:opacity-100 mix-blend-luminosity group-hover:mix-blend-normal"
+        <article class="group relative flex flex-col p-stack-md border border-transparent hover:border-secondary-container transition-colors" data-product-card="${product.id}">
+            <div data-view="${product.id}" class="relative w-full aspect-[4/5] bg-surface-container overflow-hidden cursor-pointer">
+                <img class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 group-hover:scale-[1.03]"
                      src="${ntProductImage(product)}" alt="${ntEscapeHtml(product.name)}"/>
-                ${badge ? `<div class="absolute top-2 left-2 bg-primary-container border border-on-surface px-2 py-0.5">
-                    <span class="font-label-mono text-label-mono text-on-surface text-[10px] uppercase">${badge}</span>
-                </div>` : ""}
                 ${soldOut ? `<div class="absolute inset-0 flex items-center justify-center bg-primary-container/70">
-                    <span class="bg-secondary-container text-primary-container px-3 py-1 font-label-mono text-[12px] uppercase font-bold">Sold Out</span>
+                    <span class="bg-secondary-container text-on-secondary px-3 py-1 font-label-mono text-[12px] uppercase font-bold">Sold Out</span>
                 </div>` : ""}
             </div>
-            <div class="mt-stack-md flex flex-col flex-grow">
-                <div class="flex justify-between items-start">
-                    <h2 class="font-headline-lg text-headline-lg-mobile text-on-surface uppercase leading-none pr-4">${ntEscapeHtml(product.name)}</h2>
-                    <span class="font-label-mono text-label-mono text-secondary mt-1">${ntFormatMoney(product.price)}</span>
+            <div class="mt-stack-md flex flex-col flex-grow gap-stack-sm">
+                <div class="flex justify-between items-start gap-2">
+                    <h2 class="font-headline-lg text-headline-lg-mobile text-on-surface uppercase leading-none pr-2">${ntEscapeHtml(product.name)}</h2>
+                    <span class="font-label-mono text-[10px] font-semibold tracking-widest px-2 py-1 border ${badgeClasses} uppercase whitespace-nowrap">${ntEscapeHtml(badgeText)}</span>
                 </div>
-                ${product.description ? `<p class="font-body-md text-[14px] text-on-surface-variant mt-2 line-clamp-2">${ntEscapeHtml(product.description)}</p>` : ""}
-                <div class="flex gap-2 mt-stack-md" data-sizes>${sizeButtons(product)}</div>
-                <div class="mt-auto pt-stack-lg">
+                <span class="font-label-mono text-label-mono text-secondary-container">${ntFormatMoney(product.price)}</span>
+                ${product.description ? `<p class="font-body-md text-[14px] text-on-surface-variant line-clamp-2">${ntEscapeHtml(product.description)}</p>` : ""}
+                <div class="flex gap-2 flex-wrap" data-sizes>${sizeButtons(product)}</div>
+                <div class="mt-auto pt-stack-md">
                     <button data-add-to-cart="${product.id}" ${isBlocked ? "disabled" : ""}
                         class="w-full bg-transparent border-2 border-on-surface text-on-surface font-headline-lg text-headline-lg-mobile uppercase py-2 hover:bg-on-surface hover:text-primary-container transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-on-surface">
                         ${soldOut ? "Sold Out" : disabled ? "Locked" : "Add to Cart"}
@@ -238,7 +173,7 @@
             </div>`;
             return;
         }
-        grid.innerHTML = sorted.map((p) => productCard(p, { badge: "New Arrival" })).join("");
+        grid.innerHTML = sorted.map((p) => productCard(p)).join("");
         wireCards(grid);
     }
 
@@ -299,7 +234,7 @@
                         ? card
                         : card.replace(
                               "</article>",
-                              `<div class="absolute top-2 right-2 bg-secondary-container text-primary-container px-2 py-1 font-label-mono text-[12px] uppercase font-bold" data-countdown="${drop.dropMeta.releaseAt}"></div></article>`
+                              `<div class="absolute top-2 right-2 bg-secondary-container text-on-secondary px-2 py-1 font-label-mono text-[12px] uppercase font-bold" data-countdown="${drop.dropMeta.releaseAt}"></div></article>`
                           );
                 })
                 .join("");
@@ -318,11 +253,11 @@
     function mountProductModal() {
         const root = document.createElement("div");
         root.id = "pm-root";
-        root.className = "hidden fixed inset-0 z-[70]";
+        root.className = "hidden fixed inset-0 z-[700]";
         root.innerHTML = `
             <div id="pm-backdrop" class="absolute inset-0 bg-primary-container/90 backdrop-blur-sm"></div>
             <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
-                <div id="pm-panel" class="bg-surface-container-lowest border-2 border-on-surface w-full max-w-4xl max-h-[90vh] overflow-y-auto pointer-events-auto relative"></div>
+                <div id="pm-panel" class="bg-surface-container-lowest border border-outline-variant w-full max-w-4xl max-h-[90vh] overflow-y-auto pointer-events-auto relative"></div>
             </div>`;
         document.body.appendChild(root);
         root.querySelector("#pm-backdrop").addEventListener("click", closeProductModal);
@@ -353,8 +288,8 @@
         const canBuy = !soldOut && !dropLocked;
 
         const thumbs = images.length > 1
-            ? `<div class="flex gap-2 mt-2 flex-wrap">${images.map((img, i) => `
-                <button data-thumb="${i}" class="w-14 h-16 border ${i === pmImgIndex ? "border-secondary" : "border-outline-variant/30"} overflow-hidden">
+            ? `<div class="flex gap-px bg-outline-variant/40">${images.map((img, i) => `
+                <button data-thumb="${i}" class="flex-1 h-16 bg-surface-container-lowest overflow-hidden border-b-2 ${i === pmImgIndex ? "border-secondary-container" : "border-transparent"}">
                     <img src="${ntEscapeHtml(img)}" class="w-full h-full object-cover" alt=""/>
                 </button>`).join("")}</div>`
             : "";
@@ -365,30 +300,30 @@
                 title="${v.stockAvailable <= 0 ? "Agotado" : `${v.stockAvailable} disponibles`}">${v.size}</button>`).join("");
 
         document.getElementById("pm-panel").innerHTML = `
-            <button id="pm-close" class="absolute top-2 right-2 z-10 text-on-surface hover:text-secondary transition-colors p-1" aria-label="Cerrar">
-                <span class="material-symbols-outlined text-3xl">close</span>
-            </button>
             <div class="grid grid-cols-1 md:grid-cols-2">
-                <div class="p-stack-md">
-                    <div class="w-full aspect-[4/5] bg-surface-container border border-outline-variant/20 overflow-hidden">
+                <div class="border-b md:border-b-0 md:border-r border-outline-variant">
+                    <div class="w-full aspect-square bg-surface-container overflow-hidden border-b border-outline-variant">
                         <img id="pm-main" src="${ntEscapeHtml(images[pmImgIndex])}" class="w-full h-full object-cover" alt="${ntEscapeHtml(p.name)}"/>
                     </div>
                     ${thumbs}
                 </div>
-                <div class="p-stack-md flex flex-col gap-stack-md border-t md:border-t-0 md:border-l border-outline-variant/20">
+                <div class="p-stack-md flex flex-col gap-stack-md relative">
+                    <button id="pm-close" class="self-end text-on-surface-variant hover:text-secondary-container transition-colors p-1" aria-label="Cerrar">
+                        <span class="material-symbols-outlined text-2xl">close</span>
+                    </button>
                     <div>
-                        <span class="font-label-mono text-[12px] uppercase ${p.productType === "DROP_EXCLUSIVO" ? "text-secondary" : "text-on-surface-variant"}">${p.productType === "DROP_EXCLUSIVO" ? "Drop exclusivo" : "Tienda"}</span>
-                        <h2 class="font-headline-xl text-[36px] text-on-surface uppercase leading-none mt-1">${ntEscapeHtml(p.name)}</h2>
-                        <p class="font-label-mono text-label-mono text-secondary mt-2">${ntFormatMoney(p.price)}</p>
+                        <span class="font-label-mono text-[11px] uppercase tracking-widest ${p.productType === "DROP_EXCLUSIVO" ? "text-secondary-container" : "text-on-surface-variant"}">${p.productType === "DROP_EXCLUSIVO" ? "Drop exclusivo" : "Tienda"}</span>
+                        <h2 class="font-headline-xl text-[28px] text-on-surface uppercase leading-none mt-1">${ntEscapeHtml(p.name)}</h2>
+                        <p class="font-label-mono text-label-mono text-secondary-container mt-2">${ntFormatMoney(p.price)}</p>
                     </div>
                     ${p.description ? `<p class="font-body-md text-body-md text-on-surface-variant whitespace-pre-line">${ntEscapeHtml(p.description)}</p>` : ""}
                     <div>
                         <span class="font-label-mono text-[11px] text-on-surface-variant uppercase tracking-widest block mb-2">Talla</span>
-                        <div class="flex gap-2" data-modal-sizes>${sizeBtns}</div>
+                        <div class="flex gap-2 flex-wrap" data-modal-sizes>${sizeBtns}</div>
                     </div>
-                    ${dropLocked ? `<p class="font-label-mono text-[12px] text-secondary uppercase">Disponible el ${new Date(p.dropMeta.releaseAt).toLocaleDateString("es-ES")}</p>` : ""}
+                    ${dropLocked ? `<p class="font-label-mono text-[12px] text-secondary-container uppercase">Disponible el ${new Date(p.dropMeta.releaseAt).toLocaleDateString("es-ES")}</p>` : ""}
                     <button id="pm-add" ${canBuy ? "" : "disabled"}
-                        class="w-full bg-secondary-container text-primary-container font-headline-lg text-[22px] uppercase py-3 hover:bg-on-surface transition-colors disabled:opacity-30 disabled:cursor-not-allowed mt-auto">
+                        class="w-full bg-secondary-container text-on-secondary font-label-mono text-[13px] tracking-widest uppercase font-bold py-4 hover:bg-on-surface hover:text-primary-container transition-colors disabled:opacity-30 disabled:cursor-not-allowed mt-auto">
                         ${soldOut ? "Agotado" : dropLocked ? "Próximamente" : "Añadir al carrito"}
                     </button>
                 </div>
