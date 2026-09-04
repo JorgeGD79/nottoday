@@ -2,10 +2,39 @@
    NOT TODAY — estilos compartidos del design system brutalist
    ============================================================ */
 
-/* Titulares: Sora / cuerpo: Archivo / labels: JetBrains Mono — cargadas vía
-   Google Fonts en el <head> de cada página y mapeadas en tailwind.config.js.
-   (Recoleta self-hosted quedó retirada del rediseño; los .woff2 siguen en
-   public/assets/fonts/ sin referenciar por si se retoma en el futuro.) */
+/* Titulares: Nexa / cuerpo: TT Firs Neue — self-hosted, ver @font-face debajo.
+   Labels: JetBrains Mono, vía Google Fonts en el <head> de cada página.
+   Mapeadas en tailwind.config.js. (Recoleta quedó retirada del rediseño;
+   sus .woff2 siguen en public/assets/fonts/ sin referenciar.) */
+
+/* Nexa solo trae Bold y Light — no hay Regular. Los titulares (headline-xl,
+   display-lg, headline-lg, headline-lg-mobile) usan weight 700 en
+   tailwind.config.js para que caigan siempre en Nexa-Bold; Light queda
+   disponible vía la utilidad font-light si algún sitio la necesita. */
+@font-face {
+    font-family: "Nexa";
+    src: url("../fonts/Nexa-Light.woff2") format("woff2");
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: "Nexa";
+    src: url("../fonts/Nexa-Bold.woff2") format("woff2");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+/* Rango de weight amplio: si el .woff2 es variable lo aprovecha entero: si es
+   estático de un solo peso, cualquier weight solicitado cae en esa misma cara
+   sin romper nada. */
+@font-face {
+    font-family: "TT Firs Neue";
+    src: url("../fonts/TT-Firs-Neue.woff2") format("woff2");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+}
 
 @keyframes nty-glitch-1 {
     0% { transform: translate(0, 0); opacity: 1; }
@@ -140,7 +169,7 @@ select.nt-input {
     border: none;
     border-bottom: 1px solid rgba(229, 226, 225, 0.2);
     color: #e5e2e1;
-    font-family: "Archivo", sans-serif;
+    font-family: "TT Firs Neue", sans-serif;
     font-size: 18px;
     padding: 8px 0;
     width: 100%;
@@ -187,7 +216,7 @@ select.nt-input {
 .btn-primary {
     background-color: #ff8a00;
     color: #050505;
-    font-family: "Sora", sans-serif;
+    font-family: "Nexa", sans-serif;
     font-weight: 700;
     font-size: 24px;
     text-transform: uppercase;
