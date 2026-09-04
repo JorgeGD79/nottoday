@@ -53,6 +53,33 @@ const NTChrome = (() => {
     return `<a href="${opts.href}" class="px-4 py-2.5 font-label-mono text-[11px] tracking-[0.14em] uppercase ${color} hover:text-secondary transition-colors">${label}</a>`;
   }
 
+  // Un grupo mobile es un rótulo mudo (no clicable) + sus enlaces debajo,
+  // misma agrupación que el dropdown de escritorio pero sin acordeón: en
+  // móvil no hay hover, así que en vez de reproducir el toggle mostramos
+  // todo ya abierto dentro del panel de pantalla completa.
+  function mobileGroupHtml(label, items, ag, group) {
+    const isActive = ag === group;
+    return `
+      <div class="pt-6 first:pt-0">
+        <div class="font-label-mono text-[10px] tracking-[0.18em] uppercase ${
+          isActive ? "text-secondary" : "text-on-surface-variant"
+        } mb-2">${label}</div>
+        ${items
+          .map(
+            (it) =>
+              `<a href="${it.href}" class="block py-3 font-headline-lg text-[20px] uppercase text-on-surface hover:text-secondary transition-colors">${it.label}</a>`
+          )
+          .join("")}
+      </div>`;
+  }
+
+  function mobileLinkHtml(label, href, ag, group) {
+    const isActive = ag === group;
+    return `<a href="${href}" class="block pt-6 first:pt-0 font-headline-lg text-[20px] uppercase ${
+      isActive ? "text-secondary" : "text-on-surface"
+    } hover:text-secondary transition-colors">${label}</a>`;
+  }
+
   function navHtml(active) {
     const ag = activeGroup(active);
     const items = [
@@ -62,17 +89,39 @@ const NTChrome = (() => {
       navItemHtml("contacto", "CONTACTO", { activeGroup: ag, href: "booking.html", children: CONTACT_ITEMS }),
     ].join("");
 
+    // Panel móvil a pantalla completa con la MISMA estructura que el nav de
+    // escritorio (LAB agrupado, SHOP, NEWSLETTER, CONTACTO agrupado) — el
+    // hover no existe en táctil, así que aquí va todo ya desplegado.
+    const mobileMenu = [
+      mobileGroupHtml("LAB", LAB_ITEMS, ag, "lab"),
+      mobileLinkHtml("SHOP", "store.html", ag, "shop"),
+      mobileLinkHtml("NEWSLETTER", "newsletter.html", ag, "news"),
+      mobileGroupHtml("CONTACTO", CONTACT_ITEMS, ag, "contacto"),
+    ].join("");
+
     return `
     <div id="nt-nav-wrap" style="position:fixed;left:0;right:0;z-index:600;display:flex;justify-content:center;pointer-events:none;">
       <nav id="nt-nav-bar" style="pointer-events:auto;display:flex;align-items:center;gap:14px;background:rgba(9,9,9,0.85);border:1px solid #2a2a2a;border-bottom:1px solid #3c3c3c;backdrop-filter:blur(14px);box-shadow:0 18px 50px rgba(0,0,0,0.45);transform:translateY(220%);opacity:0;transition:transform 1.15s cubic-bezier(.16,1,.3,1), opacity .9s ease, background .4s ease;">
         <a href="index.html" class="font-label-mono font-bold text-[16px] tracking-[0.06em] uppercase text-on-surface whitespace-nowrap" style="text-decoration:none;">NOT TODAY</a>
         <div class="hidden md:block" style="width:1px;height:20px;background:#444748;"></div>
         <div id="nt-nav-items" class="hidden md:flex items-stretch">${items}</div>
+        <button id="nt-mobile-menu-toggle" aria-label="Abrir menú" aria-expanded="false" class="md:hidden relative flex items-center justify-center p-1.5 text-on-surface hover:text-secondary transition-colors">
+          <span class="material-symbols-outlined text-[22px]">menu</span>
+        </button>
         <button data-cart-toggle aria-label="Abrir carrito" class="relative flex items-center justify-center p-1.5 text-on-surface hover:text-secondary transition-colors">
           <span class="material-symbols-outlined text-[20px]">shopping_bag</span>
           <span data-cart-count class="hidden absolute -top-0.5 -right-0.5 bg-secondary-container text-primary-container font-label-mono text-[10px] w-4 h-4 items-center justify-center">0</span>
         </button>
       </nav>
+    </div>
+    <div id="nt-mobile-menu" class="md:hidden hidden fixed inset-0 z-[650] bg-[rgba(5,5,5,0.97)] backdrop-blur-md flex-col overflow-y-auto">
+      <div class="flex justify-between items-center px-margin-mobile py-5 border-b border-outline-variant/20">
+        <span class="font-label-mono font-bold text-[16px] tracking-[0.06em] uppercase text-on-surface">NOT TODAY</span>
+        <button id="nt-mobile-menu-close" aria-label="Cerrar menú" class="p-1.5 text-on-surface hover:text-secondary transition-colors">
+          <span class="material-symbols-outlined text-[24px]">close</span>
+        </button>
+      </div>
+      <div class="px-margin-mobile py-2 pb-24 flex flex-col divide-y divide-outline-variant/10">${mobileMenu}</div>
     </div>`;
   }
 
@@ -126,6 +175,47 @@ const NTChrome = (() => {
         })
         .join("")}
     </nav>`;
+  }
+
+  // Panel móvil: el toggle abre/cierra el mismo árbol de enlaces que el
+  // dropdown de escritorio (ver mobileGroupHtml/mobileLinkHtml arriba),
+  // como overlay a pantalla completa en vez de hover.
+  function wireMobileMenu() {
+    const toggle = document.getElementById("nt-mobile-menu-toggle");
+    const close = document.getElementById("nt-mobile-menu-close");
+    const menu = document.getElementById("nt-mobile-menu");
+    if (!toggle || !menu) return;
+    const icon = toggle.querySelector(".material-symbols-outlined");
+
+    const open = () => {
+      menu.classList.remove("hidden");
+      menu.classList.add("flex");
+      toggle.setAttribute("aria-expanded", "true");
+      if (icon) icon.textContent = "close";
+      document.body.style.overflow = "hidden";
+    };
+    const closeMenu = () => {
+      menu.classList.add("hidden");
+      menu.classList.remove("flex");
+      toggle.setAttribute("aria-expanded", "false");
+      if (icon) icon.textContent = "menu";
+      document.body.style.overflow = "";
+    };
+
+    toggle.addEventListener("click", () => {
+      if (menu.classList.contains("hidden")) open();
+      else closeMenu();
+    });
+    if (close) close.addEventListener("click", closeMenu);
+    menu.querySelectorAll("a").forEach((a) => a.addEventListener("click", closeMenu));
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeMenu();
+    });
+    // Si el viewport pasa a escritorio con el panel abierto (rotación,
+    // resize de ventana), ciérralo — su toggle vive oculto en ese ancho.
+    window.addEventListener("resize", () => {
+      if (window.innerWidth >= 768 && !menu.classList.contains("hidden")) closeMenu();
+    });
   }
 
   function wireDropdowns(root) {
@@ -208,13 +298,17 @@ const NTChrome = (() => {
     const active = options.active || null;
     const showFooter = options.showFooter !== false;
 
+    // navHtml() devuelve dos elementos raíz (nav + panel móvil a pantalla
+    // completa) — hay que insertarlos todos, no solo el primero.
     const navHost = document.createElement("div");
     navHost.innerHTML = navHtml(active);
-    document.body.insertBefore(navHost.firstElementChild, document.body.firstChild);
+    const insertRef = document.body.firstChild;
+    Array.from(navHost.children).forEach((el) => document.body.insertBefore(el, insertRef));
 
     const wrap = document.getElementById("nt-nav-wrap");
     const bar = document.getElementById("nt-nav-bar");
     wireDropdowns(wrap);
+    wireMobileMenu();
     wireReveal(wrap, bar, active === "home");
 
     if (showFooter) {
