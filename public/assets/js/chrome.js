@@ -121,11 +121,11 @@ const NTChrome = (() => {
       { group: "contacto", href: "booking.html", icon: "edit_calendar", label: "CONTACTO" },
     ];
     return `
-    <nav class="md:hidden fixed bottom-0 left-0 right-0 z-[500] flex bg-[#050505] border-t border-outline-variant/30">
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 z-[500] flex bg-[#050505] border-t border-outline-variant/30" style="padding-bottom:env(safe-area-inset-bottom);">
       ${tabs
         .map((t) => {
           const isActive = t.group === ag;
-          return `<a href="${t.href}" class="flex-1 flex flex-col items-center gap-0.5 pt-2.5 pb-3.5 ${
+          return `<a href="${t.href}" class="flex-1 flex flex-col items-center gap-1 pt-3.5 pb-5 ${
             isActive ? "text-secondary" : "text-on-surface-variant"
           }">
             <span class="material-symbols-outlined text-[22px]">${t.icon}</span>
@@ -180,7 +180,7 @@ const NTChrome = (() => {
       // "sube desde el hero" — ese efecto es solo para desktop en home.
       if (isMobile()) {
         wrap.style.top = "0px";
-        wrap.style.padding = "0 20px";
+        wrap.style.padding = "0";
         bar.style.gap = "14px";
         bar.style.width = "100%";
         bar.style.maxWidth = "2400px";
