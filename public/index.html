@@ -26,8 +26,18 @@
     <!-- Hero -->
     <section class="relative min-h-screen flex flex-col justify-center overflow-hidden bg-[#050505]">
         <div class="absolute inset-0" style="background: radial-gradient(120% 80% at 50% 40%, #2a2a2a 0%, #131313 45%, #050505 100%);"></div>
-        <video id="hero-video" class="absolute inset-0 w-full h-full object-cover" style="filter:saturate(0.75) contrast(1.05);" autoplay muted loop playsinline
-            src="https://res.cloudinary.com/kzwsq5xx/video/upload/v1788455549/Not_Today_Presents_-_Not_Today.mp4"></video>
+        <!-- Transformaciones de Cloudinary en la URL (no reprocesan el original):
+             f_auto/q_auto = códec y calidad óptimos por navegador, w_*,c_limit
+             = tope de resolución (no hace falta 4K en un fondo de hero) — entre
+             los dos recortan mucho el peso y arreglan el "fast start" (moov al
+             principio) si el original no lo tenía, que es lo que suele causar
+             una carga larga. poster = frame fijo servido al instante mientras
+             el vídeo llega. -->
+        <video id="hero-video" class="absolute inset-0 w-full h-full object-cover" style="filter:saturate(0.75) contrast(1.05);" autoplay muted loop playsinline preload="auto"
+            poster="https://res.cloudinary.com/kzwsq5xx/video/upload/so_6.5,f_auto,q_auto,w_1920,c_limit/v1788455549/Not_Today_Presents_-_Not_Today.jpg">
+            <source media="(max-width: 860px)" src="https://res.cloudinary.com/kzwsq5xx/video/upload/f_auto,q_auto,w_960,c_limit/v1788455549/Not_Today_Presents_-_Not_Today.mp4" type="video/mp4">
+            <source src="https://res.cloudinary.com/kzwsq5xx/video/upload/f_auto,q_auto,w_1920,c_limit/v1788455549/Not_Today_Presents_-_Not_Today.mp4" type="video/mp4">
+        </video>
         <div class="absolute inset-0" style="background: linear-gradient(to bottom, rgba(5,5,5,0.55) 0%, rgba(5,5,5,0.15) 38%, rgba(5,5,5,0.88) 100%);"></div>
 
         <div class="relative flex flex-col items-start px-margin-mobile md:px-margin-desktop py-24">
