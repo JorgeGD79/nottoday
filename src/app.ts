@@ -81,6 +81,9 @@ export async function buildApp(): Promise<FastifyInstance> {
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         imgSrc: ["'self'", "data:", "https:"],
+        // Vídeo del hero (y cualquier otro futuro) servido desde Cloudinary u
+        // otro host https — mismo criterio permisivo que imgSrc.
+        mediaSrc: ["'self'", "https:"],
         connectSrc: ["'self'", "https://api.stripe.com"],
         frameSrc: ["https://js.stripe.com", "https://www.youtube-nocookie.com"],
         // Endurecido: sin plugins/embeds arbitrarios, sin secuestro de <base>, sin
