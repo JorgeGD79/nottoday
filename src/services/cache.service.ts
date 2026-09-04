@@ -6,6 +6,7 @@ import { redis } from "@/lib/redis";
 export const CACHE_KEYS = {
   drops: "cache:drops:list",
   shop: (page: number, pageSize: number) => `cache:shop:list:${page}:${pageSize}`,
+  tickets: "cache:tickets:list",
   events: "cache:events:list",
   artists: "cache:artists:list",
   sessions: "cache:sessions:list",
@@ -15,6 +16,7 @@ export const CACHE_KEYS = {
 export const CACHE_TTL_SECONDS = {
   drops: 30, // ventana corta: el estado de un drop (Próximamente -> Abierto) cambia en caliente
   shop: 120,
+  tickets: 60,
   events: 120,
   artists: 120,
   sessions: 120,
@@ -37,7 +39,11 @@ export async function setCached(key: string, value: unknown, ttlSeconds: number)
  */
 export async function invalidateCatalogCache(): Promise<void> {
   const keys = await redis.keys("cache:shop:list:*");
-  await Promise.all([redis.del(CACHE_KEYS.drops), ...(keys.length ? [redis.del(...keys)] : [])]);
+  await Promise.all([
+    redis.del(CACHE_KEYS.drops),
+    redis.del(CACHE_KEYS.tickets),
+    ...(keys.length ? [redis.del(...keys)] : []),
+  ]);
 }
 
 /**

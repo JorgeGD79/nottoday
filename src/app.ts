@@ -23,6 +23,7 @@ import { adminBookingsRoutes } from "@/modules/admin/bookings/bookings.routes";
 import { adminLogsRoutes } from "@/modules/admin/logs/logs.routes";
 import { shopRoutes } from "@/modules/public/shop/shop.routes";
 import { dropsRoutes } from "@/modules/public/drops/drops.routes";
+import { ticketsRoutes } from "@/modules/public/tickets/tickets.routes";
 import { cartRoutes } from "@/modules/public/cart/cart.routes";
 import { checkoutRoutes } from "@/modules/public/checkout/checkout.routes";
 import { publicBookingsRoutes } from "@/modules/public/bookings/bookings.routes";
@@ -152,6 +153,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   // --- API pública ---
   await app.register(shopRoutes, { prefix: "/api/shop" });
   await app.register(dropsRoutes, { prefix: "/api/drops" });
+  await app.register(ticketsRoutes, { prefix: "/api/tickets" });
   await app.register(cartRoutes, { prefix: "/api/cart" });
   await app.register(checkoutRoutes, { prefix: "/api/checkout" });
   await app.register(publicBookingsRoutes, { prefix: "/api/bookings" });

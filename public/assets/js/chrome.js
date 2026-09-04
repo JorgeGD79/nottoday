@@ -14,16 +14,17 @@ const NTChrome = (() => {
     { label: "N-TY RADIO", href: "radio.html" },
   ];
   const SHOP_ITEMS = [
-    { label: "BOOK AN ARTIST", href: "booking.html" },
     { label: "N-TY CLOTHES", href: "store.html" },
+    { label: "TICKETS", href: "tickets.html" },
   ];
   const CONTACT_ITEMS = [
+    { label: "BOOK AN ARTIST", href: "booking.html" },
     { label: "SOBRE NOSOTROS", href: "about.html" },
     { label: "SERVICIOS", href: "services.html" },
   ];
   const LAB_VIEWS = ["sessions", "radio"];
-  const SHOP_VIEWS = ["store", "booking"];
-  const CONTACT_VIEWS = ["about", "services"];
+  const SHOP_VIEWS = ["store", "tickets"];
+  const CONTACT_VIEWS = ["booking", "about", "services"];
 
   function activeGroup(active) {
     if (SHOP_VIEWS.includes(active)) return "shop";
@@ -61,7 +62,7 @@ const NTChrome = (() => {
       navItemHtml("lab", "LAB", { activeGroup: ag, href: "sessions.html", children: LAB_ITEMS }),
       navItemHtml("shop", "SHOP", { activeGroup: ag, href: "store.html", children: SHOP_ITEMS }),
       navItemHtml("news", "NEWSLETTER", { activeGroup: ag, href: "newsletter.html" }),
-      navItemHtml("contacto", "CONTACTO", { activeGroup: ag, href: "about.html", children: CONTACT_ITEMS }),
+      navItemHtml("contacto", "CONTACTO", { activeGroup: ag, href: "booking.html", children: CONTACT_ITEMS }),
     ].join("");
 
     return `
@@ -117,7 +118,7 @@ const NTChrome = (() => {
       { group: "lab", href: "sessions.html", icon: "science", label: "LAB" },
       { group: "shop", href: "store.html", icon: "shopping_bag", label: "SHOP" },
       { group: "news", href: "newsletter.html", icon: "mail", label: "NEWSLETTER" },
-      { group: "contacto", href: "about.html", icon: "call", label: "CONTACTO" },
+      { group: "contacto", href: "booking.html", icon: "edit_calendar", label: "CONTACTO" },
     ];
     return `
     <nav class="md:hidden fixed bottom-0 left-0 right-0 z-[500] flex bg-[#050505] border-t border-outline-variant/30">

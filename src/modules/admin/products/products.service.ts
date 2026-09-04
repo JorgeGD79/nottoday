@@ -19,6 +19,7 @@ export async function createProductWithInventory(input: CreateProductInput) {
         images: input.images,
         productType: input.productType,
         status: input.status,
+        eventId: input.eventId,
         variants: {
           create: input.variants.map((v) => ({
             size: v.size,
@@ -64,6 +65,7 @@ export async function updateProductWithInventory(productId: string, input: Updat
         images: input.images,
         productType: input.productType,
         status: input.status,
+        eventId: input.eventId,
       },
     });
 

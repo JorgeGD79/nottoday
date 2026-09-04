@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html class="dark" lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NOT TODAY - Tickets</title>
+<link href="favicon.jpg" rel="icon" type="image/jpeg"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="assets/js/tailwind.config.js?v=3"></script>
+<link href="assets/css/site.css?v=7" rel="stylesheet"/>
+</head>
+<body class="min-h-screen flex flex-col font-body-md antialiased selection:bg-secondary-container selection:text-on-secondary pb-24 md:pb-0">
+
+<main class="flex-grow pt-[140px] pb-stack-lg">
+    <!-- Header -->
+    <header class="px-margin-mobile md:px-margin-desktop pb-stack-lg border-b border-outline-variant/20">
+        <h1 class="font-display-lg text-display-lg uppercase text-on-surface tracking-tighter leading-none mb-stack-sm">
+            Tickets
+        </h1>
+        <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl border-l-2 border-secondary-container pl-4 mt-stack-md">
+            Entrada general para nuestros próximos shows. Aforo limitado — sin reventa.
+        </p>
+    </header>
+
+    <!-- Grid de tickets -->
+    <div class="nt-grid-lines grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mt-px" id="tickets-grid">
+        <div class="p-stack-md"><div class="nt-skeleton aspect-[4/5]"></div></div>
+        <div class="p-stack-md hidden md:block"><div class="nt-skeleton aspect-[4/5]"></div></div>
+        <div class="p-stack-md hidden lg:block"><div class="nt-skeleton aspect-[4/5]"></div></div>
+    </div>
+</main>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/chrome.js"></script>
+<script>NTChrome.mount({ active: "tickets" });</script>
+<script src="assets/js/cart.js"></script>
+<script>
+    // Cantidad elegida por ticket (misma idea que la talla elegida en store.html,
+    // pero aquí solo hay una variante GENERAL — se elige cuántas entradas).
+    const ticketQty = new Map();
+
+    function ticketCard(ticket) {
+        const ev = ticket.event;
+        const variant = ticket.variants[0]; // TICKET_EVENTO siempre trae una única variante GENERAL
+        const soldOut = !variant || ticket.status === "AGOTADO" || variant.stockAvailable <= 0;
+        const cancelled = ev.status === "CANCELADO";
+        const blocked = soldOut || cancelled;
+        const qty = ticketQty.get(ticket.id) || 1;
+        const maxQty = variant ? Math.min(10, variant.stockAvailable) : 0;
+
+        return `
+        <article class="group relative flex flex-col p-stack-md border border-transparent hover:border-secondary-container transition-colors" data-ticket-card="${ticket.id}">
+            <div class="relative w-full aspect-[4/5] bg-surface-container overflow-hidden">
+                <img class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 group-hover:scale-[1.03]"
+                     src="${ev.posterUrl || ntPlaceholderImage(ev.title)}" alt="${ntEscapeHtml(ev.title)}"/>
+                ${blocked ? `<div class="absolute inset-0 flex items-center justify-center bg-primary-container/70">
+                    <span class="bg-secondary-container text-on-secondary px-3 py-1 font-label-mono text-[12px] uppercase font-bold">${cancelled ? "Cancelado" : "Agotado"}</span>
+                </div>` : ""}
+            </div>
+            <div class="mt-stack-md flex flex-col flex-grow gap-stack-sm">
+                <span class="font-label-mono text-[11px] text-secondary-container uppercase tracking-widest">${ntFormatEventDate(ev.date)}</span>
+                <h2 class="font-headline-lg text-headline-lg-mobile text-on-surface uppercase leading-none">${ntEscapeHtml(ev.title)}</h2>
+                <span class="font-label-mono text-[12px] text-on-surface-variant uppercase">${ntEscapeHtml(ev.venue)}</span>
+                <span class="font-label-mono text-label-mono text-secondary-container">${ntFormatMoney(ticket.price)} · Entrada general</span>
+                ${!blocked ? `
+                <div class="flex items-center gap-3 mt-stack-sm">
+                    <div class="flex items-center border border-outline-variant/40">
+                        <button type="button" data-qty-dec="${ticket.id}" class="w-9 h-9 flex items-center justify-center text-on-surface hover:text-secondary-container transition-colors" aria-label="Menos">
+                            <span class="material-symbols-outlined text-[18px]">remove</span>
+                        </button>
+                        <span class="w-8 text-center font-label-mono text-[13px]" data-qty-value="${ticket.id}">${qty}</span>
+                        <button type="button" data-qty-inc="${ticket.id}" class="w-9 h-9 flex items-center justify-center text-on-surface hover:text-secondary-container transition-colors" aria-label="Más">
+                            <span class="material-symbols-outlined text-[18px]">add</span>
+                        </button>
+                    </div>
+                    <span class="font-label-mono text-[11px] text-on-surface-variant uppercase">${variant.stockAvailable} disponibles</span>
+                </div>` : ""}
+                <div class="mt-auto pt-stack-md">
+                    <button data-buy-ticket="${ticket.id}" data-variant="${variant ? variant.id : ""}" ${blocked || !maxQty ? "disabled" : ""}
+                        class="w-full bg-transparent border-2 border-on-surface text-on-surface font-headline-lg text-headline-lg-mobile uppercase py-2 hover:bg-on-surface hover:text-primary-container transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-on-surface">
+                        ${cancelled ? "Cancelado" : soldOut ? "Agotado" : "Comprar tickets"}
+                    </button>
+                </div>
+            </div>
+        </article>`;
+    }
+
+    function wireTicketCards(container, tickets) {
+        const index = new Map(tickets.map((t) => [t.id, t]));
+
+        const setQty = (ticketId, qty) => {
+            const t = index.get(ticketId);
+            const variant = t.variants[0];
+            const max = Math.min(10, variant ? variant.stockAvailable : 0);
+            const clamped = Math.max(1, Math.min(max, qty));
+            ticketQty.set(ticketId, clamped);
+            const el = container.querySelector(`[data-qty-value="${ticketId}"]`);
+            if (el) el.textContent = clamped;
+        };
+
+        container.querySelectorAll("[data-qty-inc]").forEach((btn) =>
+            btn.addEventListener("click", () => setQty(btn.dataset.qtyInc, (ticketQty.get(btn.dataset.qtyInc) || 1) + 1)));
+        container.querySelectorAll("[data-qty-dec]").forEach((btn) =>
+            btn.addEventListener("click", () => setQty(btn.dataset.qtyDec, (ticketQty.get(btn.dataset.qtyDec) || 1) - 1)));
+
+        container.querySelectorAll("[data-buy-ticket]:not(:disabled)").forEach((btn) => {
+            btn.addEventListener("click", async () => {
+                const ticketId = btn.dataset.buyTicket;
+                const productVariantId = btn.dataset.variant;
+                const quantity = ticketQty.get(ticketId) || 1;
+                btn.disabled = true;
+                try {
+                    await NTCart.add({ productId: ticketId, productVariantId, quantity });
+                    ntToast("Tickets añadidos al carrito");
+                } catch (err) {
+                    ntToast(err.message, true);
+                } finally {
+                    btn.disabled = false;
+                }
+            });
+        });
+    }
+
+    async function loadTickets() {
+        const grid = document.getElementById("tickets-grid");
+        try {
+            const { tickets } = await ntApi("/tickets");
+            // Un evento cancelado después de crear el ticket no debería venderse,
+            // aunque el producto en sí siga ACTIVO en el admin.
+            const sellable = tickets.filter((t) => t.event && t.event.status !== "BORRADOR");
+            if (!sellable.length) {
+                grid.innerHTML = `<div class="md:col-span-2 lg:col-span-3 p-stack-lg text-center">
+                    <p class="font-label-mono text-label-mono text-on-surface-variant uppercase">No hay tickets a la venta por ahora.</p>
+                </div>`;
+                return;
+            }
+            sellable.sort((a, b) => new Date(a.event.date) - new Date(b.event.date));
+            grid.innerHTML = sellable.map(ticketCard).join("");
+            wireTicketCards(grid, sellable);
+        } catch (err) {
+            grid.innerHTML = `<div class="md:col-span-2 lg:col-span-3 p-stack-lg text-center">
+                <p class="font-label-mono text-label-mono text-error uppercase">${ntEscapeHtml(err.message)}</p>
+            </div>`;
+        }
+    }
+
+    loadTickets();
+</script>
+</body>
+</html>

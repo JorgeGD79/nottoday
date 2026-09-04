@@ -23,12 +23,22 @@ export const createProductSchema = z
     status: z.nativeEnum(ProductStatus).default(ProductStatus.BORRADOR),
     variants: z.array(variantSchema).min(1, "Debes indicar al menos una talla con su stock"),
     dropMeta: dropMetaSchema.optional(),
+    // Solo aplica (y es obligatorio) para productType = TICKET_EVENTO: liga
+    // el ticket a su evento.
+    eventId: z.string().cuid().optional(),
   })
   .refine(
     (data) => data.productType !== ProductType.DROP_EXCLUSIVO || !!data.dropMeta,
     {
       message: "dropMeta (releaseAt) es obligatorio cuando productType es DROP_EXCLUSIVO",
       path: ["dropMeta"],
+    }
+  )
+  .refine(
+    (data) => data.productType !== ProductType.TICKET_EVENTO || !!data.eventId,
+    {
+      message: "eventId es obligatorio cuando productType es TICKET_EVENTO",
+      path: ["eventId"],
     }
   )
   .refine(
@@ -48,6 +58,7 @@ export const updateProductSchema = z.object({
   status: z.nativeEnum(ProductStatus).optional(),
   variants: z.array(variantSchema).optional(),
   dropMeta: dropMetaSchema.optional(),
+  eventId: z.string().cuid().optional(),
 });
 
 export const productIdParamsSchema = z.object({

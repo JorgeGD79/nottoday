@@ -157,7 +157,7 @@ const Checkout = {
           </div>
           <div class="flex-grow min-w-0">
             <p class="font-label-mono text-[13px] text-on-surface uppercase truncate">${ntEscapeHtml(item.product.name)}</p>
-            <p class="font-label-mono text-[11px] text-on-surface-variant">Talla ${item.productVariant.size} · x${item.quantity}</p>
+            <p class="font-label-mono text-[11px] text-on-surface-variant">${item.product.productType === "TICKET_EVENTO" ? "Entrada general" : `Talla ${item.productVariant.size}`} · x${item.quantity}</p>
           </div>
           <span class="font-label-mono text-[13px] text-secondary whitespace-nowrap">${ntFormatMoney(Number(item.product.price) * item.quantity)}</span>
         </div>`

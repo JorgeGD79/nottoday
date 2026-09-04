@@ -135,7 +135,7 @@
             <div class="mt-stack-md space-y-3">
                 ${order.items.map((i) => `
                     <div class="flex justify-between gap-3 border-b border-outline-variant/20 pb-3">
-                        <span class="font-body-md text-[14px] text-on-surface">${i.quantity}x ${ntEscapeHtml(i.product.name)} <span class="text-on-surface-variant">(${i.productVariant.size})</span></span>
+                        <span class="font-body-md text-[14px] text-on-surface">${i.quantity}x ${ntEscapeHtml(i.product.name)}${i.product.productType === "TICKET_EVENTO" ? "" : ` <span class="text-on-surface-variant">(${i.productVariant.size})</span>`}</span>
                         <span class="font-label-mono text-[13px] text-on-surface-variant whitespace-nowrap">${ntFormatMoney(Number(i.unitPrice) * i.quantity)}</span>
                     </div>`).join("")}
             </div>

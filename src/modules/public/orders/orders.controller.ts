@@ -38,7 +38,7 @@ export async function trackOrderHandler(request: FastifyRequest, reply: FastifyR
         select: {
           quantity: true,
           unitPrice: true,
-          product: { select: { name: true } },
+          product: { select: { name: true, productType: true } },
           productVariant: { select: { size: true } },
         },
       },

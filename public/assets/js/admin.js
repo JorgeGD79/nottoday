@@ -290,6 +290,12 @@ async function artistOptions() {
   return artists.map((a) => [a.id, a.stageName]);
 }
 
+// Eventos para el selector del producto TICKET_EVENTO.
+async function eventOptions() {
+  const { events } = await adminApi("/admin/events");
+  return events.map((e) => [e.id, `${e.title} (${fmtShortDate(e.date)})`]);
+}
+
 // ============================================================
 // SECCIONES
 // ============================================================
@@ -312,7 +318,10 @@ const Sections = {
         <tr>
           <td class="font-bold uppercase">${ntEscapeHtml(p.name)}</td>
           <td>${ntFormatMoney(p.price)}</td>
-          <td>${badge(p.productType === "DROP_EXCLUSIVO" ? "DROP" : "TIENDA", p.productType === "DROP_EXCLUSIVO" ? "ok" : "muted")}</td>
+          <td>${badge(
+            { DROP_EXCLUSIVO: "DROP", TICKET_EVENTO: "TICKET" }[p.productType] || "TIENDA",
+            { DROP_EXCLUSIVO: "ok", TICKET_EVENTO: "ok" }[p.productType] || "muted"
+          )}</td>
           <td>${statusBadge(p.status)}</td>
           <td class="font-label-mono text-[12px]">${p.variants.map((v) => `${v.size}:${v.stockAvailable}`).join(" · ") || "—"}</td>
           <td>${p.dropMeta ? `${badge(p.dropMeta.dropStatus, p.dropMeta.dropStatus === "ABIERTO" ? "ok" : "muted")}<br/><span class="font-label-mono text-[11px] text-on-surface-variant">${fmtShortDate(p.dropMeta.releaseAt)}</span>` : "—"}</td>
@@ -324,19 +333,21 @@ const Sections = {
       wireRowActions(this.items, (p) => this.form(p), (p) =>
         submitAndReload(adminApi(`/admin/products/${p.id}`, { method: "DELETE" }), "products", "Producto eliminado"));
     },
-    form(p = null) {
+    async form(p = null) {
       const stockOf = (size) => {
         const v = p && p.variants.find((x) => x.size === size);
         return v ? v.stockAvailable : "";
       };
+      const isTicket = p?.productType === "TICKET_EVENTO";
+      const events = await eventOptions();
       const html = `
         ${fText("name", "Nombre", p?.name, { required: true })}
         ${fTextarea("description", "Descripción", p?.description)}
         ${fText("price", "Precio (EUR)", p?.price, { type: "number", step: "0.01", min: 0, required: true })}
         ${ImageField.render("prod-images", "Fotos del producto", p?.images || [], true)}
-        ${fSelect("productType", "Tipo", [["TIENDA_GENERAL", "Tienda general"], ["DROP_EXCLUSIVO", "Drop exclusivo"]], p?.productType || "TIENDA_GENERAL")}
+        ${fSelect("productType", "Tipo", [["TIENDA_GENERAL", "Tienda general"], ["DROP_EXCLUSIVO", "Drop exclusivo"], ["TICKET_EVENTO", "Ticket de evento"]], p?.productType || "TIENDA_GENERAL")}
         ${fSelect("status", "Estado", ["BORRADOR", "ACTIVO", "AGOTADO"], p?.status || "BORRADOR")}
-        <div>
+        <div id="size-stock-fields" class="${isTicket ? "hidden" : ""}">
           <label class="nt-label">Stock por talla ${p ? "(se actualizan/añaden las tallas indicadas)" : "(mínimo una)"}</label>
           <div class="grid grid-cols-4 gap-3 mt-2">
             ${SIZES.map((s) => `
@@ -350,19 +361,30 @@ const Sections = {
           <legend class="font-label-mono text-[12px] text-secondary uppercase px-2">Metadatos del drop</legend>
           ${fDatetime("releaseAt", "Fecha/hora de lanzamiento", p?.dropMeta?.releaseAt)}
           ${fSelect("dropStatus", "Estado del drop", ["PROXIMAMENTE", "ABIERTO", "FINALIZADO"], p?.dropMeta?.dropStatus || "PROXIMAMENTE")}
+        </fieldset>
+        <fieldset id="ticket-fields" class="border border-secondary-container/40 p-4 space-y-4 ${isTicket ? "" : "hidden"}">
+          <legend class="font-label-mono text-[12px] text-secondary uppercase px-2">Evento del ticket</legend>
+          ${events.length
+            ? fSelect("eventId", "Evento", events, p?.eventId || "")
+            : `<p class="font-label-mono text-[12px] text-error uppercase">Crea primero un evento en la sección Eventos.</p>`}
+          ${fText("ticketCapacity", "Aforo (capacidad)", p ? stockOf("GENERAL") : "", { type: "number", step: "1", min: 0 })}
         </fieldset>`;
 
       Drawer.open(p ? "Editar producto" : "Nuevo producto", html, () => {
         const v = drawerValues();
-        const variants = SIZES
-          .filter((s) => v[`stock-${s}`] !== "")
-          .map((s) => ({ size: s, stockAvailable: parseInt(v[`stock-${s}`], 10) }));
+        const variants =
+          v.productType === "TICKET_EVENTO"
+            ? [{ size: "GENERAL", stockAvailable: parseInt(v.ticketCapacity, 10) || 0 }]
+            : SIZES
+                .filter((s) => v[`stock-${s}`] !== "")
+                .map((s) => ({ size: s, stockAvailable: parseInt(v[`stock-${s}`], 10) }));
         const payload = clean({
           name: v.name,
           description: v.description,
           price: parseFloat(v.price),
           productType: v.productType,
           status: v.status,
+          eventId: v.productType === "TICKET_EVENTO" ? v.eventId : undefined,
         });
         payload.images = ImageField.get("prod-images");
         if (variants.length) payload.variants = variants;
@@ -378,8 +400,11 @@ const Sections = {
       ImageField.wire("prod-images", true);
       document.getElementById("drawer-form")
         .querySelector("[name=productType]")
-        .addEventListener("change", (e) =>
-          document.getElementById("drop-fields").classList.toggle("hidden", e.target.value !== "DROP_EXCLUSIVO"));
+        .addEventListener("change", (e) => {
+          document.getElementById("drop-fields").classList.toggle("hidden", e.target.value !== "DROP_EXCLUSIVO");
+          document.getElementById("ticket-fields").classList.toggle("hidden", e.target.value !== "TICKET_EVENTO");
+          document.getElementById("size-stock-fields").classList.toggle("hidden", e.target.value === "TICKET_EVENTO");
+        });
     },
   },
 
@@ -643,7 +668,7 @@ const Sections = {
             <details>
               <summary class="cursor-pointer font-label-mono text-[12px] text-secondary uppercase">Detalle</summary>
               <div class="mt-2 text-[13px] text-on-surface-variant space-y-1">
-                <p class="font-bold text-on-surface">${(o.items || []).map((i) => `${i.quantity}x ${ntEscapeHtml(i.product.name)} (${i.productVariant.size})`).join("<br/>")}</p>
+                <p class="font-bold text-on-surface">${(o.items || []).map((i) => `${i.quantity}x ${ntEscapeHtml(i.product.name)}${i.product.productType === "TICKET_EVENTO" ? "" : ` (${i.productVariant.size})`}`).join("<br/>")}</p>
                 <p>${ntEscapeHtml(o.shippingName || "")}<br/>${ntEscapeHtml(o.shippingAddress || "")}<br/>${ntEscapeHtml([o.shippingPostalCode, o.shippingCity, o.shippingCountry].filter(Boolean).join(", "))}${o.shippingPhone ? `<br/>Tel: ${ntEscapeHtml(o.shippingPhone)}` : ""}</p>
                 ${o.discountCode ? `<p>Cupón: <span class="text-secondary">${ntEscapeHtml(o.discountCode.code)}</span></p>` : ""}
                 <p class="font-label-mono text-[10px]">${o.id}</p>

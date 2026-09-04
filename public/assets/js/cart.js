@@ -160,7 +160,7 @@ const NTCart = {
           <div class="flex flex-col flex-grow justify-between py-1">
             <div>
               <h3 class="font-headline-lg text-headline-lg-mobile text-on-surface uppercase leading-none">${ntEscapeHtml(item.product.name)}</h3>
-              <p class="font-label-mono text-label-mono text-on-surface-variant mt-1">Talla: ${item.productVariant.size}</p>
+              <p class="font-label-mono text-label-mono text-on-surface-variant mt-1">${item.product.productType === "TICKET_EVENTO" ? "Entrada general" : `Talla: ${item.productVariant.size}`}</p>
             </div>
             <div class="flex justify-between items-center mt-4 gap-2">
               <div class="flex items-center border border-outline-variant/30">

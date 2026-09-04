@@ -29,7 +29,7 @@ export async function listOrdersHandler(request: FastifyRequest, reply: FastifyR
       include: {
         items: {
           include: {
-            product: { select: { name: true } },
+            product: { select: { name: true, productType: true } },
             productVariant: { select: { size: true } },
           },
         },
