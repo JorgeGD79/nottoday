@@ -39,6 +39,21 @@
     50% { opacity: 1; transform: translateY(4px); }
 }
 
+/* Submenú del nav (LAB / CONTACTO): por defecto se abre hacia abajo; cuando
+   el nav está bajo (home, antes de llegar arriba — ver chrome.js) se añade
+   nt-nav-upward a la barra y el submenú se abre hacia arriba para no
+   salirse de la ventana. */
+.nt-nav-sub {
+    position: absolute;
+    left: 0;
+    top: 100%;
+    bottom: auto;
+}
+.nt-nav-upward .nt-nav-sub {
+    top: auto;
+    bottom: 100%;
+}
+
 /* Grid "brutalist" de líneas de 1px: fondo del contenedor = color de línea,
    gap:1px + celdas opacas simulan bordes compartidos entre celdas. */
 .nt-grid-lines {

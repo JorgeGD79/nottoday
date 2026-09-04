@@ -40,7 +40,7 @@ const NTChrome = (() => {
           <a href="${opts.href}" class="flex items-center gap-1.5 px-4 py-2.5 font-label-mono text-[11px] tracking-[0.14em] uppercase ${color} hover:text-secondary transition-colors">
             ${label}<span class="material-symbols-outlined text-[14px] opacity-60">expand_more</span>
           </a>
-          <div class="nt-nav-sub hidden absolute left-0 top-full min-w-[190px] bg-[rgba(9,9,9,0.96)] border border-[#2a2a2a] backdrop-blur-md">
+          <div class="nt-nav-sub hidden min-w-[190px] bg-[rgba(9,9,9,0.96)] border border-[#2a2a2a] backdrop-blur-md">
             ${opts.children
               .map(
                 (c) =>
@@ -185,6 +185,11 @@ const NTChrome = (() => {
       bar.style.border = "1px solid rgba(42,42,42," + (1 - p).toFixed(3) + ")";
       bar.style.borderBottom = "1px solid rgba(60,60,60," + Math.max(0.35, 1 - p * 0.5).toFixed(3) + ")";
       bar.style.boxShadow = "0 18px 50px rgba(0,0,0," + lerp(0.55, 0).toFixed(3) + ")";
+
+      // Mientras el nav está bajo (cerca del final del hero, aún no pegado
+      // arriba), un submenú desplegado hacia abajo se saldría de la
+      // ventana — se abre hacia arriba hasta que el nav llega arriba.
+      bar.classList.toggle("nt-nav-upward", !isTop);
     };
     update();
     window.addEventListener(
