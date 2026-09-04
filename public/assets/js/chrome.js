@@ -175,6 +175,25 @@ const NTChrome = (() => {
     const isMobile = () => window.innerWidth < 860;
     const update = () => {
       raf = null;
+
+      // En móvil el nav va fijo arriba desde el principio, sin el morph de
+      // "sube desde el hero" — ese efecto es solo para desktop en home.
+      if (isMobile()) {
+        wrap.style.top = "0px";
+        wrap.style.padding = "0 20px";
+        bar.style.gap = "14px";
+        bar.style.width = "100%";
+        bar.style.maxWidth = "2400px";
+        bar.style.justifyContent = "space-between";
+        bar.style.padding = "14px 18px";
+        bar.style.background = "rgba(9,9,9,0.88)";
+        bar.style.border = "1px solid rgba(42,42,42,0)";
+        bar.style.borderBottom = "1px solid rgba(60,60,60,0.35)";
+        bar.style.boxShadow = "0 18px 50px rgba(0,0,0,0)";
+        bar.classList.remove("nt-nav-upward");
+        return;
+      }
+
       const vh = window.innerHeight || 800;
       const travel = Math.max(220, vh * 0.62);
       const p = Math.min(1, Math.max(0, window.scrollY / travel));
