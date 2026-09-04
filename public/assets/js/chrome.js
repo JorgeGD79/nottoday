@@ -94,9 +94,6 @@ const NTChrome = (() => {
       <div>
         <div class="font-label-mono text-[11px] text-on-surface-variant tracking-[0.06em] uppercase mb-3">Info</div>
         <div class="flex flex-col gap-1.5 font-label-mono text-[12px]">
-          <a href="radio.html" class="text-on-surface-variant hover:text-secondary transition-colors w-fit">N-TY Radio</a>
-          <a href="projects.html" class="text-on-surface-variant hover:text-secondary transition-colors w-fit">Projects</a>
-          <a href="newsletter.html" class="text-on-surface-variant hover:text-secondary transition-colors w-fit">Newsletter</a>
           <a href="about.html" class="text-on-surface-variant hover:text-secondary transition-colors w-fit">Sobre Nosotros</a>
           <a href="services.html" class="text-on-surface-variant hover:text-secondary transition-colors w-fit">Servicios</a>
           <a href="track.html" class="text-on-surface-variant hover:text-secondary transition-colors w-fit">Track Order</a>
@@ -108,18 +105,23 @@ const NTChrome = (() => {
     </footer>`;
   }
 
+  // Mismos 4 botones que el nav de escritorio (LAB/SHOP/NEWSLETTER/CONTACTO),
+  // cada uno al mismo destino que su label en escritorio (el texto entero es
+  // un link, no solo el caret) — así el bottom nav no es un menú distinto,
+  // es el mismo nav en formato de pestañas.
   function mobileNavHtml(active) {
+    const ag = activeGroup(active);
     const tabs = [
-      { key: "sessions", href: "sessions.html", icon: "headphones", label: "Listen" },
-      { key: "store", href: "store.html", icon: "shopping_bag", label: "Shop" },
-      { key: "artists", href: "artists.html", icon: "group", label: "Artists" },
-      { key: "booking", href: "booking.html", icon: "edit_calendar", label: "Book" },
+      { group: "lab", href: "sessions.html", icon: "science", label: "LAB" },
+      { group: "shop", href: "store.html", icon: "shopping_bag", label: "SHOP" },
+      { group: "news", href: "newsletter.html", icon: "mail", label: "NEWSLETTER" },
+      { group: "contacto", href: "booking.html", icon: "edit_calendar", label: "CONTACTO" },
     ];
     return `
     <nav class="md:hidden fixed bottom-0 left-0 right-0 z-[500] flex bg-[#050505] border-t border-outline-variant/30">
       ${tabs
         .map((t) => {
-          const isActive = t.key === active;
+          const isActive = t.group === ag;
           return `<a href="${t.href}" class="flex-1 flex flex-col items-center gap-0.5 pt-2.5 pb-3.5 ${
             isActive ? "text-secondary" : "text-on-surface-variant"
           }">
