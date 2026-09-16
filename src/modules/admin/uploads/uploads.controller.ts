@@ -1,6 +1,15 @@
 import { FastifyReply, FastifyRequest } from "fastify";
+import { z } from "zod";
 import { AppError } from "@/utils/AppError";
 import { uploadAudio, uploadImage } from "@/services/upload.service";
+
+// Subcarpetas de Cloudinary por tipo de entidad, para que "nottoday" no quede
+// todo mezclado en un único folder. Si se pide un folder fuera de esta lista
+// (o no se pide ninguno), cae en "misc" en vez de fallar la subida.
+const IMAGE_FOLDERS = ["products", "artists", "events"] as const;
+const uploadQuerySchema = z.object({
+  folder: z.enum(IMAGE_FOLDERS).optional(),
+});
 
 /**
  * Valida el tipo real de la imagen por sus "magic bytes", no por el content-type
@@ -29,6 +38,7 @@ function detectImageType(buffer: Buffer): "jpeg" | "png" | "gif" | "webp" | null
  * El panel guarda esas URLs en el campo de imágenes del producto/artista/evento.
  */
 export async function uploadImagesHandler(request: FastifyRequest, reply: FastifyReply) {
+  const { folder } = uploadQuerySchema.parse(request.query);
   const urls: string[] = [];
 
   for await (const part of request.files()) {
@@ -37,7 +47,7 @@ export async function uploadImagesHandler(request: FastifyRequest, reply: Fastif
     if (detectImageType(buffer) === null) {
       throw new AppError(`El archivo "${part.filename}" no es una imagen válida (JPEG/PNG/GIF/WebP)`, 415);
     }
-    urls.push(await uploadImage(buffer));
+    urls.push(await uploadImage(buffer, `nottoday/${folder || "misc"}`));
   }
 
   if (urls.length === 0) {

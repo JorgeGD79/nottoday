@@ -49,10 +49,13 @@ async function adminApi(path, options = {}) {
 
 // Sube archivos a POST /api/admin/uploads (multipart). NO fijamos Content-Type:
 // el navegador lo pone con el boundary correcto al usar FormData.
-async function uploadImages(files) {
+// `folder` decide la subcarpeta de Cloudinary (products/artists/events) para
+// mantener la cuenta organizada en vez de un único folder "nottoday" mezclado.
+async function uploadImages(files, folder) {
   const fd = new FormData();
   for (const f of files) fd.append("files", f);
-  const res = await fetch("/api/admin/uploads", {
+  const qs = folder ? `?folder=${encodeURIComponent(folder)}` : "";
+  const res = await fetch(`/api/admin/uploads${qs}`, {
     method: "POST",
     headers: { Authorization: `Bearer ${Auth.token}` },
     body: fd,
@@ -175,7 +178,7 @@ const ImageField = {
         <p id="${id}-status" class="font-label-mono text-[11px] text-on-surface-variant uppercase mt-1"></p>
       </div>`;
   },
-  wire(id, multiple = true) {
+  wire(id, multiple = true, folder) {
     this.renderPreviews(id);
     const input = document.getElementById(`${id}-file`);
     if (!input) return;
@@ -185,7 +188,7 @@ const ImageField = {
       const status = document.getElementById(`${id}-status`);
       status.textContent = "Subiendo...";
       try {
-        const urls = await uploadImages(files);
+        const urls = await uploadImages(files, folder);
         if (!multiple) this.state[id] = [];
         this.state[id].push(...urls);
         status.textContent = "";
@@ -424,7 +427,7 @@ const Sections = {
           "products", p ? "Producto actualizado" : "Producto creado");
       });
 
-      ImageField.wire("prod-images", true);
+      ImageField.wire("prod-images", true, "products");
       document.getElementById("drawer-form")
         .querySelector("[name=productType]")
         .addEventListener("change", (e) => {
@@ -481,7 +484,7 @@ const Sections = {
             : adminApi("/admin/artists", { method: "POST", body: JSON.stringify(payload) }),
           "artists", a ? "Artista actualizado" : "Artista creado");
       });
-      ImageField.wire("artist-images", true);
+      ImageField.wire("artist-images", true, "artists");
     },
   },
 
@@ -562,7 +565,7 @@ const Sections = {
           "events", e ? "Evento actualizado" : "Evento creado");
       });
 
-      ImageField.wire("event-poster", false);
+      ImageField.wire("event-poster", false, "events");
       document.getElementById("lineup-add").addEventListener("click", () => {
         document.getElementById("lineup-rows").insertAdjacentHTML("beforeend", lineupRow());
       });
