@@ -1,6 +1,6 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import { AppError } from "@/utils/AppError";
-import { uploadImage } from "@/services/upload.service";
+import { uploadAudio, uploadImage } from "@/services/upload.service";
 
 /**
  * Valida el tipo real de la imagen por sus "magic bytes", no por el content-type
@@ -38,6 +38,50 @@ export async function uploadImagesHandler(request: FastifyRequest, reply: Fastif
       throw new AppError(`El archivo "${part.filename}" no es una imagen válida (JPEG/PNG/GIF/WebP)`, 415);
     }
     urls.push(await uploadImage(buffer));
+  }
+
+  if (urls.length === 0) {
+    throw new AppError("No se recibió ningún archivo", 400);
+  }
+
+  return reply.send({ urls });
+}
+
+/**
+ * Valida el tipo real de audio por sus "magic bytes" (mismo criterio que
+ * `detectImageType`, no nos fiamos del content-type declarado por el cliente).
+ */
+function detectAudioType(buffer: Buffer): "mp3" | "wav" | "ogg" | null {
+  if (buffer.length < 12) return null;
+  // MP3: cabecera ID3 o, si no la tiene, el frame sync de MPEG audio (0xFF + 3 bits a 1).
+  if (buffer[0] === 0x49 && buffer[1] === 0x44 && buffer[2] === 0x33) return "mp3";
+  if (buffer[0] === 0xff && (buffer[1] & 0xe0) === 0xe0) return "mp3";
+  if (
+    buffer.toString("ascii", 0, 4) === "RIFF" &&
+    buffer.toString("ascii", 8, 12) === "WAVE"
+  ) {
+    return "wav";
+  }
+  if (buffer.toString("ascii", 0, 4) === "OggS") return "ogg";
+  return null;
+}
+
+/**
+ * POST /api/admin/uploads/audio
+ *
+ * Recibe uno o varios archivos de audio (multipart/form-data, campo "files"),
+ * valida que sean audio real (MP3/WAV/OGG), los sube a Cloudinary y devuelve
+ * las URLs resultantes. El panel guarda esas URLs en las pistas de N-TY Radio.
+ */
+export async function uploadAudioHandler(request: FastifyRequest, reply: FastifyReply) {
+  const urls: string[] = [];
+
+  for await (const part of request.files()) {
+    const buffer = await part.toBuffer();
+    if (detectAudioType(buffer) === null) {
+      throw new AppError(`El archivo "${part.filename}" no es un audio válido (MP3/WAV/OGG)`, 415);
+    }
+    urls.push(await uploadAudio(buffer));
   }
 
   if (urls.length === 0) {

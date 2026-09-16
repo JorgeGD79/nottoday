@@ -31,6 +31,8 @@ import { publicEventsRoutes } from "@/modules/public/events/events.routes";
 import { publicArtistsRoutes } from "@/modules/public/artists/artists.routes";
 import { publicSessionsRoutes } from "@/modules/public/sessions/sessions.routes";
 import { adminSessionsRoutes } from "@/modules/admin/sessions/sessions.routes";
+import { publicRadioRoutes } from "@/modules/public/radio/radio.routes";
+import { adminRadioRoutes } from "@/modules/admin/radio/radio.routes";
 import { publicShippingRoutes } from "@/modules/public/shipping/shipping.routes";
 import { publicOrdersRoutes } from "@/modules/public/orders/orders.routes";
 import { adminShippingRoutes } from "@/modules/admin/shipping/shipping.routes";
@@ -109,8 +111,9 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(rateLimit, { max: 100, timeWindow: "1 minute", redis });
   await app.register(sensible);
   await app.register(jwt, { secret: env.JWT_SECRET });
-  // Subida de imágenes del panel (multipart/form-data). Límite por archivo 10 MB.
-  await app.register(multipart, { limits: { fileSize: 10 * 1024 * 1024, files: 10 } });
+  // Subida de imágenes/audio del panel (multipart/form-data). Límite por archivo 25 MB
+  // (las pistas de audio completas de la radio pesan más que las fotos).
+  await app.register(multipart, { limits: { fileSize: 25 * 1024 * 1024, files: 10 } });
 
   // --- Manejador de errores global ---
   // IMPORTANTE: debe registrarse ANTES de los `app.register(...)` de las rutas.
@@ -160,6 +163,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(publicEventsRoutes, { prefix: "/api/events" });
   await app.register(publicArtistsRoutes, { prefix: "/api/artists" });
   await app.register(publicSessionsRoutes, { prefix: "/api/sessions" });
+  await app.register(publicRadioRoutes, { prefix: "/api/radio" });
   await app.register(publicShippingRoutes, { prefix: "/api/shipping" });
   await app.register(publicOrdersRoutes, { prefix: "/api/orders" });
   await app.register(authRoutes, { prefix: "/api/auth" });
@@ -172,6 +176,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(adminBookingsRoutes, { prefix: "/api/admin/bookings" });
   await app.register(adminLogsRoutes, { prefix: "/api/admin/logs" });
   await app.register(adminSessionsRoutes, { prefix: "/api/admin/sessions" });
+  await app.register(adminRadioRoutes, { prefix: "/api/admin/radio" });
   await app.register(adminShippingRoutes, { prefix: "/api/admin/shipping" });
   await app.register(adminOrdersRoutes, { prefix: "/api/admin/orders" });
   await app.register(adminUploadsRoutes, { prefix: "/api/admin/uploads" });

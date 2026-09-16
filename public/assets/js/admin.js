@@ -62,6 +62,20 @@ async function uploadImages(files) {
   return body.urls;
 }
 
+// Sube archivos a POST /api/admin/uploads/audio (multipart). Mismo criterio que uploadImages.
+async function uploadAudioFiles(files) {
+  const fd = new FormData();
+  for (const f of files) fd.append("files", f);
+  const res = await fetch("/api/admin/uploads/audio", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${Auth.token}` },
+    body: fd,
+  });
+  const body = await res.json().catch(() => null);
+  if (!res.ok) throw new Error((body && body.error) || `Error ${res.status}`);
+  return body.urls;
+}
+
 // ---------- Helpers de formato ----------
 
 const fmtShortDate = (iso) =>
@@ -77,6 +91,19 @@ function toLocalInput(iso) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 const fromLocalInput = (v) => (v ? new Date(v).toISOString() : undefined);
+
+// mm:ss ⇄ segundos, para la duración de las pistas de radio.
+function parseMmSs(v) {
+  const s = (v || "").trim();
+  const match = s.match(/^(\d+):([0-5]?\d)$/);
+  if (match) return parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
+  const asNumber = parseInt(s, 10);
+  return Number.isFinite(asNumber) && asNumber > 0 ? asNumber : 0;
+}
+const formatMmSs = (totalSeconds) => {
+  const s = Math.max(0, parseInt(totalSeconds, 10) || 0);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+};
 
 // Elimina claves vacías para no chocar con validadores .url()/.min() de Zod.
 function clean(obj) {
@@ -609,6 +636,124 @@ const Sections = {
       };
       urlInput.addEventListener("input", refreshPreview);
       refreshPreview();
+    },
+  },
+
+  // ---------------- N-TY RADIO ----------------
+  radio: {
+    title: "N-TY Radio",
+    icon: "radio",
+    items: [],
+    WEEKDAYS: [
+      ["LUNES", "Lunes"], ["MARTES", "Martes"], ["MIERCOLES", "Miércoles"],
+      ["JUEVES", "Jueves"], ["VIERNES", "Viernes"], ["SABADO", "Sábado"], ["DOMINGO", "Domingo"],
+    ],
+    async load() {
+      actionsHost().innerHTML = newButton("+ Nueva franja");
+      document.getElementById("btn-new").addEventListener("click", () => this.form());
+      host().innerHTML = `<div class="nt-skeleton h-40"></div>`;
+      const { shows } = await adminApi("/admin/radio");
+      this.items = shows;
+      const dayLabel = (d) => this.WEEKDAYS.find(([v]) => v === d)?.[1] || d;
+      const rows = shows.map((s) => `
+        <tr>
+          <td class="font-label-mono text-[12px] uppercase text-secondary">${dayLabel(s.dayOfWeek)}</td>
+          <td class="font-label-mono text-[12px] whitespace-nowrap">${s.startTime}</td>
+          <td class="font-bold uppercase">${ntEscapeHtml(s.title)}</td>
+          <td class="font-label-mono text-[12px] text-on-surface-variant">${ntEscapeHtml(s.host)}</td>
+          <td class="font-label-mono text-[12px]">${s.tracks.length} pista${s.tracks.length === 1 ? "" : "s"}</td>
+          <td>${s.active ? badge("ACTIVA", "ok") : badge("INACTIVA", "muted")}</td>
+          ${rowActions(s.id)}
+        </tr>`);
+      host().innerHTML = renderTable(["Día", "Hora", "Título", "Host", "Pistas", "Estado", ""], rows, "Sin franjas de radio.");
+      wireRowActions(this.items, (s) => this.form(s), (s) =>
+        submitAndReload(adminApi(`/admin/radio/${s.id}`, { method: "DELETE" }), "radio", "Franja eliminada"));
+    },
+    async form(s = null) {
+      const trackRow = (t = null) => `
+        <div class="border border-outline-variant/20 p-3 space-y-2" data-track-row>
+          <div class="flex gap-2">
+            <input class="nt-input flex-grow" data-track-title placeholder="Título de la pista" value="${ntEscapeHtml(t?.title || "")}"/>
+            <input class="nt-input flex-grow" data-track-artist placeholder="Artista" value="${ntEscapeHtml(t?.artist || "")}"/>
+          </div>
+          <div class="flex gap-2 items-center">
+            <input class="nt-input w-20 text-center" data-track-duration placeholder="mm:ss" value="${t ? formatMmSs(t.durationSeconds) : ""}"/>
+            <input class="nt-input flex-grow" data-track-url placeholder="URL del audio" value="${ntEscapeHtml(t?.audioUrl || "")}"/>
+            <label class="adm-icon-btn cursor-pointer" title="Subir audio">
+              <span class="material-symbols-outlined text-[20px]">upload</span>
+              <input type="file" accept="audio/*" class="hidden" data-track-file/>
+            </label>
+            <button type="button" class="adm-icon-btn danger" data-track-remove title="Quitar pista"><span class="material-symbols-outlined text-[20px]">close</span></button>
+          </div>
+          <p class="font-label-mono text-[11px] text-on-surface-variant uppercase" data-track-status></p>
+        </div>`;
+
+      const html = `
+        ${fText("title", "Título de la franja", s?.title, { required: true, placeholder: "BLOQUE CERO" })}
+        ${fText("host", "Host", s?.host, { required: true, placeholder: "KOLD BENNETT" })}
+        <div class="flex gap-2">
+          ${fSelect("dayOfWeek", "Día", this.WEEKDAYS, s?.dayOfWeek || "LUNES")}
+          ${fText("startTime", "Hora de inicio", s?.startTime || "18:00", { type: "time", required: true })}
+        </div>
+        <label class="inline-flex items-center gap-2 font-label-mono text-[12px] uppercase text-on-surface-variant">
+          <input type="checkbox" name="active" ${s?.active !== false ? "checked" : ""}/> Franja activa
+        </label>
+        <div>
+          <label class="nt-label">Pistas (en orden de reproducción)</label>
+          <div class="space-y-2 mt-2" id="track-rows">
+            ${(s?.tracks || []).map((t) => trackRow(t)).join("")}
+          </div>
+          <button type="button" id="track-add" class="mt-2 font-label-mono text-[12px] uppercase border border-outline-variant/30 px-3 py-1.5 text-on-surface-variant hover:border-secondary hover:text-secondary transition-colors">
+            + Añadir pista
+          </button>
+        </div>`;
+
+      Drawer.open(s ? "Editar franja" : "Nueva franja", html, () => {
+        const v = drawerValues();
+        const tracks = [...document.querySelectorAll("[data-track-row]")].map((row) => ({
+          title: row.querySelector("[data-track-title]").value.trim(),
+          artist: row.querySelector("[data-track-artist]").value.trim(),
+          audioUrl: row.querySelector("[data-track-url]").value.trim(),
+          durationSeconds: parseMmSs(row.querySelector("[data-track-duration]").value),
+        }));
+        const payload = clean({
+          title: v.title,
+          host: v.host,
+          dayOfWeek: v.dayOfWeek,
+          startTime: v.startTime,
+        });
+        payload.active = document.querySelector('[name="active"]').checked;
+        payload.tracks = tracks;
+        return submitAndReload(
+          s ? adminApi(`/admin/radio/${s.id}`, { method: "PUT", body: JSON.stringify(payload) })
+            : adminApi("/admin/radio", { method: "POST", body: JSON.stringify(payload) }),
+          "radio", s ? "Franja actualizada" : "Franja creada");
+      });
+
+      document.getElementById("track-add").addEventListener("click", () => {
+        document.getElementById("track-rows").insertAdjacentHTML("beforeend", trackRow());
+      });
+      const form = document.getElementById("drawer-form");
+      form.addEventListener("click", (ev) => {
+        const btn = ev.target.closest("[data-track-remove]");
+        if (btn) btn.closest("[data-track-row]").remove();
+      });
+      form.addEventListener("change", async (ev) => {
+        const input = ev.target.closest("[data-track-file]");
+        if (!input || !input.files.length) return;
+        const row = input.closest("[data-track-row]");
+        const status = row.querySelector("[data-track-status]");
+        status.textContent = "Subiendo...";
+        try {
+          const [url] = await uploadAudioFiles([...input.files]);
+          row.querySelector("[data-track-url]").value = url;
+          status.textContent = "";
+        } catch (err) {
+          status.textContent = err.message;
+        } finally {
+          input.value = "";
+        }
+      });
     },
   },
 

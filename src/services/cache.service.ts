@@ -11,6 +11,7 @@ export const CACHE_KEYS = {
   artists: "cache:artists:list",
   sessions: "cache:sessions:list",
   shipping: "cache:shipping:list",
+  radioSchedule: "cache:radio:schedule",
 };
 
 export const CACHE_TTL_SECONDS = {
@@ -21,6 +22,7 @@ export const CACHE_TTL_SECONDS = {
   artists: 120,
   sessions: 120,
   shipping: 120,
+  radioSchedule: 120,
 };
 
 export async function getCached<T>(key: string): Promise<T | null> {
@@ -67,4 +69,9 @@ export async function invalidateArtistsCache(): Promise<void> {
 /** Invalida la lista pública de métodos de envío (se llama desde el admin). */
 export async function invalidateShippingCache(): Promise<void> {
   await redis.del(CACHE_KEYS.shipping);
+}
+
+/** Invalida la parrilla de N-TY Radio (se llama desde el admin de radio). */
+export async function invalidateRadioCache(): Promise<void> {
+  await redis.del(CACHE_KEYS.radioSchedule);
 }

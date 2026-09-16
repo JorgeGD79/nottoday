@@ -42,34 +42,8 @@
             <!-- Programación -->
             <div>
                 <div class="px-6 py-5 font-label-mono text-[10px] tracking-[0.14em] text-outline uppercase border-b border-outline-variant">PROGRAMACIÓN</div>
-                <div class="flex gap-[18px] px-6 py-[18px] items-baseline border-b border-[#20201f] hover:bg-[#161615] transition-colors">
-                    <div class="font-label-mono text-[11px] text-secondary-container w-14 flex-shrink-0">18:00</div>
-                    <div>
-                        <div class="font-headline-lg font-semibold uppercase text-[15px] text-on-surface">BLOQUE CERO</div>
-                        <div class="font-label-mono text-[10px] text-outline tracking-[0.06em] mt-1">KOLD BENNETT</div>
-                    </div>
-                </div>
-                <div class="flex gap-[18px] px-6 py-[18px] items-baseline border-b border-[#20201f] hover:bg-[#161615] transition-colors">
-                    <div class="font-label-mono text-[11px] text-secondary-container w-14 flex-shrink-0">20:00</div>
-                    <div>
-                        <div class="font-headline-lg font-semibold uppercase text-[15px] text-on-surface">SLOW PERREO</div>
-                        <div class="font-label-mono text-[10px] text-outline tracking-[0.06em] mt-1">DUENDE 45</div>
-                    </div>
-                </div>
-                <div class="flex gap-[18px] px-6 py-[18px] items-baseline border-b border-[#20201f] hover:bg-[#161615] transition-colors">
-                    <div class="font-label-mono text-[11px] text-secondary-container w-14 flex-shrink-0">22:00</div>
-                    <div>
-                        <div class="font-headline-lg font-semibold uppercase text-[15px] text-on-surface">NOCHE TEMPLADA</div>
-                        <div class="font-label-mono text-[10px] text-outline tracking-[0.06em] mt-1">MAR NOVA</div>
-                    </div>
-                </div>
-                <div class="flex gap-[18px] px-6 py-[18px] items-baseline border-b border-[#20201f] hover:bg-[#161615] transition-colors last:border-b-0">
-                    <div class="font-label-mono text-[11px] text-secondary-container w-14 flex-shrink-0">00:00</div>
-                    <div>
-                        <div class="font-headline-lg font-semibold uppercase text-[15px] text-on-surface">GUARDIA NOCTURNA</div>
-                        <div class="font-label-mono text-[10px] text-outline tracking-[0.06em] mt-1">RUDO</div>
-                    </div>
-                </div>
+                <div id="radio-day-tabs" class="flex gap-1 px-6 py-3 border-b border-outline-variant overflow-x-auto"></div>
+                <div id="radio-schedule-list"></div>
             </div>
         </div>
     </div>
@@ -80,35 +54,142 @@
 <script>NTChrome.mount({ active: "radio" });</script>
 <script src="assets/js/cart.js"></script>
 <script>
-    // ------- N-TY Radio: toggle visual-only, sin audio real -------
-    const radioSchedule = [
-        { time: "18:00", title: "BLOQUE CERO", host: "KOLD BENNETT" },
-        { time: "20:00", title: "SLOW PERREO", host: "DUENDE 45" },
+    // ------- N-TY Radio: parrilla real + reproducción sincronizada -------
+    const WEEKDAYS = [
+        ["LUNES", "Lunes"], ["MARTES", "Martes"], ["MIERCOLES", "Miércoles"],
+        ["JUEVES", "Jueves"], ["VIERNES", "Viernes"], ["SABADO", "Sábado"], ["DOMINGO", "Domingo"],
     ];
-    let radioPlaying = false;
+    // Date.getDay() de JS: 0=domingo..6=sábado. Convertimos a nuestro enum (lunes primero).
+    const JS_DAY_TO_ENUM = ["DOMINGO", "LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO"];
 
     const radioTitleEl = document.getElementById("radio-title");
     const radioHostEl = document.getElementById("radio-host");
     const radioToggleEl = document.getElementById("radio-toggle");
     const radioIconEl = document.getElementById("radio-icon");
     const radioLabelEl = document.getElementById("radio-label");
+    const dayTabsEl = document.getElementById("radio-day-tabs");
+    const scheduleListEl = document.getElementById("radio-schedule-list");
 
-    function renderRadio() {
-        const now = radioPlaying ? radioSchedule[1] : radioSchedule[0];
-        radioTitleEl.textContent = now.title;
-        radioHostEl.textContent = now.host;
-        radioIconEl.textContent = radioPlaying ? "pause" : "play_arrow";
-        radioLabelEl.textContent = radioPlaying ? "EN DIRECTO" : "ESCUCHAR AHORA";
-        radioToggleEl.classList.toggle("bg-secondary-container", !radioPlaying);
-        radioToggleEl.classList.toggle("text-on-secondary", !radioPlaying);
-        radioToggleEl.classList.toggle("bg-transparent", radioPlaying);
-        radioToggleEl.classList.toggle("text-secondary-container", radioPlaying);
+    let showsByDay = {};
+    let selectedDay = JS_DAY_TO_ENUM[new Date().getDay()];
+    let audioEl = null;
+    let playing = false;
+    let currentTrackId = null;
+    let pollTimer = null;
+
+    function renderDayTabs() {
+        dayTabsEl.innerHTML = WEEKDAYS.map(([value, label]) => `
+            <button type="button" data-day="${value}"
+                class="px-3 py-1.5 font-label-mono text-[11px] uppercase tracking-[0.08em] whitespace-nowrap transition-colors ${value === selectedDay ? "bg-secondary-container text-on-secondary" : "text-on-surface-variant hover:text-secondary"}">
+                ${label}
+            </button>`).join("");
+        dayTabsEl.querySelectorAll("[data-day]").forEach((btn) =>
+            btn.addEventListener("click", () => {
+                selectedDay = btn.dataset.day;
+                renderDayTabs();
+                renderScheduleList();
+            }));
     }
 
-    radioToggleEl.addEventListener("click", () => {
-        radioPlaying = !radioPlaying;
-        renderRadio();
+    function renderScheduleList() {
+        const shows = (showsByDay[selectedDay] || []).slice().sort((a, b) => a.startTime.localeCompare(b.startTime));
+        if (!shows.length) {
+            scheduleListEl.innerHTML = `<div class="px-6 py-8 font-label-mono text-[12px] text-on-surface-variant uppercase text-center">Sin franjas este día</div>`;
+            return;
+        }
+        scheduleListEl.innerHTML = shows.map((s) => `
+            <div class="flex gap-[18px] px-6 py-[18px] items-baseline border-b border-[#20201f] hover:bg-[#161615] transition-colors last:border-b-0">
+                <div class="font-label-mono text-[11px] text-secondary-container w-14 flex-shrink-0">${s.startTime}</div>
+                <div>
+                    <div class="font-headline-lg font-semibold uppercase text-[15px] text-on-surface">${s.title}</div>
+                    <div class="font-label-mono text-[10px] text-outline tracking-[0.06em] mt-1">${s.host}</div>
+                </div>
+            </div>`).join("");
+    }
+
+    function renderOnAir(show, track) {
+        radioTitleEl.textContent = show ? show.title : "SIN EMISIÓN";
+        radioHostEl.textContent = show ? show.host : "Vuelve pronto";
+        radioToggleEl.disabled = !track;
+        radioToggleEl.classList.toggle("opacity-40", !track);
+        radioToggleEl.classList.toggle("cursor-not-allowed", !track);
+    }
+
+    function renderToggleButton() {
+        radioIconEl.textContent = playing ? "pause" : "play_arrow";
+        radioLabelEl.textContent = playing ? "EN DIRECTO" : "ESCUCHAR AHORA";
+        radioToggleEl.classList.toggle("bg-secondary-container", !playing);
+        radioToggleEl.classList.toggle("text-on-secondary", !playing);
+        radioToggleEl.classList.toggle("bg-transparent", playing);
+        radioToggleEl.classList.toggle("text-secondary-container", playing);
+    }
+
+    async function fetchSchedule() {
+        const { shows } = await ntApi("/radio/schedule");
+        showsByDay = {};
+        for (const s of shows) (showsByDay[s.dayOfWeek] ||= []).push(s);
+        renderDayTabs();
+        renderScheduleList();
+    }
+
+    async function fetchNowPlaying() {
+        return ntApi("/radio/now");
+    }
+
+    // Sincroniza el <audio> con lo que debería sonar ahora mismo. Si cambió de
+    // pista (cambio de show o fin de playlist), salta al nuevo audio/offset;
+    // si sigue siendo la misma pista, no la toca (evita cortes audibles).
+    async function syncNowPlaying() {
+        const { show, track, offsetSeconds } = await fetchNowPlaying();
+        renderOnAir(show, track);
+        if (!playing || !track) return;
+
+        if (track.id !== currentTrackId) {
+            currentTrackId = track.id;
+            audioEl.src = track.audioUrl;
+            audioEl.currentTime = offsetSeconds;
+            await audioEl.play().catch(() => {});
+        }
+    }
+
+    radioToggleEl.addEventListener("click", async () => {
+        if (!audioEl) {
+            audioEl = new Audio();
+            audioEl.addEventListener("ended", syncNowPlaying);
+        }
+        if (playing) {
+            playing = false;
+            audioEl.pause();
+            clearInterval(pollTimer);
+            renderToggleButton();
+            return;
+        }
+        try {
+            const { show, track, offsetSeconds } = await fetchNowPlaying();
+            renderOnAir(show, track);
+            if (!track) return;
+            currentTrackId = track.id;
+            audioEl.src = track.audioUrl;
+            audioEl.currentTime = offsetSeconds;
+            await audioEl.play();
+            playing = true;
+            renderToggleButton();
+            pollTimer = setInterval(syncNowPlaying, 30000);
+        } catch (err) {
+            ntToast("No se pudo iniciar la radio", true);
+        }
     });
+
+    (async () => {
+        try {
+            await fetchSchedule();
+            const { show, track } = await fetchNowPlaying();
+            renderOnAir(show, track);
+        } catch (err) {
+            renderOnAir(null, null);
+        }
+        renderToggleButton();
+    })();
 </script>
 </body>
 </html>

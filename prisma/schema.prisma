@@ -91,6 +91,50 @@ model Session {
 }
 
 // ----------------------------------------------------------------------------
+// 2c. N-TY RADIO (parrilla semanal + playlist por franja)
+// ----------------------------------------------------------------------------
+
+enum Weekday {
+  LUNES
+  MARTES
+  MIERCOLES
+  JUEVES
+  VIERNES
+  SABADO
+  DOMINGO
+}
+
+model RadioShow {
+  id        String   @id @default(cuid())
+  title     String // "BLOQUE CERO"
+  host      String // texto libre: no todo host está en el roster de Artist
+  dayOfWeek Weekday
+  startTime String // "HH:mm" 24h, validado por regex en el schema zod
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tracks RadioTrack[]
+
+  @@index([dayOfWeek, startTime])
+}
+
+model RadioTrack {
+  id              String   @id @default(cuid())
+  radioShowId     String
+  title           String
+  artist          String
+  audioUrl        String // Cloudinary (subida) o URL externa pegada
+  durationSeconds Int // necesario para calcular el "ahora suena" sincronizado
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  radioShow RadioShow @relation(fields: [radioShowId], references: [id], onDelete: Cascade)
+
+  @@index([radioShowId, sortOrder])
+}
+
+// ----------------------------------------------------------------------------
 // 3. EVENTOS (con line-up de artistas invitados)
 // ----------------------------------------------------------------------------
 

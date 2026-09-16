@@ -43,3 +43,24 @@ export async function uploadImage(buffer: Buffer, folder = "nottoday"): Promise<
     stream.end(buffer);
   });
 }
+
+/**
+ * Sube un buffer de audio (pista de N-TY Radio) a Cloudinary. Cloudinary aloja
+ * el audio bajo resource_type "video" (no tiene un tipo "audio" propio).
+ */
+export async function uploadAudio(buffer: Buffer, folder = "nottoday/radio"): Promise<string> {
+  ensureConfigured();
+
+  return new Promise<string>((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder, resource_type: "video" },
+      (error, result) => {
+        if (error || !result) {
+          return reject(new AppError("No se pudo subir el audio", 502, error?.message));
+        }
+        resolve(result.secure_url);
+      }
+    );
+    stream.end(buffer);
+  });
+}
