@@ -69,7 +69,7 @@ const NTChrome = (() => {
     <div id="nt-nav-wrap" style="position:fixed;left:0;right:0;z-index:600;display:flex;justify-content:center;pointer-events:none;">
       <nav id="nt-nav-bar" style="pointer-events:auto;display:flex;align-items:center;gap:14px;background:rgba(9,9,9,0.85);border:1px solid #2a2a2a;border-bottom:1px solid #3c3c3c;backdrop-filter:blur(14px);box-shadow:0 18px 50px rgba(0,0,0,0.45);transform:translateY(220%);opacity:0;transition:transform 1.15s cubic-bezier(.16,1,.3,1), opacity .9s ease, background .4s ease;">
         <a href="index.html" class="flex items-center" aria-label="NOT TODAY" style="text-decoration:none;">
-          <img src="favicon.jpg" alt="NOT TODAY" style="height:32px;width:32px;border-radius:6px;display:block;" />
+          <img src="logo_removebg.png" alt="NOT TODAY" style="height:34px;width:auto;display:block;" />
         </a>
         <div class="hidden md:block" style="width:1px;height:20px;background:#444748;"></div>
         <div id="nt-nav-items" class="hidden md:flex items-stretch">${items}</div>
