@@ -45,8 +45,21 @@
     <div id="checkout-view" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-gutter items-start">
         <!-- Columna izquierda: datos -->
         <form id="checkout-form" class="lg:col-span-7 space-y-stack-lg" novalidate>
-            <!-- Dirección de envío -->
+            <!-- Datos del comprador -->
             <section class="nt-card">
+                <h2 class="font-headline-lg text-headline-lg-mobile text-on-surface uppercase mb-stack-md flex items-center gap-2">
+                    <span class="material-symbols-outlined text-secondary">person</span> Tus datos
+                </h2>
+                <div class="space-y-stack-md">
+                    <div><label class="nt-label" for="checkout-email">Email</label>
+                        <input type="email" id="checkout-email" class="nt-input" placeholder="tu@email.com" required autocomplete="email"/></div>
+                    <div><label class="nt-label" for="ship-country">País</label>
+                        <select id="ship-country" class="nt-input" required autocomplete="country"></select></div>
+                </div>
+            </section>
+
+            <!-- Dirección de envío (solo si el pedido lleva productos físicos) -->
+            <section class="nt-card" id="ship-section">
                 <h2 class="font-headline-lg text-headline-lg-mobile text-on-surface uppercase mb-stack-md flex items-center gap-2">
                     <span class="material-symbols-outlined text-secondary">local_shipping</span> Dirección de envío
                 </h2>
@@ -61,14 +74,8 @@
                         <div><label class="nt-label" for="ship-postal">Código postal</label>
                             <input type="text" id="ship-postal" class="nt-input" required autocomplete="postal-code"/></div>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-stack-md">
-                        <div><label class="nt-label" for="ship-country">País</label>
-                            <input type="text" id="ship-country" class="nt-input" value="España" required autocomplete="country-name"/></div>
-                        <div><label class="nt-label" for="ship-phone">Teléfono (opcional)</label>
-                            <input type="tel" id="ship-phone" class="nt-input" autocomplete="tel"/></div>
-                    </div>
-                    <div><label class="nt-label" for="checkout-email">Email</label>
-                        <input type="email" id="checkout-email" class="nt-input" placeholder="tu@email.com" required autocomplete="email"/></div>
+                    <div><label class="nt-label" for="ship-phone">Teléfono (opcional)</label>
+                        <input type="tel" id="ship-phone" class="nt-input" autocomplete="tel"/></div>
                 </div>
             </section>
 
@@ -80,8 +87,8 @@
                 <div id="payment-methods" class="grid grid-cols-1 sm:grid-cols-3 gap-stack-md"></div>
             </section>
 
-            <!-- Método de envío -->
-            <section class="nt-card">
+            <!-- Método de envío (depende del país y del peso del pedido) -->
+            <section class="nt-card" id="shipping-section">
                 <h2 class="font-headline-lg text-headline-lg-mobile text-on-surface uppercase mb-stack-md flex items-center gap-2">
                     <span class="material-symbols-outlined text-secondary">inventory_2</span> Método de envío
                 </h2>

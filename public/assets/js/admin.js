@@ -340,6 +340,7 @@ const VARIANT_PRESETS = {
   "Calzado 36–46": ["36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46"],
   "Talla única": ["Única"],
 };
+const TAX_RATES = [["21", "21 % (general)"], ["10", "10 % (reducido)"], ["4", "4 % (superreducido)"], ["0", "0 % (exento)"]];
 
 // Categorías para el selector del producto.
 async function categoryOptions() {
@@ -372,7 +373,7 @@ const Sections = {
             <span class="font-bold uppercase">${ntEscapeHtml(p.name)}</span>
             <span class="font-label-mono text-[11px] text-on-surface-variant block">${p.category ? ntEscapeHtml(p.category.name) : "Sin categoría"} · /${ntEscapeHtml(p.slug)}</span>
           </td>
-          <td>${ntFormatMoney(p.price)}</td>
+          <td>${ntFormatMoney(p.price)}<span class="font-label-mono text-[11px] text-on-surface-variant block">IVA ${Number(p.taxRate)} %</span></td>
           <td>${badge(
             { DROP_EXCLUSIVO: "DROP", TICKET_EVENTO: "TICKET" }[p.productType] || "TIENDA",
             { DROP_EXCLUSIVO: "ok", TICKET_EVENTO: "ok" }[p.productType] || "muted"
@@ -407,7 +408,11 @@ const Sections = {
         ${fText("name", "Nombre", p?.name, { required: true })}
         ${fSelect("categoryId", "Categoría", [["", "— Sin categoría —"], ...categories], p?.categoryId || "")}
         ${fTextarea("description", "Descripción", p?.description)}
-        ${fText("price", "Precio (EUR)", p?.price, { type: "number", step: "0.01", min: 0, required: true })}
+        <div class="grid grid-cols-3 gap-3">
+          ${fText("price", "Precio (EUR, IVA incl.)", p?.price, { type: "number", step: "0.01", min: 0, required: true })}
+          ${fSelect("taxRate", "IVA", TAX_RATES, String(Number(p?.taxRate ?? 21)))}
+          ${fText("weightGrams", "Peso envío (g)", p?.weightGrams ?? 0, { type: "number", step: "1", min: 0 })}
+        </div>
         ${ImageField.render("prod-images", "Fotos del producto", p?.images || [], true)}
         ${fSelect("productType", "Tipo", [["TIENDA_GENERAL", "Tienda general"], ["DROP_EXCLUSIVO", "Drop exclusivo"], ["TICKET_EVENTO", "Ticket de evento"]], p?.productType || "TIENDA_GENERAL")}
         ${fSelect("status", "Estado", ["BORRADOR", "ACTIVO", "AGOTADO"], p?.status || "BORRADOR")}
@@ -460,6 +465,8 @@ const Sections = {
           name: v.name,
           description: v.description,
           price: parseFloat(v.price),
+          taxRate: parseFloat(v.taxRate),
+          weightGrams: parseInt(v.weightGrams || "0", 10),
           productType: v.productType,
           status: v.status,
           eventId: v.productType === "TICKET_EVENTO" ? v.eventId : undefined,
@@ -929,7 +936,8 @@ const Sections = {
               <summary class="cursor-pointer font-label-mono text-[12px] text-secondary uppercase">Detalle</summary>
               <div class="mt-2 text-[13px] text-on-surface-variant space-y-1">
                 <p class="font-bold text-on-surface">${(o.items || []).map((i) => `${i.quantity}x ${ntEscapeHtml(i.product.name)}${i.product.productType === "TICKET_EVENTO" || !i.variantLabel ? "" : ` (${ntEscapeHtml(i.variantLabel)})`}`).join("<br/>")}</p>
-                <p>${ntEscapeHtml(o.shippingName || "")}<br/>${ntEscapeHtml(o.shippingAddress || "")}<br/>${ntEscapeHtml([o.shippingPostalCode, o.shippingCity, o.shippingCountry].filter(Boolean).join(", "))}${o.shippingPhone ? `<br/>Tel: ${ntEscapeHtml(o.shippingPhone)}` : ""}</p>
+                <p>${ntEscapeHtml(o.shippingName || "")}<br/>${ntEscapeHtml(o.shippingAddress || "")}<br/>${ntEscapeHtml([o.shippingPostalCode, o.shippingCity, ntCountryName(o.shippingCountry)].filter(Boolean).join(", "))}${o.shippingPhone ? `<br/>Tel: ${ntEscapeHtml(o.shippingPhone)}` : ""}</p>
+                <p>IVA: ${o.taxExempt ? "exento (exportación)" : ntFormatMoney(o.taxAmount)}</p>
                 ${o.discountCode ? `<p>Cupón: <span class="text-secondary">${ntEscapeHtml(o.discountCode.code)}</span></p>` : ""}
                 ${o._count && o._count.tickets ? `<p>Entradas emitidas: <span class="text-secondary">${o._count.tickets}</span></p>` : ""}
                 ${o.refundedAt ? `<p>Reembolso: ${fmtShortDate(o.refundedAt)}${o.stripeRefundId ? ` · ${ntEscapeHtml(o.stripeRefundId)}` : ""}</p>` : ""}
@@ -1210,51 +1218,154 @@ const Sections = {
     },
   },
 
-  // ---------------- ENVÍOS ----------------
+  // ---------------- ENVÍOS (zonas por país + métodos con tarifa por peso) ----------------
   shipping: {
     title: "Envíos",
     icon: "local_shipping",
     items: [],
+    zones: [],
     async load() {
-      actionsHost().innerHTML = newButton();
+      actionsHost().innerHTML = `
+        <button id="btn-new-zone" class="font-label-mono text-[12px] uppercase border border-outline-variant/30 px-4 py-2 text-on-surface-variant hover:border-secondary hover:text-secondary transition-colors">+ Zona</button>
+        ${newButton("+ Método")}`;
       document.getElementById("btn-new").addEventListener("click", () => this.form());
+      document.getElementById("btn-new-zone").addEventListener("click", () => this.zoneForm());
       host().innerHTML = `<div class="nt-skeleton h-40"></div>`;
-      const { methods } = await adminApi("/admin/shipping");
+      const { methods, zones } = await adminApi("/admin/shipping");
       this.items = methods;
+      this.zones = zones;
+
+      const zoneRows = zones.map((z) => `
+        <tr>
+          <td class="font-bold uppercase">${ntEscapeHtml(z.name)}</td>
+          <td class="font-label-mono text-[12px] text-on-surface-variant max-w-[360px]">${z.restOfWorld ? "Resto del mundo" : z.countries.map((c) => ntEscapeHtml(ntCountryName(c))).join(", ") || "—"}</td>
+          <td>${z.taxExempt ? badge("SIN IVA", "warn") : badge("IVA", "muted")}</td>
+          <td class="font-label-mono text-[12px]">${z._count.methods}</td>
+          <td class="whitespace-nowrap text-right">
+            <button class="adm-icon-btn" data-zone-edit="${z.id}" title="Editar"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+            <button class="adm-icon-btn danger" data-zone-del="${z.id}" title="Eliminar"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+          </td>
+        </tr>`);
+      const weightInfo = (m) => [
+        Number(m.pricePerExtraKg) > 0 ? `+${ntFormatMoney(m.pricePerExtraKg)}/kg extra` : "",
+        m.maxWeightGrams ? `máx. ${m.maxWeightGrams / 1000} kg` : "",
+        m.freeOverAmount !== null ? `gratis desde ${ntFormatMoney(m.freeOverAmount)}` : "",
+      ].filter(Boolean).join(" · ") || "—";
       const rows = methods.map((m) => `
         <tr>
-          <td class="font-bold uppercase">${ntEscapeHtml(m.name)}</td>
-          <td class="text-on-surface-variant">${ntEscapeHtml(m.description || "—")}</td>
+          <td class="font-bold uppercase">${ntEscapeHtml(m.name)}<span class="font-body-md normal-case font-normal text-[12px] text-on-surface-variant block">${ntEscapeHtml(m.description || "")}</span></td>
+          <td class="font-label-mono text-[12px]">${m.zone ? ntEscapeHtml(m.zone.name) : "Cualquier país"}</td>
           <td class="font-label-mono">${Number(m.price) === 0 ? "Gratis" : ntFormatMoney(m.price)}</td>
+          <td class="font-label-mono text-[12px] text-on-surface-variant">${weightInfo(m)}</td>
           <td>${badge(m.active ? "ACTIVO" : "INACTIVO", m.active ? "ok" : "muted")}</td>
-          <td class="font-label-mono text-[12px]">${m.sortOrder}</td>
           ${rowActions(m.id)}
         </tr>`);
-      host().innerHTML = renderTable(["Nombre", "Descripción", "Coste", "Estado", "Orden", ""], rows,
-        "Sin métodos de envío. Crea el primero para habilitar el checkout con envío.");
+
+      host().innerHTML = `
+        <h3 class="font-label-mono text-[12px] text-secondary uppercase mb-2">Zonas (países)</h3>
+        ${renderTable(["Zona", "Países", "IVA", "Métodos", ""], zoneRows,
+          "Sin zonas: todos los métodos valen para cualquier país. Crea zonas (España, UE, resto del mundo) para cobrar distinto según destino.")}
+        <h3 class="font-label-mono text-[12px] text-secondary uppercase mt-8 mb-2">Métodos de envío</h3>
+        ${renderTable(["Nombre", "Zona", "Base (1er kg)", "Peso / gratis", "Estado", ""], rows,
+          "Sin métodos de envío. Crea el primero para habilitar el checkout con envío.")}`;
+
       wireRowActions(this.items, (m) => this.form(m), (m) =>
         submitAndReload(adminApi(`/admin/shipping/${m.id}`, { method: "DELETE" }), "shipping", "Método eliminado"));
+      host().querySelectorAll("[data-zone-edit]").forEach((b) =>
+        b.addEventListener("click", () => this.zoneForm(this.zones.find((z) => z.id === b.dataset.zoneEdit))));
+      host().querySelectorAll("[data-zone-del]").forEach((b) =>
+        b.addEventListener("click", () => {
+          const z = this.zones.find((x) => x.id === b.dataset.zoneDel);
+          if (confirm(`¿Eliminar la zona "${z.name}"?`)) {
+            submitAndReload(adminApi(`/admin/shipping/zones/${z.id}`, { method: "DELETE" }), "shipping", "Zona eliminada");
+          }
+        }));
     },
     form(m = null) {
+      const zoneOpts = [["", "Cualquier país"], ...this.zones.map((z) => [z.id, z.name])];
       const html = `
         ${fText("name", "Nombre", m?.name, { required: true, placeholder: "Estándar 48/72h" })}
         ${fText("description", "Descripción", m?.description, { placeholder: "Península. Entrega en 2-3 días laborables" })}
-        ${fText("price", "Coste (EUR)", m?.price ?? "", { type: "number", step: "0.01", min: 0, required: true })}
+        ${fSelect("zoneId", "Zona", zoneOpts, m?.zoneId || "")}
+        <div class="grid grid-cols-2 gap-3">
+          ${fText("price", "Precio base, 1er kg (EUR)", m?.price ?? "", { type: "number", step: "0.01", min: 0, required: true })}
+          ${fText("pricePerExtraKg", "Por kg extra (EUR)", m?.pricePerExtraKg ?? 0, { type: "number", step: "0.01", min: 0 })}
+          ${fText("maxWeightKg", "Peso máximo (kg, vacío = sin límite)", m?.maxWeightGrams ? m.maxWeightGrams / 1000 : "", { type: "number", step: "0.1", min: 0 })}
+          ${fText("freeOverAmount", "Gratis desde (EUR, vacío = nunca)", m?.freeOverAmount ?? "", { type: "number", step: "0.01", min: 0 })}
+        </div>
         ${fSelect("active", "Visible en el checkout", [["true", "Sí"], ["false", "No"]], String(m?.active ?? true))}
-        ${fText("sortOrder", "Orden (menor = primero)", m?.sortOrder ?? 0, { type: "number", min: 0 })}`;
+        ${fText("sortOrder", "Orden (menor = primero)", m?.sortOrder ?? 0, { type: "number", min: 0 })}
+        <p class="font-label-mono text-[11px] text-on-surface-variant uppercase">Precios con IVA incluido. El peso sale de la suma de los productos del pedido.</p>`;
       Drawer.open(m ? "Editar método de envío" : "Nuevo método de envío", html, () => {
         const v = drawerValues();
         const payload = clean({
           name: v.name,
           description: v.description,
           price: parseFloat(v.price),
+          pricePerExtraKg: parseFloat(v.pricePerExtraKg || "0"),
           sortOrder: parseInt(v.sortOrder || "0", 10),
         });
+        payload.zoneId = v.zoneId || null;
+        payload.maxWeightGrams = v.maxWeightKg ? Math.round(parseFloat(v.maxWeightKg) * 1000) : null;
+        payload.freeOverAmount = v.freeOverAmount !== "" ? parseFloat(v.freeOverAmount) : null;
         payload.active = v.active === "true";
         return submitAndReload(
           m ? adminApi(`/admin/shipping/${m.id}`, { method: "PUT", body: JSON.stringify(payload) })
             : adminApi("/admin/shipping", { method: "POST", body: JSON.stringify(payload) }),
           "shipping", m ? "Método actualizado" : "Método creado");
+      });
+    },
+    zoneForm(z = null) {
+      const selected = new Set(z?.countries || []);
+      const EU = ["AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "MT", "NL", "PL", "PT", "RO", "SE", "SI", "SK"];
+      const html = `
+        ${fText("name", "Nombre", z?.name, { required: true, placeholder: "España peninsular / UE / Resto del mundo" })}
+        <label class="inline-flex items-center gap-2 font-label-mono text-[12px] uppercase text-on-surface-variant">
+          <input type="checkbox" id="zone-row" ${z?.restOfWorld ? "checked" : ""}/> Resto del mundo (países que no estén en otra zona)
+        </label>
+        <label class="inline-flex items-start gap-2 font-label-mono text-[12px] uppercase text-on-surface-variant">
+          <input type="checkbox" id="zone-exempt" ${z?.taxExempt ? "checked" : ""}/>
+          <span>Exportación: productos físicos sin IVA<br/><span class="normal-case">Solo para destinos fuera de la UE. Las entradas siguen llevando IVA.</span></span>
+        </label>
+        ${fText("sortOrder", "Orden", z?.sortOrder ?? 0, { type: "number", min: 0 })}
+        <div id="zone-countries-wrap" class="${z?.restOfWorld ? "hidden" : ""}">
+          <label class="nt-label">Países</label>
+          <div class="flex gap-2 my-2">
+            <button type="button" id="zone-eu" class="font-label-mono text-[11px] uppercase border border-outline-variant/30 px-2 py-1 text-on-surface-variant hover:border-secondary hover:text-secondary">+ UE-27</button>
+            <input id="zone-filter" class="nt-input !py-1" placeholder="Filtrar países"/>
+          </div>
+          <div id="zone-countries" class="max-h-64 overflow-y-auto border border-outline-variant/20 p-2 grid grid-cols-2 gap-1">
+            ${ntCountryOptions().map(([code, name]) => `
+              <label class="flex items-center gap-2 text-[13px] text-on-surface-variant" data-country-label="${ntEscapeHtml(name.toLowerCase())}">
+                <input type="checkbox" value="${code}" ${selected.has(code) ? "checked" : ""}/> ${ntEscapeHtml(name)}
+              </label>`).join("")}
+          </div>
+        </div>`;
+      Drawer.open(z ? "Editar zona" : "Nueva zona", html, () => {
+        const v = drawerValues();
+        const restOfWorld = document.getElementById("zone-row").checked;
+        const countries = restOfWorld ? [] : [...document.querySelectorAll("#zone-countries input:checked")].map((i) => i.value);
+        if (!restOfWorld && !countries.length) { ntToast("Elige al menos un país (o marca resto del mundo)", true); return; }
+        const payload = {
+          name: v.name,
+          restOfWorld,
+          countries,
+          taxExempt: document.getElementById("zone-exempt").checked,
+          sortOrder: parseInt(v.sortOrder || "0", 10),
+        };
+        return submitAndReload(
+          z ? adminApi(`/admin/shipping/zones/${z.id}`, { method: "PUT", body: JSON.stringify(payload) })
+            : adminApi("/admin/shipping/zones", { method: "POST", body: JSON.stringify(payload) }),
+          "shipping", z ? "Zona actualizada" : "Zona creada");
+      });
+      document.getElementById("zone-row").addEventListener("change", (e) =>
+        document.getElementById("zone-countries-wrap").classList.toggle("hidden", e.target.checked));
+      document.getElementById("zone-eu").addEventListener("click", () =>
+        document.querySelectorAll("#zone-countries input").forEach((i) => { if (EU.includes(i.value)) i.checked = true; }));
+      document.getElementById("zone-filter").addEventListener("input", (e) => {
+        const q = e.target.value.trim().toLowerCase();
+        document.querySelectorAll("[data-country-label]").forEach((l) =>
+          l.classList.toggle("hidden", !!q && !l.dataset.countryLabel.includes(q)));
       });
     },
   },

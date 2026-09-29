@@ -3,6 +3,7 @@ import {
   addItemHandler,
   applyDiscountHandler,
   getCartHandler,
+  quoteHandler,
   removeItemHandler,
   updateItemHandler,
 } from "./cart.controller";
@@ -13,4 +14,5 @@ export async function cartRoutes(fastify: FastifyInstance) {
   fastify.patch("/:cartId/items/:productVariantId", updateItemHandler);
   fastify.delete("/:cartId/items/:productVariantId", removeItemHandler);
   fastify.post("/discount", applyDiscountHandler);
+  fastify.post("/:cartId/quote", quoteHandler);
 }

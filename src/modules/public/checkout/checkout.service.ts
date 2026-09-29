@@ -1,8 +1,8 @@
-import { Prisma, CartStatus, OrderStatus } from "@prisma/client";
+import { Prisma, CartStatus, OrderStatus, ProductType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { env } from "@/config/env";
 import { AppError } from "@/utils/AppError";
-import { validateAndPriceDiscount } from "@/services/discount.service";
+import { quoteCart } from "@/services/pricing.service";
 import { variantLabel } from "@/utils/slug";
 import { assertDropPurchasable } from "@/services/drop.service";
 import { createPaymentIntent, toStripeAmount } from "@/services/stripe.service";
@@ -33,8 +33,9 @@ interface LockedVariantRow {
  *   3. Las filas se bloquean siempre en el mismo orden (ID ascendente) entre
  *      todas las transacciones, para eliminar la posibilidad de deadlocks
  *      cruzados entre dos checkouts con carritos que comparten variantes.
- *   4. El descuento se revalida dentro de la misma transacción con los datos
- *      reales del carrito, nunca confiando en lo que ya se validó al añadirlo.
+ *   4. El importe se calcula con el motor de precios (pricing.service) dentro
+ *      de la misma transacción: IVA, cupón revalidado en caliente y envío
+ *      según país y peso. Nunca se confía en lo que calculó el frontend.
  */
 export async function checkout(input: CheckoutInput) {
   const cart = await prisma.cart.findUnique({
@@ -58,18 +59,11 @@ export async function checkout(input: CheckoutInput) {
     }
   }
 
-  const subtotal = cart.items.reduce(
-    (sum, item) => sum + Number(item.product.price) * item.quantity,
-    0
-  );
-
-  // El método de envío lo define el admin; si lo desactivó, no se puede comprar con él.
-  const shippingMethod = await prisma.shippingMethod.findUnique({
-    where: { id: input.shippingMethodId },
-  });
-  if (!shippingMethod || !shippingMethod.active) {
-    throw new AppError("El método de envío seleccionado no está disponible", 422);
+  const requiresShipping = cart.items.some((i) => i.product.productType !== ProductType.TICKET_EVENTO);
+  if (requiresShipping && !input.shippingAddress) {
+    throw new AppError("Indica la dirección de envío", 422);
   }
+  const country = input.shippingAddress?.country ?? input.billingCountry ?? null;
 
   const result = await prisma.$transaction(async (tx) => {
     // --- 1. Row locking: bloqueamos todas las variantes implicadas, en orden estable ---
@@ -87,18 +81,12 @@ export async function checkout(input: CheckoutInput) {
       }
     }
 
-    // --- 3. Descuento (si el carrito tiene uno aplicado), revalidado en caliente ---
-    let discountAmount = 0;
-    let discountId: string | null = null;
-    let freeShipping = false;
-    if (cart.discountCode) {
-      const evaluation = await validateAndPriceDiscount(cart.discountCode.code, subtotal, tx);
-      discountAmount = evaluation.discountAmount;
-      discountId = evaluation.discountId;
-      freeShipping = evaluation.freeShipping;
-    }
-    const shippingCost = freeShipping ? 0 : Number(shippingMethod.price);
-    const total = Math.max(subtotal - discountAmount, 0) + shippingCost;
+    // --- 3. Precio definitivo: IVA, cupón (revalidado en caliente) y envío por país/peso ---
+    const quote = await quoteCart(tx, cart, {
+      country,
+      shippingMethodId: input.shippingMethodId,
+      strict: true,
+    });
 
     // --- 4. Reserva stock (no lo descuenta todavía) y crea el pedido + sus líneas ---
     // Incrementamos stockReserved en vez de descontar stockAvailable: la unidad
@@ -112,33 +100,38 @@ export async function checkout(input: CheckoutInput) {
       });
     }
 
+    const address = input.shippingAddress;
     const order = await tx.order.create({
       data: {
         email: input.email,
-        subtotal,
-        discountAmount,
-        total,
-        discountCodeId: discountId,
+        subtotal: quote.subtotal,
+        discountAmount: quote.discount?.amount ?? 0,
+        total: quote.total,
+        discountCodeId: quote.discountId,
         status: OrderStatus.PENDIENTE,
+        taxAmount: quote.taxAmount,
+        taxExempt: quote.taxExempt,
+        shippingTaxRate: quote.shippingTaxRate,
         // Snapshot del envío: si el admin luego edita o borra el método,
         // el pedido conserva el nombre y el coste que realmente se cobraron.
-        shippingMethodId: shippingMethod.id,
-        shippingMethodName: shippingMethod.name,
-        shippingCost,
-        shippingName: input.shippingAddress.name,
-        shippingAddress: input.shippingAddress.address,
-        shippingCity: input.shippingAddress.city,
-        shippingPostalCode: input.shippingAddress.postalCode,
-        shippingCountry: input.shippingAddress.country,
-        shippingPhone: input.shippingAddress.phone,
+        shippingMethodId: quote.shippingMethod?.id ?? null,
+        shippingMethodName: quote.shippingMethod?.name ?? null,
+        shippingCost: quote.shippingCost,
+        shippingName: address?.name,
+        shippingAddress: address?.address,
+        shippingCity: address?.city,
+        shippingPostalCode: address?.postalCode,
+        shippingCountry: country,
+        shippingPhone: address?.phone,
         items: {
-          create: cart.items.map((item) => ({
-            productId: item.productId,
-            productVariantId: item.productVariantId,
-            quantity: item.quantity,
-            unitPrice: item.product.price,
-            // Snapshot de la variante: el pedido no cambia si luego se renombra.
-            variantLabel: variantLabel(item.productVariant),
+          create: quote.lines.map((line) => ({
+            productId: line.productId,
+            productVariantId: line.productVariantId,
+            quantity: line.quantity,
+            unitPrice: line.unitPrice,
+            taxRate: line.taxRate,
+            discountAmount: line.discountAmount,
+            variantLabel: line.variantLabel,
           })),
         },
       },
@@ -147,7 +140,7 @@ export async function checkout(input: CheckoutInput) {
 
     await tx.cart.update({ where: { id: cart.id }, data: { status: CartStatus.CONVERTIDO } });
 
-    return { order, total };
+    return { order, total: quote.total };
   });
 
   // --- 5. Modo simulación (solo dev): saltamos Stripe por completo ---

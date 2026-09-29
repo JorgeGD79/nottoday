@@ -33,6 +33,8 @@ export async function trackOrderHandler(request: FastifyRequest, reply: FastifyR
       discountAmount: true,
       shippingCost: true,
       total: true,
+      taxAmount: true,
+      taxExempt: true,
       shippingMethodName: true,
       shippingCity: true,
       shippingCountry: true,

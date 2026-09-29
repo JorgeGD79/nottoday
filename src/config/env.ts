@@ -61,6 +61,9 @@ const envSchema = z
     // Buzón que recibe los avisos internos (bookings nuevos) y las respuestas.
     EMAIL_REPLY_TO: z.string().email().optional(),
 
+    // IVA aplicado al envío (los productos llevan el suyo propio).
+    SHIPPING_TAX_RATE: z.coerce.number().min(0).max(100).default(21),
+
     // Solo desarrollo/pruebas: salta la llamada a Stripe en el checkout y confirma
     // el pedido como pagado directamente, para poder simular la web de punta a punta
     // sin claves de Stripe reales. PROHIBIDO en producción (ver superRefine).

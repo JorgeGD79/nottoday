@@ -21,7 +21,10 @@ const PAYMENT_METHODS = [
 
 const Checkout = {
   cart: null,
-  shippingMethods: [],
+  // Presupuesto del servidor (POST /api/cart/:id/quote): líneas, IVA, cupón,
+  // opciones de envío para el país y total. El navegador no calcula importes.
+  quote: null,
+  countries: { anyCountry: true, countries: [] },
   selectedShippingId: null,
   paymentMethod: "card",
 
@@ -29,34 +32,12 @@ const Checkout = {
     return localStorage.getItem(CO_CART_KEY);
   },
 
-  // ---------- Cálculo de totales (misma lógica que el panel del carrito) ----------
-
-  subtotal() {
-    if (!this.cart) return 0;
-    return this.cart.items.reduce((sum, i) => sum + Number(i.product.price) * i.quantity, 0);
+  country() {
+    return document.getElementById("ship-country").value || null;
   },
 
-  freeShipping() {
-    return !!(this.cart && this.cart.discountCode && this.cart.discountCode.type === "ENVIO_GRATIS");
-  },
-
-  discountAmount() {
-    const d = this.cart && this.cart.discountCode;
-    if (!d) return 0;
-    const subtotal = this.subtotal();
-    if (d.type === "PORCENTAJE") return (subtotal * Number(d.value)) / 100;
-    if (d.type === "MONTO_FIJO") return Math.min(Number(d.value), subtotal);
-    return 0; // ENVIO_GRATIS no altera el total de producto
-  },
-
-  shippingCost() {
-    if (this.freeShipping()) return 0;
-    const method = this.shippingMethods.find((m) => m.id === this.selectedShippingId);
-    return method ? Number(method.price) : 0;
-  },
-
-  total() {
-    return Math.max(this.subtotal() - this.discountAmount(), 0) + this.shippingCost();
+  requiresShipping() {
+    return !!(this.cart && this.cart.items.some((i) => i.product.productType !== "TICKET_EVENTO"));
   },
 
   // ---------- Carga inicial ----------
@@ -65,14 +46,13 @@ const Checkout = {
     const id = this.cartId();
     if (!id) return this.showEmpty();
     try {
-      const [{ cart }, shipping] = await Promise.all([
+      const [{ cart }, countries] = await Promise.all([
         ntApi(`/cart/${id}`),
-        ntApi("/shipping").catch(() => ({ methods: [] })),
+        ntApi("/shipping/countries").catch(() => ({ anyCountry: true, countries: [] })),
       ]);
       if (!cart || cart.status !== "ACTIVO" || cart.items.length === 0) return this.showEmpty();
       this.cart = cart;
-      this.shippingMethods = shipping.methods || [];
-      if (this.shippingMethods.length) this.selectedShippingId = this.shippingMethods[0].id;
+      this.countries = countries;
     } catch (err) {
       if (err.status === 404) localStorage.removeItem(CO_CART_KEY);
       return this.showEmpty();
@@ -80,16 +60,58 @@ const Checkout = {
 
     document.getElementById("loading-state").classList.add("hidden");
     document.getElementById("checkout-view").classList.remove("hidden");
+    this.renderCountries();
+    this.toggleShippingSections();
     this.renderPaymentMethods();
-    this.renderShippingOptions();
-    this.renderSummary();
     this.wire();
+    await this.refreshQuote();
   },
 
   showEmpty() {
     document.getElementById("loading-state").classList.add("hidden");
     document.getElementById("checkout-view").classList.add("hidden");
     document.getElementById("empty-state").classList.remove("hidden");
+  },
+
+  // Países del selector: los que tienen envío (o todos, si hay "resto del
+  // mundo"/métodos sin zona, o si el pedido es solo de entradas).
+  renderCountries() {
+    const select = document.getElementById("ship-country");
+    const all = !this.requiresShipping() || this.countries.anyCountry || !this.countries.countries.length;
+    const codes = all ? NT_COUNTRY_CODES : this.countries.countries;
+    const options = ntCountryOptions(codes);
+    const preferred = codes.includes("ES") ? "ES" : options[0] && options[0][0];
+    select.innerHTML = options
+      .map(([code, name]) => `<option value="${code}" ${code === preferred ? "selected" : ""}>${ntEscapeHtml(name)}</option>`)
+      .join("");
+  },
+
+  toggleShippingSections() {
+    const needs = this.requiresShipping();
+    document.getElementById("ship-section").classList.toggle("hidden", !needs);
+    document.getElementById("shipping-section").classList.toggle("hidden", !needs);
+    // Sin envío, la dirección no es obligatoria (el navegador no la valida).
+    document.querySelectorAll("#ship-section [required]").forEach((el) => { el.required = needs; });
+  },
+
+  async refreshQuote() {
+    try {
+      const { quote } = await ntApi(`/cart/${this.cartId()}/quote`, {
+        method: "POST",
+        body: JSON.stringify({ country: this.country() || undefined, shippingMethodId: this.selectedShippingId || undefined }),
+      });
+      this.quote = quote;
+      // Si el método elegido ya no vale para el nuevo país/peso, se elige el primero.
+      if (quote.requiresShipping && !quote.shippingMethod && quote.shippingOptions.length) {
+        this.selectedShippingId = quote.shippingOptions[0].id;
+        return this.refreshQuote();
+      }
+      if (!quote.shippingMethod) this.selectedShippingId = null;
+    } catch (err) {
+      ntToast(err.message, true);
+    }
+    this.renderShippingOptions();
+    this.renderSummary();
   },
 
   // ---------- Render ----------
@@ -115,12 +137,14 @@ const Checkout = {
 
   renderShippingOptions() {
     const box = document.getElementById("shipping-options");
-    if (!this.shippingMethods.length) {
-      box.innerHTML = `<p class="font-label-mono text-[12px] text-error uppercase">No hay métodos de envío disponibles. Contacta con la tienda.</p>`;
+    const q = this.quote;
+    if (!q || !q.requiresShipping) { box.innerHTML = ""; return; }
+    if (!q.shippingOptions.length) {
+      box.innerHTML = `<p class="font-label-mono text-[12px] text-error uppercase">No hacemos envíos a ${ntEscapeHtml(ntCountryName(q.country))} con este pedido. Prueba otro país o escríbenos.</p>`;
       return;
     }
-    const free = this.freeShipping();
-    box.innerHTML = this.shippingMethods
+    const kg = q.weightGrams > 0 ? ` · ${(q.weightGrams / 1000).toLocaleString("es-ES", { maximumFractionDigits: 2 })} kg` : "";
+    box.innerHTML = q.shippingOptions
       .map(
         (m) => `
         <label class="flex items-center justify-between gap-3 border ${m.id === this.selectedShippingId ? "border-secondary" : "border-outline-variant/20"} px-stack-md py-stack-sm cursor-pointer hover:border-secondary transition-colors">
@@ -132,66 +156,80 @@ const Checkout = {
               ${m.description ? `<span class="font-body-md text-[13px] text-on-surface-variant block truncate">${ntEscapeHtml(m.description)}</span>` : ""}
             </span>
           </span>
-          <span class="font-label-mono text-[13px] ${free ? "text-on-surface-variant line-through" : "text-secondary"} whitespace-nowrap">
-            ${Number(m.price) === 0 ? "Gratis" : ntFormatMoney(m.price)}
+          <span class="font-label-mono text-[13px] text-secondary whitespace-nowrap">
+            ${m.cost === 0 ? "Gratis" : ntFormatMoney(m.cost)}
           </span>
         </label>`
       )
-      .join("");
+      .join("") + `<p class="font-label-mono text-[10px] text-on-surface-variant uppercase tracking-wide">Envío a ${ntEscapeHtml(ntCountryName(q.country))}${kg}</p>`;
     box.querySelectorAll("input[name=shipping-method]").forEach((radio) =>
       radio.addEventListener("change", () => {
         this.selectedShippingId = radio.value;
-        this.renderShippingOptions();
-        this.renderSummary();
+        this.refreshQuote();
       })
     );
   },
 
   renderSummary() {
-    document.getElementById("order-items").innerHTML = this.cart.items
+    const q = this.quote;
+    const lines = q ? q.lines : [];
+    const imageFor = (productVariantId) => {
+      const item = this.cart.items.find((i) => i.productVariantId === productVariantId);
+      return item ? ntProductImage(item.product) : ntPlaceholderImage("NT");
+    };
+    document.getElementById("order-items").innerHTML = lines
       .map(
-        (item) => `
+        (line) => `
         <div class="flex gap-stack-sm items-center">
           <div class="w-14 h-16 bg-surface-container flex-shrink-0 border border-outline-variant/20 overflow-hidden">
-            <img class="w-full h-full object-cover mix-blend-luminosity" src="${ntProductImage(item.product)}" alt="${ntEscapeHtml(item.product.name)}"/>
+            <img class="w-full h-full object-cover mix-blend-luminosity" src="${imageFor(line.productVariantId)}" alt="${ntEscapeHtml(line.name)}"/>
           </div>
           <div class="flex-grow min-w-0">
-            <p class="font-label-mono text-[13px] text-on-surface uppercase truncate">${ntEscapeHtml(item.product.name)}</p>
-            <p class="font-label-mono text-[11px] text-on-surface-variant">${ntEscapeHtml(ntVariantLabel(item.productVariant))} · x${item.quantity}</p>
+            <p class="font-label-mono text-[13px] text-on-surface uppercase truncate">${ntEscapeHtml(line.name)}</p>
+            <p class="font-label-mono text-[11px] text-on-surface-variant">${ntEscapeHtml(line.variantLabel)} · x${line.quantity}</p>
           </div>
-          <span class="font-label-mono text-[13px] text-secondary whitespace-nowrap">${ntFormatMoney(Number(item.product.price) * item.quantity)}</span>
+          <span class="font-label-mono text-[13px] text-secondary whitespace-nowrap">${ntFormatMoney(line.lineTotal)}</span>
         </div>`
       )
       .join("");
 
-    const subtotal = this.subtotal();
-    const discount = this.discountAmount();
-    const free = this.freeShipping();
-    const shipping = this.shippingCost();
-    const discountRow = this.cart.discountCode
+    if (!q) {
+      document.getElementById("order-totals").innerHTML = "";
+      return;
+    }
+    const discountRow = q.discount
       ? `<div class="flex justify-between items-center mb-stack-sm">
-           <span class="font-label-mono text-label-mono text-secondary uppercase">Cupón ${ntEscapeHtml(this.cart.discountCode.code)}</span>
-           <span class="font-label-mono text-label-mono text-secondary">${free ? "Envío gratis" : "-" + ntFormatMoney(discount)}</span>
+           <span class="font-label-mono text-label-mono text-secondary uppercase">Cupón ${ntEscapeHtml(q.discount.code)}</span>
+           <span class="font-label-mono text-label-mono text-secondary">${q.discount.freeShipping ? "Envío gratis" : "-" + ntFormatMoney(q.discount.amount)}</span>
+         </div>`
+      : q.discountError
+        ? `<p class="font-label-mono text-[11px] text-error uppercase mb-stack-sm">Cupón no aplicado: ${ntEscapeHtml(q.discountError)}</p>`
+        : "";
+    const shippingRow = q.requiresShipping
+      ? `<div class="flex justify-between items-center mb-stack-sm">
+           <span class="font-label-mono text-label-mono text-on-surface-variant uppercase">Envío</span>
+           <span class="font-label-mono text-label-mono text-on-surface">${!q.shippingMethod ? "—" : q.shippingCost === 0 ? "Gratis" : ntFormatMoney(q.shippingCost)}</span>
          </div>`
       : "";
+    const taxNote = q.taxExempt
+      ? `Productos sin IVA (exportación)${q.taxAmount > 0 ? ` · IVA de entradas incluido: ${ntFormatMoney(q.taxAmount)}` : ""}`
+      : `IVA incluido: ${ntFormatMoney(q.taxAmount)}`;
 
     document.getElementById("order-totals").innerHTML = `
       <div class="flex justify-between items-center mb-stack-sm">
         <span class="font-label-mono text-label-mono text-on-surface-variant uppercase">Subtotal</span>
-        <span class="font-label-mono text-label-mono text-on-surface">${ntFormatMoney(subtotal)}</span>
+        <span class="font-label-mono text-label-mono text-on-surface">${ntFormatMoney(q.subtotal)}</span>
       </div>
       ${discountRow}
-      <div class="flex justify-between items-center mb-stack-sm">
-        <span class="font-label-mono text-label-mono text-on-surface-variant uppercase">Envío</span>
-        <span class="font-label-mono text-label-mono ${free ? "text-secondary" : "text-on-surface"}">${free ? "GRATIS" : shipping === 0 ? "Gratis" : ntFormatMoney(shipping)}</span>
-      </div>
+      ${shippingRow}
       <div class="flex justify-between items-center border-t border-outline-variant/30 pt-stack-sm mt-stack-sm">
         <span class="font-label-mono text-label-mono text-on-surface-variant uppercase">Total</span>
-        <span class="font-headline-lg text-headline-lg-mobile text-on-surface">${ntFormatMoney(this.total())}</span>
-      </div>`;
+        <span class="font-headline-lg text-headline-lg-mobile text-on-surface">${ntFormatMoney(q.total)}</span>
+      </div>
+      <p class="font-label-mono text-[10px] text-on-surface-variant uppercase tracking-wide mt-1 text-right">${taxNote}</p>`;
 
     const btn = document.getElementById("pay-btn");
-    btn.textContent = `Pagar ${ntFormatMoney(this.total())}`;
+    btn.textContent = `Pagar ${ntFormatMoney(q.total)}`;
   },
 
   // ---------- Envío del pedido ----------
@@ -201,40 +239,40 @@ const Checkout = {
       e.preventDefault();
       this.pay();
     });
+    document.getElementById("ship-country").addEventListener("change", () => this.refreshQuote());
   },
 
   async pay() {
     const form = document.getElementById("checkout-form");
     if (!form.reportValidity()) return;
-    if (!this.selectedShippingId) {
+    const needsShipping = this.requiresShipping();
+    if (needsShipping && !this.selectedShippingId) {
       ntToast("Elige un método de envío", true);
       return;
     }
 
     const email = document.getElementById("checkout-email").value.trim();
-    const shippingAddress = {
-      name: document.getElementById("ship-name").value.trim(),
-      address: document.getElementById("ship-address").value.trim(),
-      city: document.getElementById("ship-city").value.trim(),
-      postalCode: document.getElementById("ship-postal").value.trim(),
-      country: document.getElementById("ship-country").value.trim(),
-      phone: document.getElementById("ship-phone").value.trim() || undefined,
-    };
+    const country = this.country();
+    const body = { cartId: this.cartId(), email, currency: "eur" };
+    if (needsShipping) {
+      body.shippingMethodId = this.selectedShippingId;
+      body.shippingAddress = {
+        name: document.getElementById("ship-name").value.trim(),
+        address: document.getElementById("ship-address").value.trim(),
+        city: document.getElementById("ship-city").value.trim(),
+        postalCode: document.getElementById("ship-postal").value.trim(),
+        country,
+        phone: document.getElementById("ship-phone").value.trim() || undefined,
+      };
+    } else if (country) {
+      body.billingCountry = country;
+    }
 
     const btn = document.getElementById("pay-btn");
     btn.disabled = true;
     btn.textContent = "Procesando...";
     try {
-      const res = await ntApi("/checkout", {
-        method: "POST",
-        body: JSON.stringify({
-          cartId: this.cartId(),
-          email,
-          currency: "eur",
-          shippingMethodId: this.selectedShippingId,
-          shippingAddress,
-        }),
-      });
+      const res = await ntApi("/checkout", { method: "POST", body: JSON.stringify(body) });
       // El carrito pasa a CONVERTIDO en el backend: lo descartamos y refrescamos el badge.
       localStorage.removeItem(CO_CART_KEY);
       // NTCart vive en el scope global compartido (cart.js), no en window.
@@ -243,7 +281,7 @@ const Checkout = {
     } catch (err) {
       ntToast(err.message, true);
       btn.disabled = false;
-      this.renderSummary();
+      this.refreshQuote();
     }
   },
 
@@ -263,7 +301,7 @@ const Checkout = {
     const payHost = document.getElementById("confirmation-payment-host");
 
     if (simulated) {
-      sub.textContent = "Tu pago se ha confirmado. Te enviaremos las novedades a tu correo.";
+      sub.textContent = "Tu pago se ha confirmado. Tienes el pedido y tus entradas en el seguimiento.";
       payHost.innerHTML = `
         <p class="font-label-mono text-[11px] text-secondary uppercase leading-relaxed">
           Modo simulación (CHECKOUT_SKIP_STRIPE): pedido marcado como PAGADO automáticamente.

@@ -223,7 +223,12 @@ model Product {
   // URL amigable y estable (/producto/<slug>): se genera del nombre al crear.
   slug           String        @unique
   description    String?       @db.Text
+  // Precio de venta al público, IVA INCLUIDO.
   price          Decimal       @db.Decimal(10, 2)
+  // Tipo de IVA aplicable (21 general, 10 reducido, 4 superreducido, 0 exento).
+  taxRate        Decimal       @default(21) @db.Decimal(5, 2)
+  // Peso de envío por unidad (para las tarifas por peso). 0 = no cuenta.
+  weightGrams    Int           @default(0)
   images         String[]      @default([])
   productType    ProductType   @default(TIENDA_GENERAL)
   status         ProductStatus @default(BORRADOR)
@@ -379,15 +384,42 @@ model CartItem {
 // MÉTODOS DE ENVÍO (definidos por el admin en su panel: tipo + coste)
 // ----------------------------------------------------------------------------
 
-model ShippingMethod {
+// Zona de envío: conjunto de países (ISO 3166-1 alfa-2). `restOfWorld` recoge
+// cualquier país no incluido en otra zona. `taxExempt`: exportación fuera de
+// la UE, los productos físicos se venden sin IVA.
+model ShippingZone {
   id          String   @id @default(cuid())
-  name        String // "Estándar 48/72h"
-  description String?
-  price       Decimal  @db.Decimal(10, 2)
-  active      Boolean  @default(true)
+  name        String
+  countries   String[] @default([])
+  restOfWorld Boolean  @default(false)
+  taxExempt   Boolean  @default(false)
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  methods ShippingMethod[]
+}
+
+model ShippingMethod {
+  id              String   @id @default(cuid())
+  name            String // "Estándar 48/72h"
+  description     String?
+  // Precio base (IVA incluido): cubre el primer kilo.
+  price           Decimal  @db.Decimal(10, 2)
+  // Suplemento por cada kilo (o fracción) por encima del primero.
+  pricePerExtraKg Decimal  @default(0) @db.Decimal(10, 2)
+  // Peso máximo admitido; null = sin límite.
+  maxWeightGrams  Int?
+  // Envío gratis a partir de este importe de productos; null = nunca.
+  freeOverAmount  Decimal? @db.Decimal(10, 2)
+  active          Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // null = disponible para cualquier país.
+  zoneId String?
+  zone   ShippingZone? @relation(fields: [zoneId], references: [id], onDelete: SetNull)
 
   orders Order[]
 
@@ -440,6 +472,11 @@ model Order {
   fulfillmentStatus FulfillmentStatus @default(PENDIENTE)
   trackingCode      String?
 
+  // --- Impuestos (snapshot del cálculo del checkout) ---
+  taxAmount       Decimal @default(0) @db.Decimal(10, 2) // IVA incluido en total
+  taxExempt       Boolean @default(false) // exportación: físicos sin IVA
+  shippingTaxRate Decimal @default(21) @db.Decimal(5, 2)
+
   // --- Reembolso ---
   // refundedAt se marca ANTES de llamar a Stripe (reclama el reembolso): así un
   // doble click o el webhook charge.refunded que llega mientras tanto no lo
@@ -463,7 +500,11 @@ model OrderItem {
   productId        String
   productVariantId String
   quantity         Int
+  // Precio unitario cobrado (IVA incluido; sin IVA si el pedido es de exportación).
   unitPrice        Decimal @db.Decimal(10, 2)
+  taxRate          Decimal @default(21) @db.Decimal(5, 2)
+  // Descuento del cupón prorrateado a esta línea (para la factura).
+  discountAmount   Decimal @default(0) @db.Decimal(10, 2)
   // Snapshot de la variante: la factura no cambia si luego se renombra.
   variantLabel     String  @default("")
 

@@ -3,6 +3,7 @@ import { AppError } from "@/utils/AppError";
 import { CartStatus } from "@prisma/client";
 import { validateAndPriceDiscount } from "@/services/discount.service";
 import { assertDropPurchasable } from "@/services/drop.service";
+import { quoteCart } from "@/services/pricing.service";
 import { variantLabel } from "@/utils/slug";
 
 const cartInclude = {
@@ -126,4 +127,14 @@ export async function getCart(cartId: string) {
   const cart = await prisma.cart.findUnique({ where: { id: cartId }, include: cartInclude });
   if (!cart) throw AppError.notFound("Carrito");
   return cart;
+}
+
+/**
+ * Presupuesto del carrito con el motor de precios: IVA, cupón, opciones de
+ * envío para el país (con su coste según peso) y total. Es lo que pinta el
+ * checkout; el cobro usa exactamente el mismo cálculo.
+ */
+export async function quoteForCart(cartId: string, opts: { country?: string; shippingMethodId?: string }) {
+  const cart = await getCart(cartId);
+  return quoteCart(prisma, cart, { ...opts, strict: false });
 }

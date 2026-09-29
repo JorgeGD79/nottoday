@@ -73,7 +73,7 @@ export async function invalidateArtistsCache(): Promise<void> {
 
 /** Invalida la lista pública de métodos de envío (se llama desde el admin). */
 export async function invalidateShippingCache(): Promise<void> {
-  await redis.del(CACHE_KEYS.shipping);
+  await redis.del(CACHE_KEYS.shipping, `${CACHE_KEYS.shipping}:countries`);
 }
 
 /** Invalida la parrilla de N-TY Radio (se llama desde el admin de radio). */

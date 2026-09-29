@@ -203,7 +203,7 @@ const NTCart = {
         <span class="font-label-mono text-label-mono text-on-surface-variant uppercase">Total</span>
         <span class="font-headline-lg text-headline-lg-mobile text-on-surface">${ntFormatMoney(total)}</span>
       </div>
-      <p class="font-label-mono text-[10px] text-on-surface-variant uppercase tracking-wide mb-stack-md">Envío e impuestos se calculan en el pago</p>`;
+      <p class="font-label-mono text-[10px] text-on-surface-variant uppercase tracking-wide mb-stack-md">IVA incluido · el envío se calcula en el pago según tu país</p>`;
 
     // Botones de eliminar (la X de cada línea).
     itemsEl.querySelectorAll("[data-remove]").forEach((btn) =>

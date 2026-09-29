@@ -82,7 +82,7 @@
             {
                 title: "Enviado",
                 detail: shipped
-                    ? `${order.shippingMethodName || "Envío"} — en camino a ${[order.shippingCity, order.shippingCountry].filter(Boolean).join(", ")}`
+                    ? `${order.shippingMethodName || "Envío"} — en camino a ${[order.shippingCity, ntCountryName(order.shippingCountry)].filter(Boolean).join(", ")}`
                     : "Preparando tu pedido",
                 tracking: shipped ? order.trackingCode : null,
                 state: shipped ? "done" : paid ? "current" : "pending",
@@ -188,6 +188,7 @@
                 ${Number(order.discountAmount) > 0 ? `<div class="flex justify-between text-secondary-container"><span class="uppercase">Descuento</span><span>-${ntFormatMoney(order.discountAmount)}</span></div>` : ""}
                 <div class="flex justify-between text-on-surface-variant"><span class="uppercase">Envío${order.shippingMethodName ? ` · ${ntEscapeHtml(order.shippingMethodName)}` : ""}</span><span>${Number(order.shippingCost) === 0 ? "Gratis" : ntFormatMoney(order.shippingCost)}</span></div>
                 <div class="flex justify-between text-on-surface border-t border-outline-variant/30 pt-2"><span class="uppercase font-bold">Total</span><span class="font-bold">${ntFormatMoney(order.total)}</span></div>
+                <p class="text-[11px] text-on-surface-variant uppercase text-right">${order.taxExempt ? "Productos sin IVA (exportación)" : `IVA incluido: ${ntFormatMoney(order.taxAmount)}`}</p>
             </div>
         </div>
         ${ticketsHtml(order.tickets)}`;
