@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ProductType, ProductStatus, DropStatus } from "@prisma/client";
+import { SLUG_REGEX } from "@/utils/slug";
 
 // Una línea de inventario por variante (talla + color opcional), enviada junto
 // con el producto en el mismo payload. El orden del array es el de la tienda.
@@ -24,11 +25,15 @@ const noDuplicateVariants = (variants: { size: string; color: string }[] | undef
 
 const baseFields = {
   name: z.string().min(2).max(200),
+  slug: z.string().trim().toLowerCase().regex(SLUG_REGEX, "Slug no válido (a-z, 0-9 y guiones)").max(80),
   description: z.string().max(5000),
   price: z.number().positive(),
   images: z.array(z.string().url()),
   productType: z.nativeEnum(ProductType),
   status: z.nativeEnum(ProductStatus),
+  categoryId: z.string().cuid().nullable(),
+  seoTitle: z.string().trim().max(70),
+  seoDescription: z.string().trim().max(160),
   variants: z.array(variantSchema).max(100),
   dropMeta: dropMetaSchema,
   // Solo aplica (y es obligatorio) para productType = TICKET_EVENTO: liga
@@ -39,10 +44,14 @@ const baseFields = {
 export const createProductSchema = z
   .object({
     ...baseFields,
+    slug: baseFields.slug.optional(),
     description: baseFields.description.optional(),
     images: baseFields.images.default([]),
     productType: baseFields.productType.default(ProductType.TIENDA_GENERAL),
     status: baseFields.status.default(ProductStatus.BORRADOR),
+    categoryId: baseFields.categoryId.optional(),
+    seoTitle: baseFields.seoTitle.optional(),
+    seoDescription: baseFields.seoDescription.optional(),
     variants: baseFields.variants.min(1, "Debes indicar al menos una variante con su stock"),
     dropMeta: dropMetaSchema.optional(),
     eventId: baseFields.eventId.optional(),
@@ -70,6 +79,8 @@ export const updateProductSchema = z
   .object({
     ...baseFields,
     description: baseFields.description.optional(),
+    seoTitle: baseFields.seoTitle.optional(),
+    seoDescription: baseFields.seoDescription.optional(),
   })
   .partial()
   .refine((data) => noDuplicateVariants(data.variants), {

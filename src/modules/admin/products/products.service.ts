@@ -1,12 +1,31 @@
 import { prisma } from "@/lib/prisma";
 import { AppError } from "@/utils/AppError";
+import { normalizeSearch, uniqueSlug } from "@/utils/slug";
 import { Prisma, ProductType } from "@prisma/client";
 import { CreateProductInput, UpdateProductInput } from "./products.schema";
+
+type Tx = Prisma.TransactionClient;
 
 const productInclude = {
   variants: { orderBy: [{ active: "desc" }, { sortOrder: "asc" }] },
   dropMeta: true,
+  category: { select: { id: true, name: true, slug: true } },
 } satisfies Prisma.ProductInclude;
+
+/** Recalcula el texto de búsqueda (nombre + descripción + categoría) de un producto. */
+export async function refreshSearchText(tx: Tx | typeof prisma, productId: string) {
+  const p = await tx.product.findUniqueOrThrow({
+    where: { id: productId },
+    select: { name: true, description: true, category: { select: { name: true } } },
+  });
+  await tx.product.update({
+    where: { id: productId },
+    data: { searchText: normalizeSearch([p.name, p.description ?? "", p.category?.name ?? ""].join(" ")) },
+  });
+}
+
+const slugTaken = (tx: Tx, exceptId?: string) => async (slug: string) =>
+  !!(await tx.product.findFirst({ where: { slug, ...(exceptId ? { id: { not: exceptId } } : {}) }, select: { id: true } }));
 
 /**
  * Crea un producto junto con su inventario por variante (y, si aplica, sus
@@ -16,14 +35,23 @@ const productInclude = {
  */
 export async function createProductWithInventory(input: CreateProductInput) {
   return prisma.$transaction(async (tx) => {
+    if (input.slug && (await slugTaken(tx)(input.slug))) {
+      throw AppError.conflict(`El slug "${input.slug}" ya lo usa otro producto`);
+    }
+    const slug = input.slug ?? (await uniqueSlug(input.name, slugTaken(tx)));
+
     const product = await tx.product.create({
       data: {
         name: input.name,
+        slug,
         description: input.description,
         price: input.price,
         images: input.images,
         productType: input.productType,
         status: input.status,
+        categoryId: input.categoryId ?? null,
+        seoTitle: input.seoTitle || null,
+        seoDescription: input.seoDescription || null,
         eventId: input.eventId,
         variants: {
           create: input.variants.map((v, idx) => ({
@@ -37,6 +65,8 @@ export async function createProductWithInventory(input: CreateProductInput) {
         },
       },
     });
+
+    await refreshSearchText(tx, product.id);
 
     // Metadatos de "cuenta atrás" solo se crean para drops exclusivos.
     if (input.productType === ProductType.DROP_EXCLUSIVO && input.dropMeta) {
@@ -67,18 +97,28 @@ export async function updateProductWithInventory(productId: string, input: Updat
   }
 
   return prisma.$transaction(async (tx) => {
+    if (input.slug && input.slug !== existing.slug && (await slugTaken(tx, productId)(input.slug))) {
+      throw AppError.conflict(`El slug "${input.slug}" ya lo usa otro producto`);
+    }
+
     await tx.product.update({
       where: { id: productId },
       data: {
         name: input.name,
+        slug: input.slug,
         description: input.description,
         price: input.price,
         images: input.images,
         productType: input.productType,
         status: input.status,
+        categoryId: input.categoryId,
+        seoTitle: input.seoTitle === undefined ? undefined : input.seoTitle || null,
+        seoDescription: input.seoDescription === undefined ? undefined : input.seoDescription || null,
         eventId: input.eventId,
       },
     });
+
+    await refreshSearchText(tx, productId);
 
     if (input.variants) {
       if (input.variants.length === 0) {

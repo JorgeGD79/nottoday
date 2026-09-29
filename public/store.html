@@ -15,6 +15,12 @@
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <script src="assets/js/tailwind.config.js?v=3"></script>
 <link href="assets/css/site.css?v=7" rel="stylesheet"/>
+<meta name="description" content="Tienda oficial de NOT TODAY: ropa, drops exclusivos y merch del colectivo."/>
+<style>
+    .nt-filter { background: transparent; border: 1px solid rgb(68 71 72); color: inherit; font-family: "JetBrains Mono", monospace; font-size: 12px; text-transform: uppercase; padding: 0.45rem 2rem 0.45rem 0.6rem; cursor: pointer; }
+    .nt-filter:focus { outline: none; border-color: #ff8a00; box-shadow: none; }
+    .nt-filter option { background: #131313; }
+</style>
 </head>
 <body class="min-h-screen flex flex-col font-body-md antialiased selection:bg-secondary-container selection:text-on-secondary pb-28 md:pb-0">
 
@@ -38,16 +44,32 @@
         <div class="nt-grid-lines grid-cols-1 md:grid-cols-2 lg:grid-cols-3" id="drops-grid"></div>
     </section>
 
-    <!-- Ordenación -->
-    <div class="sticky top-[104px] z-40 bg-background/95 backdrop-blur-md border-b border-outline-variant/20 px-margin-mobile md:px-margin-desktop py-stack-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-stack-md">
-        <span class="font-label-mono text-label-mono text-on-surface-variant uppercase" id="catalog-count">Cargando catálogo...</span>
-        <div class="flex items-center gap-base">
-            <span class="font-label-mono text-label-mono text-on-surface-variant uppercase">Sort:</span>
-            <select id="sort-select" class="bg-surface-container-lowest border border-outline-variant text-on-surface font-label-mono text-label-mono uppercase p-2 focus:ring-0 focus:border-secondary-container outline-none appearance-none cursor-pointer">
-                <option value="latest">Latest</option>
-                <option value="price-desc">Price: High to Low</option>
-                <option value="price-asc">Price: Low to High</option>
-            </select>
+    <!-- Búsqueda y filtros (se reflejan en la URL: ?q=&categoria=&talla=&color=&stock=1&orden=) -->
+    <div class="sticky top-[104px] z-40 bg-background/95 backdrop-blur-md border-b border-outline-variant/20 px-margin-mobile md:px-margin-desktop py-stack-sm flex flex-col gap-3">
+        <div class="flex flex-col md:flex-row gap-3 md:items-center">
+            <div class="flex-1 flex items-center border border-outline-variant bg-surface-container-lowest">
+                <span class="material-symbols-outlined text-on-surface-variant px-3">search</span>
+                <input id="f-q" type="search" placeholder="BUSCAR" aria-label="Buscar productos"
+                    class="flex-1 bg-transparent border-none outline-none focus:ring-0 text-on-surface font-label-mono text-label-mono uppercase py-2 pr-3"/>
+            </div>
+            <div class="flex flex-wrap gap-2 items-center">
+                <select id="f-category" aria-label="Categoría" class="nt-filter"><option value="">Categoría: todas</option></select>
+                <select id="f-size" aria-label="Talla" class="nt-filter"><option value="">Talla: todas</option></select>
+                <select id="f-color" aria-label="Color" class="nt-filter hidden"><option value="">Color: todos</option></select>
+                <label class="flex items-center gap-2 font-label-mono text-label-mono text-on-surface-variant uppercase cursor-pointer">
+                    <input id="f-stock" type="checkbox" class="bg-transparent border-outline-variant text-secondary-container focus:ring-0"/> En stock
+                </label>
+                <select id="sort-select" aria-label="Ordenar" class="nt-filter">
+                    <option value="latest">Novedades</option>
+                    <option value="price-asc">Precio: menor a mayor</option>
+                    <option value="price-desc">Precio: mayor a menor</option>
+                    <option value="name">Nombre</option>
+                </select>
+            </div>
+        </div>
+        <div class="flex items-center justify-between gap-3">
+            <span class="font-label-mono text-label-mono text-on-surface-variant uppercase" id="catalog-count">Cargando catálogo...</span>
+            <button id="f-clear" class="hidden font-label-mono text-[11px] text-secondary-container uppercase tracking-widest hover:text-on-surface">Quitar filtros ×</button>
         </div>
     </div>
 
@@ -57,57 +79,123 @@
         <div class="p-stack-md hidden md:block"><div class="nt-skeleton aspect-[4/5]"></div></div>
         <div class="p-stack-md hidden lg:block"><div class="nt-skeleton aspect-[4/5]"></div></div>
     </div>
+    <div class="flex justify-center py-stack-lg">
+        <button id="load-more" class="hidden border-2 border-on-surface text-on-surface font-headline-lg text-headline-lg-mobile uppercase px-8 py-2 hover:bg-on-surface hover:text-primary-container transition-colors">Cargar más</button>
+    </div>
 </main>
 
 <script src="assets/js/api.js"></script>
 <script src="assets/js/chrome.js"></script>
 <script>NTChrome.mount({ active: "store" });</script>
 <script src="assets/js/cart.js"></script>
+<script src="assets/js/product-ui.js"></script>
 <script>
-    // Índice producto/variantes para resolver la talla elegida al añadir al carrito.
+    // Índice producto/variantes para resolver la variante elegida al añadir al carrito.
     const productIndex = new Map();
     let catalog = [];
+    let page = 1;
+    let totalPages = 1;
+    const PAGE_SIZE = 24;
 
-    function sizeButtons(product) {
-        // Las variantes llegan ya en el orden fijado en el panel.
-        const variants = product.variants;
-        return variants
-            .map(
-                (v) => `
+    // ------- Filtros <-> URL -------
+    const F = {
+        q: document.getElementById("f-q"),
+        category: document.getElementById("f-category"),
+        size: document.getElementById("f-size"),
+        color: document.getElementById("f-color"),
+        stock: document.getElementById("f-stock"),
+        sort: document.getElementById("sort-select"),
+    };
+    const URL_KEYS = { q: "q", category: "categoria", size: "talla", color: "color", sort: "orden" };
+
+    function filtersFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        return {
+            q: params.get("q") || "",
+            category: params.get("categoria") || "",
+            size: params.get("talla") || "",
+            color: params.get("color") || "",
+            stock: params.get("stock") === "1",
+            sort: params.get("orden") || "latest",
+        };
+    }
+
+    function currentFilters() {
+        return {
+            q: F.q.value.trim(),
+            category: F.category.value,
+            size: F.size.value,
+            color: F.color.value,
+            stock: F.stock.checked,
+            sort: F.sort.value,
+        };
+    }
+
+    function syncUrl(f) {
+        const params = new URLSearchParams(window.location.search);
+        for (const [k, key] of Object.entries(URL_KEYS)) {
+            if (f[k] && !(k === "sort" && f[k] === "latest")) params.set(key, f[k]); else params.delete(key);
+        }
+        if (f.stock) params.set("stock", "1"); else params.delete("stock");
+        const qs = params.toString();
+        history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash}`);
+        document.getElementById("f-clear").classList.toggle("hidden", !(f.q || f.category || f.size || f.color || f.stock));
+    }
+
+    function fillSelect(el, placeholder, options, selected) {
+        el.innerHTML = `<option value="">${placeholder}</option>` + options
+            .map(([v, l]) => `<option value="${ntEscapeHtml(v)}" ${v === selected ? "selected" : ""}>${ntEscapeHtml(l)}</option>`)
+            .join("");
+    }
+
+    async function loadFacets(initial) {
+        try {
+            const facets = await ntApi("/shop/facets");
+            fillSelect(F.category, "Categoría: todas", facets.categories.map((c) => [c.slug, `${c.name} (${c.count})`]), initial.category);
+            fillSelect(F.size, "Talla: todas", facets.sizes.map((s) => [s, s]), initial.size);
+            fillSelect(F.color, "Color: todos", facets.colors.map((c) => [c, c]), initial.color);
+            F.category.classList.toggle("hidden", !facets.categories.length);
+            F.color.classList.toggle("hidden", !facets.colors.length);
+        } catch {
+            /* sin facetas los filtros quedan en "todas" */
+        }
+    }
+
+    // ------- Tarjetas -------
+    function productCard(product, { badge = null, disabled = false } = {}) {
+        const soldOut = NTProductUI.isSoldOut(product);
+        const isBlocked = disabled || soldOut;
+        const badgeText = badge || (soldOut ? "Agotado" : product.category ? product.category.name : "Activo");
+        const badgeClasses = soldOut
+            ? "border-outline text-outline"
+            : "border-secondary-container text-secondary-container";
+        const single = product.variants.length === 1;
+        const variantBtns = single ? "" : product.variants.map((v) => `
             <button class="size-btn" data-product="${product.id}" data-variant="${v.id}"
                 ${v.stockAvailable <= 0 ? "disabled" : ""}
                 title="${v.stockAvailable <= 0 ? "Agotado" : `${v.stockAvailable} disponibles`}">
                 ${ntEscapeHtml(ntVariantLabel(v))}
-            </button>`
-            )
-            .join("");
-    }
-
-    function productCard(product, { badge = null, disabled = false } = {}) {
-        const soldOut = product.status === "AGOTADO" ||
-            product.variants.every((v) => v.stockAvailable <= 0);
-        const isBlocked = disabled || soldOut;
-        const badgeText = badge || (soldOut ? "Agotado" : "Activo");
-        const badgeClasses = soldOut
-            ? "border-outline text-outline"
-            : "border-secondary-container text-secondary-container";
+            </button>`).join("");
+        if (single && !soldOut) selectedVariant.set(product.id, product.variants[0].id);
         return `
         <article class="group relative flex flex-col p-stack-md border border-transparent hover:border-secondary-container transition-colors" data-product-card="${product.id}">
             <div data-view="${product.id}" class="relative w-full aspect-[4/5] bg-surface-container overflow-hidden cursor-pointer">
                 <img class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 group-hover:scale-[1.03]"
-                     src="${ntProductImage(product)}" alt="${ntEscapeHtml(product.name)}"/>
+                     src="${ntProductImage(product)}" alt="${ntEscapeHtml(product.name)}" loading="lazy"/>
                 ${soldOut ? `<div class="absolute inset-0 flex items-center justify-center bg-primary-container/70">
                     <span class="bg-secondary-container text-on-secondary px-3 py-1 font-label-mono text-[12px] uppercase font-bold">Sold Out</span>
                 </div>` : ""}
             </div>
             <div class="mt-stack-md flex flex-col flex-grow gap-stack-sm">
                 <div class="flex justify-between items-start gap-2">
-                    <h2 class="font-headline-lg text-headline-lg-mobile text-on-surface uppercase leading-none pr-2">${ntEscapeHtml(product.name)}</h2>
+                    <h2 class="font-headline-lg text-headline-lg-mobile text-on-surface uppercase leading-none pr-2">
+                        <a href="${NTProductUI.productUrl(product)}" class="hover:text-secondary-container transition-colors">${ntEscapeHtml(product.name)}</a>
+                    </h2>
                     <span class="font-label-mono text-[10px] font-semibold tracking-widest px-2 py-1 border ${badgeClasses} uppercase whitespace-nowrap">${ntEscapeHtml(badgeText)}</span>
                 </div>
                 <span class="font-label-mono text-label-mono text-secondary-container">${ntFormatMoney(product.price)}</span>
                 ${product.description ? `<p class="font-body-md text-[14px] text-on-surface-variant line-clamp-2">${ntEscapeHtml(product.description)}</p>` : ""}
-                <div class="flex gap-2 flex-wrap" data-sizes>${sizeButtons(product)}</div>
+                ${variantBtns ? `<div class="flex gap-2 flex-wrap" data-sizes>${variantBtns}</div>` : ""}
                 <div class="mt-auto pt-stack-md">
                     <button data-add-to-cart="${product.id}" ${isBlocked ? "disabled" : ""}
                         class="w-full bg-transparent border-2 border-on-surface text-on-surface font-headline-lg text-headline-lg-mobile uppercase py-2 hover:bg-on-surface hover:text-primary-container transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-on-surface">
@@ -118,7 +206,7 @@
         </article>`;
     }
 
-    // Talla seleccionada por producto
+    // Variante seleccionada por producto
     const selectedVariant = new Map();
 
     function wireCards(container) {
@@ -160,35 +248,50 @@
         });
     }
 
-    // ------- Catálogo general -------
-    function renderCatalog() {
+    // ------- Catálogo general (filtrado y paginado en el servidor) -------
+    let loadSeq = 0;
+    async function loadCatalog({ append = false } = {}) {
+        const f = currentFilters();
+        syncUrl(f);
+        const seq = ++loadSeq;
+        const params = new URLSearchParams({ page: append ? page + 1 : 1, pageSize: PAGE_SIZE, sort: f.sort });
+        if (f.q) params.set("q", f.q);
+        if (f.category) params.set("category", f.category);
+        if (f.size) params.set("size", f.size);
+        if (f.color) params.set("color", f.color);
+        if (f.stock) params.set("inStock", "true");
+
         const grid = document.getElementById("products-grid");
-        const sort = document.getElementById("sort-select").value;
-        const sorted = [...catalog];
-        if (sort === "price-desc") sorted.sort((a, b) => Number(b.price) - Number(a.price));
-        if (sort === "price-asc") sorted.sort((a, b) => Number(a.price) - Number(b.price));
-
-        if (!sorted.length) {
-            grid.innerHTML = `<div class="md:col-span-2 lg:col-span-3 p-stack-lg text-center">
-                <p class="font-label-mono text-label-mono text-on-surface-variant uppercase">El catálogo está vacío por ahora.</p>
-            </div>`;
-            return;
-        }
-        grid.innerHTML = sorted.map((p) => productCard(p)).join("");
-        wireCards(grid);
-    }
-
-    async function loadCatalog() {
         try {
-            const { products, pagination } = await ntApi("/shop?page=1&pageSize=60");
-            catalog = products;
+            const { products, pagination } = await ntApi(`/shop?${params}`);
+            if (seq !== loadSeq) return; // llegó una búsqueda más reciente
+            page = pagination.page;
+            totalPages = pagination.totalPages;
             products.forEach((p) => productIndex.set(p.id, p));
+            catalog = append ? catalog.concat(products) : products;
             document.getElementById("catalog-count").textContent =
                 `${pagination.total} producto${pagination.total === 1 ? "" : "s"}`;
-            renderCatalog();
+            document.getElementById("load-more").classList.toggle("hidden", page >= totalPages);
+
+            if (!catalog.length) {
+                grid.innerHTML = `<div class="md:col-span-2 lg:col-span-3 p-stack-lg text-center">
+                    <p class="font-label-mono text-label-mono text-on-surface-variant uppercase">${f.q || f.category || f.size || f.color || f.stock ? "Nada coincide con esos filtros." : "El catálogo está vacío por ahora."}</p>
+                </div>`;
+                return;
+            }
+            if (append) {
+                const tmp = document.createElement("div");
+                tmp.innerHTML = products.map((p) => productCard(p)).join("");
+                const nodes = [...tmp.children];
+                nodes.forEach((n) => grid.appendChild(n));
+                nodes.forEach((n) => wireCards(n));
+            } else {
+                grid.innerHTML = catalog.map((p) => productCard(p)).join("");
+                wireCards(grid);
+            }
         } catch (err) {
             document.getElementById("catalog-count").textContent = "Error";
-            document.getElementById("products-grid").innerHTML =
+            grid.innerHTML =
                 `<div class="md:col-span-2 lg:col-span-3 p-stack-lg text-center">
                     <p class="font-label-mono text-label-mono text-error uppercase">${ntEscapeHtml(err.message)}</p>
                 </div>`;
@@ -247,10 +350,6 @@
     }
 
     // ===================== Modal de detalle de producto =====================
-    let pmProduct = null;
-    let pmVariantId = null;
-    let pmImgIndex = 0;
-
     function mountProductModal() {
         const root = document.createElement("div");
         root.id = "pm-root";
@@ -266,12 +365,13 @@
     }
 
     function openProductModal(product) {
-        pmProduct = product;
-        pmImgIndex = 0;
-        pmVariantId = null;
         document.getElementById("pm-root").classList.remove("hidden");
         document.body.style.overflow = "hidden";
-        renderProductModal();
+        NTProductUI.mount(document.getElementById("pm-panel"), product, {
+            modal: true,
+            onClose: closeProductModal,
+            onAdded: closeProductModal,
+        });
     }
 
     function closeProductModal() {
@@ -280,84 +380,27 @@
         document.body.style.overflow = "";
     }
 
-    function renderProductModal() {
-        const p = pmProduct;
-        const images = (p.images && p.images.length) ? p.images : [ntPlaceholderImage(p.name)];
-        const sizes = p.variants;
-        const soldOut = p.status === "AGOTADO" || p.variants.every((v) => v.stockAvailable <= 0);
-        const dropLocked = p.dropMeta && p.dropMeta.dropStatus !== "ABIERTO";
-        const canBuy = !soldOut && !dropLocked;
-
-        const thumbs = images.length > 1
-            ? `<div class="flex gap-px bg-outline-variant/40">${images.map((img, i) => `
-                <button data-thumb="${i}" class="flex-1 h-16 bg-surface-container-lowest overflow-hidden border-b-2 ${i === pmImgIndex ? "border-secondary-container" : "border-transparent"}">
-                    <img src="${ntEscapeHtml(img)}" class="w-full h-full object-cover" alt=""/>
-                </button>`).join("")}</div>`
-            : "";
-
-        const sizeBtns = sizes.map((v) => `
-            <button data-size="${v.id}" ${v.stockAvailable <= 0 ? "disabled" : ""}
-                class="size-btn ${pmVariantId === v.id ? "selected" : ""}"
-                title="${v.stockAvailable <= 0 ? "Agotado" : `${v.stockAvailable} disponibles`}">${ntEscapeHtml(ntVariantLabel(v))}</button>`).join("");
-
-        document.getElementById("pm-panel").innerHTML = `
-            <div class="grid grid-cols-1 md:grid-cols-2">
-                <div class="border-b md:border-b-0 md:border-r border-outline-variant">
-                    <div class="w-full aspect-square bg-surface-container overflow-hidden border-b border-outline-variant">
-                        <img id="pm-main" src="${ntEscapeHtml(images[pmImgIndex])}" class="w-full h-full object-cover" alt="${ntEscapeHtml(p.name)}"/>
-                    </div>
-                    ${thumbs}
-                </div>
-                <div class="p-stack-md flex flex-col gap-stack-md relative">
-                    <button id="pm-close" class="self-end text-on-surface-variant hover:text-secondary-container transition-colors p-1" aria-label="Cerrar">
-                        <span class="material-symbols-outlined text-2xl">close</span>
-                    </button>
-                    <div>
-                        <span class="font-label-mono text-[11px] uppercase tracking-widest ${p.productType === "DROP_EXCLUSIVO" ? "text-secondary-container" : "text-on-surface-variant"}">${p.productType === "DROP_EXCLUSIVO" ? "Drop exclusivo" : "Tienda"}</span>
-                        <h2 class="font-headline-xl text-[28px] text-on-surface uppercase leading-none mt-1">${ntEscapeHtml(p.name)}</h2>
-                        <p class="font-label-mono text-label-mono text-secondary-container mt-2">${ntFormatMoney(p.price)}</p>
-                    </div>
-                    ${p.description ? `<p class="font-body-md text-body-md text-on-surface-variant whitespace-pre-line">${ntEscapeHtml(p.description)}</p>` : ""}
-                    <div>
-                        <span class="font-label-mono text-[11px] text-on-surface-variant uppercase tracking-widest block mb-2">Talla</span>
-                        <div class="flex gap-2 flex-wrap" data-modal-sizes>${sizeBtns}</div>
-                    </div>
-                    ${dropLocked ? `<p class="font-label-mono text-[12px] text-secondary-container uppercase">Disponible el ${new Date(p.dropMeta.releaseAt).toLocaleDateString("es-ES")}</p>` : ""}
-                    <button id="pm-add" ${canBuy ? "" : "disabled"}
-                        class="w-full bg-secondary-container text-on-secondary font-label-mono text-[13px] tracking-widest uppercase font-bold py-4 hover:bg-on-surface hover:text-primary-container transition-colors disabled:opacity-30 disabled:cursor-not-allowed mt-auto">
-                        ${soldOut ? "Agotado" : dropLocked ? "Próximamente" : "Añadir al carrito"}
-                    </button>
-                </div>
-            </div>`;
-
-        const panel = document.getElementById("pm-panel");
-        panel.querySelector("#pm-close").addEventListener("click", closeProductModal);
-        panel.querySelectorAll("[data-thumb]").forEach((b) =>
-            b.addEventListener("click", () => { pmImgIndex = Number(b.dataset.thumb); renderProductModal(); }));
-        panel.querySelectorAll("[data-size]:not(:disabled)").forEach((b) =>
-            b.addEventListener("click", () => { pmVariantId = b.dataset.size; renderProductModal(); }));
-        const addBtn = panel.querySelector("#pm-add");
-        if (canBuy) {
-            addBtn.addEventListener("click", async () => {
-                if (!pmVariantId) { ntToast("Elige una talla primero", true); return; }
-                addBtn.disabled = true;
-                try {
-                    await NTCart.add({ productId: p.id, productVariantId: pmVariantId, quantity: 1 });
-                    closeProductModal();
-                    ntToast("Añadido al carrito");
-                } catch (err) {
-                    ntToast(err.message, true);
-                    addBtn.disabled = false;
-                }
-            });
-        }
-    }
-
+    // ------- Arranque -------
     mountProductModal();
 
-    document.getElementById("sort-select").addEventListener("change", renderCatalog);
-    loadCatalog();
+    const initial = filtersFromUrl();
+    F.q.value = initial.q;
+    F.stock.checked = initial.stock;
+    F.sort.value = initial.sort;
+    loadFacets(initial).then(() => loadCatalog());
     loadDrops();
+
+    let searchTimer = null;
+    F.q.addEventListener("input", () => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => loadCatalog(), 300);
+    });
+    [F.category, F.size, F.color, F.stock, F.sort].forEach((el) => el.addEventListener("change", () => loadCatalog()));
+    document.getElementById("f-clear").addEventListener("click", () => {
+        F.q.value = ""; F.category.value = ""; F.size.value = ""; F.color.value = ""; F.stock.checked = false;
+        loadCatalog();
+    });
+    document.getElementById("load-more").addEventListener("click", () => loadCatalog({ append: true }));
 
     // Vuelta de Stripe (return_url): confirmación del pago
     const params = new URLSearchParams(window.location.search);

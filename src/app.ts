@@ -41,6 +41,8 @@ import { adminUploadsRoutes } from "@/modules/admin/uploads/uploads.routes";
 import { adminTicketsRoutes } from "@/modules/admin/tickets/tickets.routes";
 import { publicNewsletterRoutes } from "@/modules/public/newsletter/newsletter.routes";
 import { adminNewsletterRoutes } from "@/modules/admin/newsletter/newsletter.routes";
+import { adminCategoriesRoutes } from "@/modules/admin/categories/categories.routes";
+import { seoRoutes } from "@/modules/public/seo/seo.routes";
 
 export async function buildApp(): Promise<FastifyInstance> {
   // Dejamos que Fastify construya su propia instancia de pino a partir de
@@ -162,6 +164,9 @@ export async function buildApp(): Promise<FastifyInstance> {
     prefix: "/",
   });
 
+  // --- SEO: ficha de producto renderizada en servidor, sitemap y robots ---
+  await app.register(seoRoutes);
+
   // --- API pública ---
   await app.register(shopRoutes, { prefix: "/api/shop" });
   await app.register(dropsRoutes, { prefix: "/api/drops" });
@@ -192,6 +197,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(adminUploadsRoutes, { prefix: "/api/admin/uploads" });
   await app.register(adminTicketsRoutes, { prefix: "/api/admin/tickets" });
   await app.register(adminNewsletterRoutes, { prefix: "/api/admin/newsletter" });
+  await app.register(adminCategoriesRoutes, { prefix: "/api/admin/categories" });
 
   app.get("/health", async () => ({ status: "ok" }));
 

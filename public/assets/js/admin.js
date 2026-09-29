@@ -341,6 +341,12 @@ const VARIANT_PRESETS = {
   "Talla única": ["Única"],
 };
 
+// Categorías para el selector del producto.
+async function categoryOptions() {
+  const { categories } = await adminApi("/admin/categories");
+  return categories.map((c) => [c.id, c.name]);
+}
+
 const Sections = {
   // ---------------- PRODUCTOS ----------------
   products: {
@@ -362,7 +368,10 @@ const Sections = {
       };
       const rows = products.map((p) => `
         <tr>
-          <td class="font-bold uppercase">${ntEscapeHtml(p.name)}</td>
+          <td>
+            <span class="font-bold uppercase">${ntEscapeHtml(p.name)}</span>
+            <span class="font-label-mono text-[11px] text-on-surface-variant block">${p.category ? ntEscapeHtml(p.category.name) : "Sin categoría"} · /${ntEscapeHtml(p.slug)}</span>
+          </td>
           <td>${ntFormatMoney(p.price)}</td>
           <td>${badge(
             { DROP_EXCLUSIVO: "DROP", TICKET_EVENTO: "TICKET" }[p.productType] || "TIENDA",
@@ -391,11 +400,12 @@ const Sections = {
     },
     async form(p = null) {
       const isTicket = p?.productType === "TICKET_EVENTO";
-      const events = await eventOptions();
+      const [events, categories] = await Promise.all([eventOptions(), categoryOptions()]);
       const activeVariants = p ? p.variants.filter((v) => v.active && v.size !== "GENERAL") : [];
       const generalStock = p?.variants.find((v) => v.size === "GENERAL")?.stockAvailable ?? "";
       const html = `
         ${fText("name", "Nombre", p?.name, { required: true })}
+        ${fSelect("categoryId", "Categoría", [["", "— Sin categoría —"], ...categories], p?.categoryId || "")}
         ${fTextarea("description", "Descripción", p?.description)}
         ${fText("price", "Precio (EUR)", p?.price, { type: "number", step: "0.01", min: 0, required: true })}
         ${ImageField.render("prod-images", "Fotos del producto", p?.images || [], true)}
@@ -423,7 +433,15 @@ const Sections = {
             ? fSelect("eventId", "Evento", events, p?.eventId || "")
             : `<p class="font-label-mono text-[12px] text-error uppercase">Crea primero un evento en la sección Eventos.</p>`}
           ${fText("ticketCapacity", "Aforo (capacidad)", generalStock, { type: "number", step: "1", min: 0 })}
-        </fieldset>`;
+        </fieldset>
+        <details class="border border-outline-variant/30 p-4" ${p?.seoTitle || p?.seoDescription ? "open" : ""}>
+          <summary class="font-label-mono text-[12px] text-secondary uppercase cursor-pointer">SEO (buscadores y redes)</summary>
+          <div class="space-y-4 mt-4">
+            ${fText("slug", "URL: /producto/…", p?.slug, { placeholder: "se genera del nombre" })}
+            ${fText("seoTitle", "Título SEO (máx. 70)", p?.seoTitle, { placeholder: "por defecto: nombre · NOT TODAY" })}
+            ${fTextarea("seoDescription", "Meta descripción (máx. 160)", p?.seoDescription, 2)}
+          </div>
+        </details>`;
 
       Drawer.open(p ? "Editar producto" : "Nuevo producto", html, () => {
         const v = drawerValues();
@@ -445,7 +463,11 @@ const Sections = {
           productType: v.productType,
           status: v.status,
           eventId: v.productType === "TICKET_EVENTO" ? v.eventId : undefined,
+          slug: v.slug,
         });
+        payload.categoryId = v.categoryId || null;
+        payload.seoTitle = v.seoTitle;
+        payload.seoDescription = v.seoDescription;
         payload.images = ImageField.get("prod-images");
         payload.variants = variants;
         if (v.productType === "DROP_EXCLUSIVO" && v.releaseAt) {
@@ -479,6 +501,51 @@ const Sections = {
             .map((size) => this.variantRow({ size, stockAvailable: stockBySize.get(size.toLowerCase()) ?? "" }))
             .join("");
         }
+      });
+    },
+  },
+
+  // ---------------- CATEGORÍAS ----------------
+  categories: {
+    title: "Categorías",
+    icon: "category",
+    items: [],
+    async load() {
+      actionsHost().innerHTML = newButton("+ Nueva");
+      document.getElementById("btn-new").addEventListener("click", () => this.form());
+      host().innerHTML = `<div class="nt-skeleton h-40"></div>`;
+      const { categories } = await adminApi("/admin/categories");
+      this.items = categories;
+      const rows = categories.map((c) => `
+        <tr>
+          <td class="font-bold uppercase">${ntEscapeHtml(c.name)}</td>
+          <td class="font-label-mono text-[12px] text-on-surface-variant">${ntEscapeHtml(c.slug)}</td>
+          <td class="font-label-mono text-[12px]">${c._count.products}</td>
+          <td class="font-label-mono text-[12px]">${c.sortOrder}</td>
+          ${rowActions(c.id)}
+        </tr>`);
+      host().innerHTML = renderTable(["Nombre", "Slug", "Productos", "Orden", ""], rows,
+        "Sin categorías. Crea algunas (camisetas, sudaderas, vinilos...) para que la tienda se pueda filtrar.");
+      wireRowActions(this.items, (c) => this.form(c), (c) =>
+        submitAndReload(adminApi(`/admin/categories/${c.id}`, { method: "DELETE" }), "categories", "Categoría eliminada"));
+    },
+    form(c = null) {
+      const html = `
+        ${fText("name", "Nombre", c?.name, { required: true, placeholder: "Sudaderas" })}
+        ${fText("slug", "Slug (URL)", c?.slug, { placeholder: "se genera del nombre" })}
+        ${fTextarea("description", "Descripción", c?.description)}
+        ${fText("sortOrder", "Orden (menor = primero)", c?.sortOrder ?? 0, { type: "number", min: 0 })}
+        ${fText("seoTitle", "Título SEO (máx. 70)", c?.seoTitle)}
+        ${fTextarea("seoDescription", "Meta descripción (máx. 160)", c?.seoDescription, 2)}`;
+      Drawer.open(c ? "Editar categoría" : "Nueva categoría", html, () => {
+        const v = drawerValues();
+        const payload = clean({ name: v.name, slug: v.slug, description: v.description, sortOrder: parseInt(v.sortOrder || "0", 10) });
+        payload.seoTitle = v.seoTitle;
+        payload.seoDescription = v.seoDescription;
+        return submitAndReload(
+          c ? adminApi(`/admin/categories/${c.id}`, { method: "PUT", body: JSON.stringify(payload) })
+            : adminApi("/admin/categories", { method: "POST", body: JSON.stringify(payload) }),
+          "categories", c ? "Categoría actualizada" : "Categoría creada");
       });
     },
   },

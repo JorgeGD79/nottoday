@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html class="dark" lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<!-- Se sirve en /producto/:slug: todas las rutas relativas cuelgan de la raíz. -->
+<base href="/"/>
+<!--SEO-->
+<title>NOT TODAY - Producto</title>
+<meta name="description" content="Tienda oficial de NOT TODAY."/>
+<!--/SEO-->
+<link href="favicon.jpg" rel="icon" type="image/jpeg"/>
+<link href="favicon.jpg" rel="apple-touch-icon"/>
+<link href="manifest.webmanifest" rel="manifest"/>
+<meta content="#131313" name="theme-color"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="assets/js/tailwind.config.js?v=3"></script>
+<link href="assets/css/site.css?v=7" rel="stylesheet"/>
+</head>
+<body class="min-h-screen flex flex-col font-body-md antialiased selection:bg-secondary-container selection:text-on-secondary pb-28 md:pb-0">
+
+<main class="flex-grow pt-[140px] pb-stack-lg px-margin-mobile md:px-margin-desktop">
+    <nav class="font-label-mono text-[11px] text-on-surface-variant uppercase tracking-widest mb-stack-md" id="breadcrumb" aria-label="Migas de pan">
+        <a href="store.html" class="hover:text-secondary-container">Tienda</a>
+    </nav>
+    <div id="product-root" class="border border-outline-variant max-w-6xl">
+        <div class="p-stack-lg"><div class="nt-skeleton aspect-[2/1]"></div></div>
+    </div>
+</main>
+
+<!--DATA-->
+<script src="assets/js/api.js"></script>
+<script src="assets/js/chrome.js"></script>
+<script>NTChrome.mount({ active: "store" });</script>
+<script src="assets/js/cart.js"></script>
+<script src="assets/js/product-ui.js"></script>
+<script>
+    (async () => {
+        const root = document.getElementById("product-root");
+        // El servidor embebe el producto en window.__PRODUCT__ (null = no existe).
+        // Si la página se abre sin pasar por /producto/:slug, se pide a la API.
+        let product = window.__PRODUCT__;
+        if (product === undefined) {
+            const slug = decodeURIComponent(window.location.pathname.split("/").filter(Boolean).pop() || "");
+            try {
+                product = (await ntApi(`/shop/products/${encodeURIComponent(slug)}`)).product;
+            } catch {
+                product = null;
+            }
+        }
+
+        if (!product) {
+            root.innerHTML = `
+                <div class="p-stack-lg text-center space-y-stack-md">
+                    <p class="font-label-mono text-label-mono text-on-surface-variant uppercase">Este producto no existe o ya no está a la venta.</p>
+                    <a href="store.html" class="inline-block border-2 border-on-surface text-on-surface font-headline-lg text-headline-lg-mobile uppercase px-8 py-2 hover:bg-on-surface hover:text-primary-container transition-colors">Ir a la tienda</a>
+                </div>`;
+            return;
+        }
+
+        if (product.category) {
+            document.getElementById("breadcrumb").insertAdjacentHTML("beforeend",
+                ` / <a href="store.html?categoria=${encodeURIComponent(product.category.slug)}" class="hover:text-secondary-container">${ntEscapeHtml(product.category.name)}</a>`);
+        }
+        document.getElementById("breadcrumb").insertAdjacentHTML("beforeend",
+            ` / <span class="text-on-surface">${ntEscapeHtml(product.name)}</span>`);
+
+        NTProductUI.mount(root, product, { modal: false });
+    })();
+</script>
+</body>
+</html>

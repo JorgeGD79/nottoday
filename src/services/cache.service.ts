@@ -5,7 +5,12 @@ import { redis } from "@/lib/redis";
 // de un drop, así que se sirve desde Redis y solo golpea Postgres en caso de miss.
 export const CACHE_KEYS = {
   drops: "cache:drops:list",
-  shop: (page: number, pageSize: number) => `cache:shop:list:${page}:${pageSize}`,
+  // Todo lo del catálogo cuelga de "cache:shop:" para invalidarlo de una vez:
+  // listados (una clave por combinación de filtros), facetas y fichas.
+  shop: (queryKey: string) => `cache:shop:list:${queryKey}`,
+  shopFacets: "cache:shop:facets",
+  shopProduct: (slug: string) => `cache:shop:product:${slug}`,
+  sitemap: "cache:shop:sitemap",
   tickets: "cache:tickets:list",
   events: "cache:events:list",
   artists: "cache:artists:list",
@@ -40,7 +45,7 @@ export async function setCached(key: string, value: unknown, ttlSeconds: number)
  * ve la web pública: crear/editar/borrar producto o stock, cambiar dropStatus, etc.
  */
 export async function invalidateCatalogCache(): Promise<void> {
-  const keys = await redis.keys("cache:shop:list:*");
+  const keys = await redis.keys("cache:shop:*");
   await Promise.all([
     redis.del(CACHE_KEYS.drops),
     redis.del(CACHE_KEYS.tickets),

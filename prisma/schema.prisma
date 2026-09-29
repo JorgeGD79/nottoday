@@ -200,16 +200,43 @@ enum ProductStatus {
   AGOTADO
 }
 
+// Categorías del catálogo (camisetas, sudaderas, vinilos, pósters...).
+model Category {
+  id             String   @id @default(cuid())
+  name           String
+  slug           String   @unique
+  description    String?  @db.Text
+  seoTitle       String?
+  seoDescription String?
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  products Product[]
+
+  @@index([sortOrder])
+}
+
 model Product {
-  id          String        @id @default(cuid())
-  name        String
-  description String?       @db.Text
-  price       Decimal       @db.Decimal(10, 2)
-  images      String[]      @default([])
-  productType ProductType   @default(TIENDA_GENERAL)
-  status      ProductStatus @default(BORRADOR)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id             String        @id @default(cuid())
+  name           String
+  // URL amigable y estable (/producto/<slug>): se genera del nombre al crear.
+  slug           String        @unique
+  description    String?       @db.Text
+  price          Decimal       @db.Decimal(10, 2)
+  images         String[]      @default([])
+  productType    ProductType   @default(TIENDA_GENERAL)
+  status         ProductStatus @default(BORRADOR)
+  seoTitle       String?
+  seoDescription String?
+  // Texto de búsqueda normalizado (minúsculas, sin acentos): nombre +
+  // descripción + categoría. Lo mantiene la app al guardar (ver normalizeSearch).
+  searchText     String        @default("")
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   variants   ProductVariant[]
   dropMeta   DropMetadata?
@@ -222,6 +249,7 @@ model Product {
   event   Event?  @relation(fields: [eventId], references: [id], onDelete: SetNull)
 
   @@index([productType, status])
+  @@index([categoryId])
 }
 
 // Metadatos exclusivos para productos tipo DROP_EXCLUSIVO (cuenta atrás / apertura)
