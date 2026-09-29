@@ -209,6 +209,27 @@ export function latePaymentRefundedEmail(order: OrderEmailData) {
   return { subject: `Pedido no completado: reembolso emitido · ${BRAND}`, html, text };
 }
 
+export function unsubscribeUrl(token: string) {
+  return `${env.APP_URL}/newsletter.html?baja=${encodeURIComponent(token)}`;
+}
+
+export function newsletterWelcomeEmail(token: string) {
+  const unsub = unsubscribeUrl(token);
+  const html = layout(
+    "Estás dentro",
+    `<p style="margin:0;">Te has suscrito a la newsletter de ${BRAND}: lanzamientos, fechas y acceso anticipado a los drops antes que nadie. Un correo cada dos semanas, sin ruido.</p>
+     <p style="margin:24px 0 0;">${button(env.APP_URL, "Ir a la web")}</p>`,
+    `Recibes este correo porque te suscribiste en ${escapeHtml(env.APP_URL.replace(/^https?:\/\//, ""))}. <a href="${escapeHtml(unsub)}" style="color:#8e9192;">Darme de baja</a>.`
+  );
+  const text = `Te has suscrito a la newsletter de ${BRAND}.\n\nPara darte de baja: ${unsub}`;
+  return {
+    subject: `Bienvenido a la newsletter · ${BRAND}`,
+    html,
+    text,
+    headers: { "List-Unsubscribe": `<${unsub}>` },
+  };
+}
+
 export function bookingReceivedEmail(booking: { type: string; requesterName: string; email: string; details: string }) {
   const label = booking.type === "CONTRATACION" ? "Booking" : "Colaboración";
   const html = layout(

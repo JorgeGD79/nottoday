@@ -1263,6 +1263,64 @@ const Sections = {
     },
   },
 
+  // ---------------- NEWSLETTER ----------------
+  newsletter: {
+    title: "Newsletter",
+    icon: "alternate_email",
+    adminOnly: true,
+    page: 1,
+    statusFilter: "ACTIVO",
+    async load() {
+      host().innerHTML = `<div class="nt-skeleton h-40"></div>`;
+      const params = new URLSearchParams({ page: this.page, pageSize: 50 });
+      if (this.statusFilter) params.set("status", this.statusFilter);
+      const { subscribers, stats, pagination } = await adminApi(`/admin/newsletter?${params}`);
+
+      actionsHost().innerHTML = `
+        <span class="font-label-mono text-[12px] text-secondary uppercase">${stats.active} activos</span>
+        <select id="nl-status" class="nt-input !w-auto font-label-mono text-[12px] uppercase">
+          ${[["ACTIVO", "Activos"], ["BAJA", "Bajas"], ["", "Todos"]].map(([v, l]) => `<option value="${v}" ${this.statusFilter === v ? "selected" : ""}>${l}</option>`).join("")}
+        </select>
+        <span class="font-label-mono text-[12px] text-on-surface-variant uppercase">${pagination.page} / ${Math.max(pagination.totalPages, 1)}</span>
+        <button id="nl-prev" class="adm-icon-btn" ${pagination.page <= 1 ? "disabled" : ""}><span class="material-symbols-outlined">chevron_left</span></button>
+        <button id="nl-next" class="adm-icon-btn" ${pagination.page >= pagination.totalPages ? "disabled" : ""}><span class="material-symbols-outlined">chevron_right</span></button>
+        <button id="nl-export" class="bg-secondary-container text-primary-container font-headline-lg text-[18px] uppercase px-5 py-2 hover:bg-on-surface transition-colors">Exportar CSV</button>`;
+      document.getElementById("nl-status").addEventListener("change", (e) => { this.statusFilter = e.target.value; this.page = 1; this.load(); });
+      document.getElementById("nl-prev").addEventListener("click", () => { this.page--; this.load(); });
+      document.getElementById("nl-next").addEventListener("click", () => { this.page++; this.load(); });
+      document.getElementById("nl-export").addEventListener("click", () => this.exportCsv());
+
+      const rows = subscribers.map((sub) => `
+        <tr>
+          <td class="font-label-mono text-[12px]">${ntEscapeHtml(sub.email)}</td>
+          <td>${statusBadge(sub.status)}</td>
+          <td class="font-label-mono text-[12px] text-on-surface-variant">${ntEscapeHtml(sub.source)}</td>
+          <td class="font-label-mono text-[12px] whitespace-nowrap">${fmtShortDate(sub.consentAt)}</td>
+          <td class="font-label-mono text-[12px] whitespace-nowrap text-on-surface-variant">${sub.unsubscribedAt ? fmtShortDate(sub.unsubscribedAt) : "—"}</td>
+        </tr>`);
+      host().innerHTML = renderTable(["Email", "Estado", "Origen", "Consentimiento", "Baja"], rows, "Sin suscriptores.");
+    },
+    // El export necesita el Authorization header, así que no vale un <a href>:
+    // se descarga como blob y se ofrece como archivo.
+    async exportCsv() {
+      try {
+        const res = await fetch("/api/admin/newsletter/export", { headers: { Authorization: `Bearer ${Auth.token}` } });
+        if (!res.ok) {
+          const body = await res.json().catch(() => null);
+          throw new Error((body && body.error) || `Error ${res.status}`);
+        }
+        const url = URL.createObjectURL(await res.blob());
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `newsletter-${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        ntToast(err.message, true);
+      }
+    },
+  },
+
   // ---------------- LOGS ----------------
   logs: {
     title: "Auditoría",

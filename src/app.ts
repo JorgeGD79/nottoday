@@ -39,6 +39,8 @@ import { adminShippingRoutes } from "@/modules/admin/shipping/shipping.routes";
 import { adminOrdersRoutes } from "@/modules/admin/orders/orders.routes";
 import { adminUploadsRoutes } from "@/modules/admin/uploads/uploads.routes";
 import { adminTicketsRoutes } from "@/modules/admin/tickets/tickets.routes";
+import { publicNewsletterRoutes } from "@/modules/public/newsletter/newsletter.routes";
+import { adminNewsletterRoutes } from "@/modules/admin/newsletter/newsletter.routes";
 
 export async function buildApp(): Promise<FastifyInstance> {
   // Dejamos que Fastify construya su propia instancia de pino a partir de
@@ -173,6 +175,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(publicRadioRoutes, { prefix: "/api/radio" });
   await app.register(publicShippingRoutes, { prefix: "/api/shipping" });
   await app.register(publicOrdersRoutes, { prefix: "/api/orders" });
+  await app.register(publicNewsletterRoutes, { prefix: "/api/newsletter" });
   await app.register(authRoutes, { prefix: "/api/auth" });
 
   // --- API privada / Panel de Administración ---
@@ -188,6 +191,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(adminOrdersRoutes, { prefix: "/api/admin/orders" });
   await app.register(adminUploadsRoutes, { prefix: "/api/admin/uploads" });
   await app.register(adminTicketsRoutes, { prefix: "/api/admin/tickets" });
+  await app.register(adminNewsletterRoutes, { prefix: "/api/admin/newsletter" });
 
   app.get("/health", async () => ({ status: "ok" }));
 

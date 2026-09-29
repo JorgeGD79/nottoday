@@ -512,6 +512,32 @@ model Booking {
 }
 
 // ----------------------------------------------------------------------------
+// NEWSLETTER (suscripción con consentimiento explícito, RGPD)
+// ----------------------------------------------------------------------------
+
+enum NewsletterStatus {
+  ACTIVO
+  BAJA
+}
+
+model NewsletterSubscriber {
+  id               String           @id @default(cuid())
+  email            String           @unique
+  status           NewsletterStatus @default(ACTIVO)
+  // Prueba del consentimiento: cuándo, desde dónde y en qué formulario.
+  consentAt        DateTime
+  consentIp        String?
+  source           String           @default("newsletter")
+  // Token del enlace "darse de baja" de cada email (no requiere login).
+  unsubscribeToken String           @unique
+  unsubscribedAt   DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([status, createdAt])
+}
+
+// ----------------------------------------------------------------------------
 // 8. LOGS DE AUDITORÍA
 // ----------------------------------------------------------------------------
 
