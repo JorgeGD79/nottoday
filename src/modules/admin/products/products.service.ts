@@ -1,7 +1,9 @@
 import { prisma } from "@/lib/prisma";
+import { env } from "@/config/env";
 import { AppError } from "@/utils/AppError";
 import { normalizeSearch, uniqueSlug } from "@/utils/slug";
-import { Prisma, ProductType } from "@prisma/client";
+import { DropStatus, Prisma, ProductType, StockNotificationStatus } from "@prisma/client";
+import { notifyOpenedDrops, notifyRestock } from "@/services/stock-alerts.service";
 import { CreateProductInput, UpdateProductInput } from "./products.schema";
 
 type Tx = Prisma.TransactionClient;
@@ -91,14 +93,18 @@ export async function createProductWithInventory(input: CreateProductInput) {
  *   - las nuevas se crean;
  *   - las que ya no vienen se desactivan (no se borran: hay pedidos que las
  *     referencian) y dejan de verse en la tienda.
+ * Las variantes que pasan de agotadas a tener stock disparan los avisos de
+ * reposición; abrir un drop a mano avisa a su lista de espera.
  */
 export async function updateProductWithInventory(productId: string, input: UpdateProductInput) {
-  const existing = await prisma.product.findUnique({ where: { id: productId } });
+  const existing = await prisma.product.findUnique({ where: { id: productId }, include: { dropMeta: true } });
   if (!existing) {
     throw AppError.notFound("Producto");
   }
 
-  return prisma.$transaction(async (tx) => {
+  const restocked: string[] = [];
+
+  const product = await prisma.$transaction(async (tx) => {
     if (input.slug && input.slug !== existing.slug && (await slugTaken(tx, productId)(input.slug))) {
       throw AppError.conflict(`El slug "${input.slug}" ya lo usa otro producto`);
     }
@@ -137,6 +143,7 @@ export async function updateProductWithInventory(productId: string, input: Updat
         const found = byKey.get(key(v));
         if (found) {
           keep.add(found.id);
+          const wasAvailable = found.active ? found.stockAvailable - found.stockReserved : 0;
           await tx.productVariant.update({
             where: { id: found.id },
             data: {
@@ -146,8 +153,11 @@ export async function updateProductWithInventory(productId: string, input: Updat
               sortOrder: idx * 10,
               active: true,
               stockAvailable: v.stockAvailable,
+              // Reposición por encima del umbral: rearma la alerta de stock bajo.
+              ...(v.stockAvailable - found.stockReserved > env.LOW_STOCK_THRESHOLD ? { lowStockAlertedAt: null } : {}),
             },
           });
+          if (wasAvailable <= 0 && v.stockAvailable - found.stockReserved > 0) restocked.push(found.id);
         } else {
           const created = await tx.productVariant.create({
             data: {
@@ -160,12 +170,18 @@ export async function updateProductWithInventory(productId: string, input: Updat
             },
           });
           keep.add(created.id);
+          if (v.stockAvailable > 0) restocked.push(created.id);
         }
       }
 
       const retired = current.filter((v) => !keep.has(v.id) && v.active).map((v) => v.id);
       if (retired.length) {
         await tx.productVariant.updateMany({ where: { id: { in: retired } }, data: { active: false } });
+        // Nadie va a recibir un aviso de una variante que ya no se vende.
+        await tx.stockNotification.updateMany({
+          where: { productVariantId: { in: retired }, status: StockNotificationStatus.PENDIENTE },
+          data: { status: StockNotificationStatus.CANCELADO },
+        });
       }
     }
 
@@ -186,6 +202,14 @@ export async function updateProductWithInventory(productId: string, input: Updat
 
     return tx.product.findUniqueOrThrow({ where: { id: productId }, include: productInclude });
   });
+
+  // Efectos fuera de la transacción (envían emails).
+  await notifyRestock(restocked);
+  if (input.dropMeta?.dropStatus === DropStatus.ABIERTO && existing.dropMeta?.dropStatus !== DropStatus.ABIERTO) {
+    await notifyOpenedDrops();
+  }
+
+  return product;
 }
 
 export async function deleteProduct(productId: string) {
@@ -205,8 +229,14 @@ export async function deleteProduct(productId: string) {
 }
 
 export async function listProductsAdmin() {
-  return prisma.product.findMany({
-    include: productInclude,
+  const products = await prisma.product.findMany({
+    include: {
+      ...productInclude,
+      _count: {
+        select: { stockNotifications: { where: { status: StockNotificationStatus.PENDIENTE } } },
+      },
+    },
     orderBy: { createdAt: "desc" },
   });
+  return { products, lowStockThreshold: env.LOW_STOCK_THRESHOLD };
 }

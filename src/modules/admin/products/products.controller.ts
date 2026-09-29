@@ -14,8 +14,8 @@ import { recordAuditLog } from "@/services/audit-log.service";
 import { invalidateCatalogCache } from "@/services/cache.service";
 
 export async function listProductsHandler(_request: FastifyRequest, reply: FastifyReply) {
-  const products = await listProductsAdmin();
-  return reply.send({ products });
+  const { products, lowStockThreshold } = await listProductsAdmin();
+  return reply.send({ products, lowStockThreshold });
 }
 
 /**

@@ -4,6 +4,7 @@ import { env } from "@/config/env";
 import { AppError } from "@/utils/AppError";
 import { quoteCart } from "@/services/pricing.service";
 import { assignInvoiceNumber } from "@/services/invoice.service";
+import { checkLowStock, notifyRestock } from "@/services/stock-alerts.service";
 import { variantLabel } from "@/utils/slug";
 import { assertDropPurchasable } from "@/services/drop.service";
 import { createPaymentIntent, toStripeAmount } from "@/services/stripe.service";
@@ -231,7 +232,12 @@ export async function releaseOrderStock(orderId: string, finalStatus: OrderStatu
     return true;
   });
 
-  if (released) await invalidateCatalogCache();
+  if (released) {
+    await invalidateCatalogCache();
+    // La reserva liberada puede devolver a la venta una variante que se veía
+    // agotada: avisamos a quien lo pidió.
+    await notifyRestock(await orderVariantIds(orderId));
+  }
   return released;
 }
 
@@ -290,6 +296,12 @@ export async function markOrderAsPaid(orderId: string) {
   if (paid) {
     await invalidateCatalogCache();
     await notifyOrder(orderId, "confirmation");
+    await checkLowStock(await orderVariantIds(orderId));
   }
   return paid;
+}
+
+export async function orderVariantIds(orderId: string) {
+  const items = await prisma.orderItem.findMany({ where: { orderId }, select: { productVariantId: true } });
+  return [...new Set(items.map((i) => i.productVariantId))];
 }

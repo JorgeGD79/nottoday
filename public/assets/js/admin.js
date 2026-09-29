@@ -379,15 +379,19 @@ const Sections = {
       actionsHost().innerHTML = newButton();
       document.getElementById("btn-new").addEventListener("click", () => this.form());
       host().innerHTML = `<div class="nt-skeleton h-40"></div>`;
-      const { products } = await adminApi("/admin/products");
+      const { products, lowStockThreshold } = await adminApi("/admin/products");
       this.items = products;
       const stockCell = (p) => {
         const active = p.variants.filter((v) => v.active);
         if (!active.length) return "—";
-        return active.map((v) =>
-          `<span title="${v.stockReserved ? `${v.stockReserved} reservadas en pedidos pendientes` : ""}">${ntEscapeHtml(v.color ? `${v.color}/${v.size}` : v.size)}:${v.stockAvailable}</span>`
-        ).join(" · ");
+        return active.map((v) => {
+          const available = v.stockAvailable - v.stockReserved;
+          const cls = available <= 0 ? "text-error" : available <= lowStockThreshold ? "text-secondary" : "";
+          return `<span class="${cls}" title="${v.stockReserved ? `${v.stockReserved} reservadas en pedidos pendientes` : ""}">${ntEscapeHtml(v.color ? `${v.color}/${v.size}` : v.size)}:${v.stockAvailable}</span>`;
+        }).join(" · ");
       };
+      const lowCount = products.filter((p) => p.productType !== "TICKET_EVENTO" &&
+        p.variants.some((v) => v.active && v.stockAvailable - v.stockReserved <= lowStockThreshold)).length;
       const rows = products.map((p) => `
         <tr>
           <td>
@@ -401,11 +405,14 @@ const Sections = {
           )}</td>
           <td>${statusBadge(p.status)}</td>
           <td class="font-label-mono text-[12px]">${stockCell(p)}</td>
+          <td class="font-label-mono text-[12px]">${p._count.stockNotifications ? `<span class="text-secondary" title="Clientes esperando reposición o apertura">${p._count.stockNotifications} en espera</span>` : "—"}</td>
           <td>${p.dropMeta ? `${badge(p.dropMeta.dropStatus, p.dropMeta.dropStatus === "ABIERTO" ? "ok" : "muted")}<br/><span class="font-label-mono text-[11px] text-on-surface-variant">${fmtShortDate(p.dropMeta.releaseAt)}</span>` : "—"}</td>
           ${rowActions(p.id)}
         </tr>`);
-      host().innerHTML = renderTable(
-        ["Nombre", "Precio", "Tipo", "Estado", "Stock por variante", "Drop", ""],
+      host().innerHTML = (lowCount
+        ? `<p class="font-label-mono text-[12px] text-secondary uppercase mb-3">${lowCount} producto(s) con stock bajo (≤ ${lowStockThreshold} disponibles) · en rojo, agotado</p>`
+        : "") + renderTable(
+        ["Nombre", "Precio", "Tipo", "Estado", "Stock por variante", "Avisos", "Drop", ""],
         rows, "Sin productos. Crea el primero.");
       wireRowActions(this.items, (p) => this.form(p), (p) =>
         submitAndReload(adminApi(`/admin/products/${p.id}`, { method: "DELETE" }), "products", "Producto eliminado"));

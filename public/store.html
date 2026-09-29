@@ -197,10 +197,15 @@
                 ${product.description ? `<p class="font-body-md text-[14px] text-on-surface-variant line-clamp-2">${ntEscapeHtml(product.description)}</p>` : ""}
                 ${variantBtns ? `<div class="flex gap-2 flex-wrap" data-sizes>${variantBtns}</div>` : ""}
                 <div class="mt-auto pt-stack-md">
-                    <button data-add-to-cart="${product.id}" ${isBlocked ? "disabled" : ""}
-                        class="w-full bg-transparent border-2 border-on-surface text-on-surface font-headline-lg text-headline-lg-mobile uppercase py-2 hover:bg-on-surface hover:text-primary-container transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-on-surface">
-                        ${soldOut ? "Sold Out" : disabled ? "Locked" : "Add to Cart"}
-                    </button>
+                    ${isBlocked
+                        ? `<button data-view-btn="${product.id}"
+                              class="w-full bg-transparent border-2 border-secondary-container text-secondary-container font-headline-lg text-headline-lg-mobile uppercase py-2 hover:bg-secondary-container hover:text-on-secondary transition-colors">
+                              Avísame
+                           </button>`
+                        : `<button data-add-to-cart="${product.id}"
+                              class="w-full bg-transparent border-2 border-on-surface text-on-surface font-headline-lg text-headline-lg-mobile uppercase py-2 hover:bg-on-surface hover:text-primary-container transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                              Add to Cart
+                           </button>`}
                 </div>
             </div>
         </article>`;
@@ -210,10 +215,10 @@
     const selectedVariant = new Map();
 
     function wireCards(container) {
-        // Clic en la imagen → abre el detalle del producto (galería + descripción).
-        container.querySelectorAll("[data-view]").forEach((el) => {
+        // Clic en la imagen (o en "Avísame") → abre el detalle del producto.
+        container.querySelectorAll("[data-view], [data-view-btn]").forEach((el) => {
             el.addEventListener("click", () => {
-                const p = productIndex.get(el.dataset.view);
+                const p = productIndex.get(el.dataset.view || el.dataset.viewBtn);
                 if (p) openProductModal(p);
             });
         });

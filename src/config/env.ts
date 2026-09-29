@@ -68,13 +68,16 @@ const envSchema = z
     COMPANY_EMAIL: z.string().default(""),
     // IVA aplicado al envío (los productos llevan el suyo propio).
     SHIPPING_TAX_RATE: z.coerce.number().min(0).max(100).default(21),
+    // Unidades disponibles a partir de las cuales se avisa de stock bajo.
+    LOW_STOCK_THRESHOLD: z.coerce.number().int().nonnegative().default(3),
 
     // Solo desarrollo/pruebas: salta la llamada a Stripe en el checkout y confirma
     // el pedido como pagado directamente, para poder simular la web de punta a punta
     // sin claves de Stripe reales. PROHIBIDO en producción (ver superRefine).
     CHECKOUT_SKIP_STRIPE: booleanFlag,
 
-    ABANDONED_CART_CRON: z.string().default("0 */2 * * *"),
+    // Cada 15 min: además del barrido de carritos, avisa de los drops que acaban de abrir.
+    ABANDONED_CART_CRON: z.string().default("*/15 * * * *"),
     ABANDONED_CART_THRESHOLD_HOURS: z.coerce.number().default(2),
 
     // Expiración de pedidos PENDIENTE que nunca se pagan: libera la reserva de stock.

@@ -5,6 +5,7 @@ import { AppError } from "@/utils/AppError";
 import { invalidateCatalogCache } from "@/services/cache.service";
 import { voidTicketsForOrder } from "@/services/ticket.service";
 import { assignCreditNoteNumber } from "@/services/invoice.service";
+import { notifyRestock } from "@/services/stock-alerts.service";
 import { notifyOrder } from "@/services/order-notifications.service";
 import { isRealPaymentIntent, refundPaymentIntent, stripe } from "@/services/stripe.service";
 import {
@@ -130,7 +131,10 @@ async function refundAndClose(
     }
   });
 
-  if (opts.restock) await invalidateCatalogCache();
+  if (opts.restock) {
+    await invalidateCatalogCache();
+    await notifyRestock([...new Set(order.items.map((i) => i.productVariantId))]);
+  }
   await notifyOrder(orderId, opts.email);
 }
 

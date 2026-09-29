@@ -243,10 +243,11 @@ model Product {
   categoryId String?
   category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
-  variants   ProductVariant[]
-  dropMeta   DropMetadata?
-  cartItems  CartItem[]
-  orderItems OrderItem[]
+  variants           ProductVariant[]
+  dropMeta           DropMetadata?
+  cartItems          CartItem[]
+  orderItems         OrderItem[]
+  stockNotifications StockNotification[]
 
   // Solo se usa (y es obligatorio) cuando productType = TICKET_EVENTO: liga
   // el producto-ticket a su evento. Único -> como mucho un ticket por evento.
@@ -280,25 +281,57 @@ model DropMetadata {
 // `color` opcional ("" = sin color). "GENERAL" es la única variante de un
 // producto TICKET_EVENTO, donde stockAvailable = aforo del evento.
 model ProductVariant {
-  id             String   @id @default(cuid())
-  productId      String
-  size           String
-  color          String   @default("")
-  sku            String?
-  sortOrder      Int      @default(0)
+  id                String    @id @default(cuid())
+  productId         String
+  size              String
+  color             String    @default("")
+  sku               String?
+  sortOrder         Int       @default(0)
   // Una variante retirada deja de venderse pero se conserva: los pedidos
   // antiguos la referencian (borrarla arrastraría sus líneas de pedido).
-  active         Boolean  @default(true)
-  stockAvailable Int      @default(0)
-  stockReserved  Int      @default(0)
-  updatedAt      DateTime @updatedAt
+  active            Boolean   @default(true)
+  stockAvailable    Int       @default(0)
+  stockReserved     Int       @default(0)
+  // Se marca al enviar la alerta de stock bajo; se limpia al reponer.
+  lowStockAlertedAt DateTime?
+  updatedAt         DateTime  @updatedAt
 
-  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
-  cartItems  CartItem[]
-  orderItems OrderItem[]
+  product            Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cartItems          CartItem[]
+  orderItems         OrderItem[]
+  stockNotifications StockNotification[]
 
   @@unique([productId, size, color])
   @@index([productId])
+}
+
+// ----------------------------------------------------------------------------
+// AVISOS DE REPOSICIÓN / LISTA DE ESPERA DE DROPS
+// ----------------------------------------------------------------------------
+
+enum StockNotificationStatus {
+  PENDIENTE
+  NOTIFICADO
+  CANCELADO
+}
+
+// "Avísame": para una variante agotada (reposición) o para un drop que aún no
+// ha salido (productVariantId null = cualquier variante / apertura del drop).
+model StockNotification {
+  id               String                  @id @default(cuid())
+  email            String
+  productId        String
+  productVariantId String?
+  status           StockNotificationStatus @default(PENDIENTE)
+  consentIp        String?
+  createdAt        DateTime                @default(now())
+  notifiedAt       DateTime?
+
+  product        Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productVariant ProductVariant? @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
+
+  @@index([productId, status])
+  @@index([productVariantId, status])
 }
 
 // ----------------------------------------------------------------------------

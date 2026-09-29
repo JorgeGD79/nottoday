@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { Prisma, ProductStatus, ProductType } from "@prisma/client";
+import { DropStatus, Prisma, ProductStatus, ProductType, StockNotificationStatus } from "@prisma/client";
 import { AppError } from "@/utils/AppError";
 import { CACHE_KEYS, CACHE_TTL_SECONDS, getCached, setCached } from "@/services/cache.service";
 import { effectiveDropStatus } from "@/services/drop.service";
@@ -175,4 +175,60 @@ export async function productDetailHandler(request: FastifyRequest, reply: Fasti
   const product = await findPublicProduct(slug);
   if (!product) throw AppError.notFound("Producto");
   return reply.send({ product });
+}
+
+const notifySchema = z.object({
+  productId: z.string().cuid(),
+  productVariantId: z.string().cuid().optional(),
+  email: z.string().trim().toLowerCase().email().max(254),
+  consent: z.literal(true, { errorMap: () => ({ message: "Debes aceptar que te escribamos para el aviso" }) }),
+});
+
+/**
+ * POST /api/shop/notify — "Avísame".
+ *   - Con variante: reposición de esa talla/color agotada.
+ *   - Sin variante en un drop que no ha abierto: lista de espera de apertura.
+ *   - Sin variante en un producto normal agotado: cualquier talla que vuelva.
+ * Respuesta idéntica exista o no ya el aviso (no revela quién se apuntó).
+ */
+export async function notifyMeHandler(request: FastifyRequest, reply: FastifyReply) {
+  const input = notifySchema.parse(request.body);
+
+  const product = await prisma.product.findUnique({
+    where: { id: input.productId },
+    include: { variants: { where: { active: true } }, dropMeta: true },
+  });
+  if (!product || product.productType === ProductType.TICKET_EVENTO || product.status === ProductStatus.BORRADOR) {
+    throw AppError.notFound("Producto");
+  }
+  const available = (v: { stockAvailable: number; stockReserved: number }) => v.stockAvailable - v.stockReserved;
+  const dropOpen = !product.dropMeta || effectiveDropStatus(product.dropMeta) === DropStatus.ABIERTO;
+
+  if (input.productVariantId) {
+    const variant = product.variants.find((v) => v.id === input.productVariantId);
+    if (!variant) throw AppError.notFound("Variante de producto");
+    if (dropOpen && available(variant) > 0) throw new AppError("Esa talla tiene stock: puedes comprarla ya", 422);
+  } else if (dropOpen && product.variants.some((v) => available(v) > 0)) {
+    throw new AppError("Este producto tiene stock: elige tu talla", 422);
+  }
+
+  const existing = await prisma.stockNotification.findFirst({
+    where: {
+      email: input.email,
+      productId: input.productId,
+      productVariantId: input.productVariantId ?? null,
+      status: StockNotificationStatus.PENDIENTE,
+    },
+  });
+  if (!existing) {
+    await prisma.stockNotification.create({
+      data: {
+        email: input.email,
+        productId: input.productId,
+        productVariantId: input.productVariantId ?? null,
+        consentIp: request.ip,
+      },
+    });
+  }
+  return reply.code(201).send({ ok: true });
 }

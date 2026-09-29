@@ -244,3 +244,46 @@ export function bookingReceivedEmail(booking: { type: string; requesterName: str
   const text = `Nueva solicitud (${label}) de ${booking.requesterName} <${booking.email}>\n\n${booking.details}`;
   return { subject: `Nueva solicitud de ${label.toLowerCase()}: ${booking.requesterName}`, html, text };
 }
+
+// --------------------------------------------------------------------------
+// Stock y drops
+// --------------------------------------------------------------------------
+
+export const productUrl = (slug: string) => `${env.APP_URL}/producto/${encodeURIComponent(slug)}`;
+
+/** Aviso interno al equipo: variantes que han caído al umbral de stock bajo. */
+export function lowStockEmail(rows: { product: string; variant: string; available: number }[]) {
+  const list = rows
+    .map((r) => `<tr><td style="padding:6px 0;border-bottom:1px solid #353535;color:#e5e2e1;">${escapeHtml(r.product)} <span style="color:#8e9192;">(${escapeHtml(r.variant)})</span></td><td style="padding:6px 0;border-bottom:1px solid #353535;text-align:right;color:${ACCENT};">${r.available} ud.</td></tr>`)
+    .join("");
+  const html = layout(
+    "Stock bajo",
+    `<p style="margin:0;">Estas variantes han quedado con pocas unidades disponibles:</p>
+     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;margin:16px 0;">${list}</table>
+     <p style="margin:24px 0 0;">${button(`${env.APP_URL}/admin.html#products`, "Reponer en el panel")}</p>`
+  );
+  const text = `Stock bajo:\n${rows.map((r) => `- ${r.product} (${r.variant}): ${r.available} ud.`).join("\n")}`;
+  return { subject: `Stock bajo: ${rows.length} variante(s)`, html, text };
+}
+
+export function restockEmail(p: { name: string; slug: string; variant: string }) {
+  const url = productUrl(p.slug);
+  const html = layout(
+    "Ha vuelto",
+    `<p style="margin:0;"><strong style="color:#e5e2e1;">${escapeHtml(p.name)}</strong> (${escapeHtml(p.variant)}) vuelve a estar disponible. Las unidades son limitadas: si lo quieres, no esperes mucho.</p>
+     <p style="margin:24px 0 0;">${button(url, "Lo quiero")}</p>`,
+    `Recibes este aviso porque lo pediste en la tienda. Solo te escribimos una vez.`
+  );
+  return { subject: `Ha vuelto: ${p.name}`, html, text: `${p.name} (${p.variant}) vuelve a estar disponible: ${url}` };
+}
+
+export function dropOpenEmail(p: { name: string; slug: string }) {
+  const url = productUrl(p.slug);
+  const html = layout(
+    "El drop está abierto",
+    `<p style="margin:0;"><strong style="color:#e5e2e1;">${escapeHtml(p.name)}</strong> ya está a la venta. Tirada limitada, sin reposición.</p>
+     <p style="margin:24px 0 0;">${button(url, "Entrar al drop")}</p>`,
+    `Recibes este aviso porque te apuntaste a la lista de espera del drop. Solo te escribimos una vez.`
+  );
+  return { subject: `Ya disponible: ${p.name}`, html, text: `${p.name} ya está a la venta: ${url}` };
+}
