@@ -6,6 +6,7 @@ import { validateAndPriceDiscount } from "@/services/discount.service";
 import { assertDropPurchasable } from "@/services/drop.service";
 import { createPaymentIntent, toStripeAmount } from "@/services/stripe.service";
 import { invalidateCatalogCache } from "@/services/cache.service";
+import { issueTicketsForOrder } from "@/services/ticket.service";
 import { notifyOrder } from "@/services/order-notifications.service";
 import { CheckoutInput } from "./checkout.schema";
 
@@ -235,7 +236,7 @@ export async function releaseOrderStock(orderId: string, finalStatus: OrderStatu
 /**
  * Convierte un pedido en venta dentro de una transacción ya abierta: lo pasa a
  * PAGADO (solo si su estado actual está en `claimFrom`), descuenta el stock,
- * y suma el uso del cupón. Devuelve false si otro proceso
+ * suma el uso del cupón y emite las entradas. Devuelve false si otro proceso
  * ya lo había movido de estado (webhook duplicado, barrido concurrente...).
  *
  * `fromReservation`: el stock estaba reservado (flujo normal) y hay que bajar
@@ -271,12 +272,13 @@ export async function commitSale(
     });
   }
 
+  await issueTicketsForOrder(tx, orderId);
   return true;
 }
 
 /**
  * Confirma el pago de un pedido PENDIENTE: convierte la reserva en venta real,
- * y envía el email de confirmación. Devuelve true solo si
+ * emite las entradas y envía el email de confirmación. Devuelve true solo si
  * esta llamada fue la que hizo la transición (idempotente ante reintentos).
  */
 export async function markOrderAsPaid(orderId: string) {

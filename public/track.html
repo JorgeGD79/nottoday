@@ -124,6 +124,41 @@
         </div>`;
     }
 
+    const TICKET_STATUS = {
+        VALIDA: { label: "Válida", cls: "text-secondary-container border-secondary-container" },
+        USADA: { label: "Usada", cls: "text-on-surface-variant border-outline-variant" },
+        ANULADA: { label: "Anulada", cls: "text-error border-error" },
+    };
+
+    function ticketsHtml(tickets) {
+        if (!tickets || !tickets.length) return "";
+        return `
+        <div class="lg:col-span-12 nt-card">
+            <span class="font-label-mono text-[11px] text-secondary-container uppercase tracking-widest">Tus entradas</span>
+            <p class="font-body-md text-[14px] text-on-surface-variant mt-2">Enseña cada QR en la puerta (en el móvil vale). Cada código solo se puede usar una vez.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-gutter mt-stack-md">
+                ${tickets.map((t, i) => {
+                    const st = TICKET_STATUS[t.status] || TICKET_STATUS.VALIDA;
+                    return `
+                    <div class="border border-outline-variant/30 p-4 flex flex-col gap-3">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0">
+                                <span class="font-label-mono text-[11px] text-on-surface-variant uppercase">Entrada ${i + 1} / ${tickets.length}</span>
+                                <h3 class="font-headline-lg text-[18px] uppercase leading-tight text-on-surface mt-1">${ntEscapeHtml(t.event.title)}</h3>
+                                <p class="font-label-mono text-[12px] text-on-surface-variant mt-1">${ntEscapeHtml(ntFormatEventDate(t.event.date))} · ${ntEscapeHtml(t.event.venue)}</p>
+                            </div>
+                            <span class="border px-2 py-0.5 font-label-mono text-[11px] uppercase whitespace-nowrap ${st.cls}">${st.label}</span>
+                        </div>
+                        <div class="bg-white p-3 self-center ${t.status === "VALIDA" ? "" : "opacity-30"}">
+                            <img src="/api/tickets/qr/${encodeURIComponent(t.code)}" alt="QR de la entrada" width="200" height="200" class="block w-[200px] h-[200px]"/>
+                        </div>
+                        <p class="font-label-mono text-[11px] text-on-surface-variant text-center break-all">${ntEscapeHtml(t.code)}</p>
+                    </div>`;
+                }).join("")}
+            </div>
+        </div>`;
+    }
+
     function renderOrder(order) {
         const steps = buildSteps(order);
         const result = document.getElementById("track-result");
@@ -154,7 +189,8 @@
                 <div class="flex justify-between text-on-surface-variant"><span class="uppercase">Envío${order.shippingMethodName ? ` · ${ntEscapeHtml(order.shippingMethodName)}` : ""}</span><span>${Number(order.shippingCost) === 0 ? "Gratis" : ntFormatMoney(order.shippingCost)}</span></div>
                 <div class="flex justify-between text-on-surface border-t border-outline-variant/30 pt-2"><span class="uppercase font-bold">Total</span><span class="font-bold">${ntFormatMoney(order.total)}</span></div>
             </div>
-        </div>`;
+        </div>
+        ${ticketsHtml(order.tickets)}`;
 
         result.querySelectorAll("[data-copy]").forEach((btn) =>
             btn.addEventListener("click", async () => {

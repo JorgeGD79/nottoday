@@ -13,6 +13,8 @@ const querySchema = z.object({ email: z.string().email() });
  * es el par id (cuid no adivinable) + email de compra: si no coinciden ambos,
  * 404 genérico sin revelar si el pedido existe. Se expone solo el subconjunto
  * necesario para el timeline — nunca la dirección postal completa ni el teléfono.
+ * Incluye las entradas del pedido (con su código) para mostrar los QR: quien
+ * tiene id + email es el comprador, el mismo que las recibe por correo.
  */
 export async function trackOrderHandler(request: FastifyRequest, reply: FastifyReply) {
   const { id } = paramsSchema.parse(request.params);
@@ -41,6 +43,15 @@ export async function trackOrderHandler(request: FastifyRequest, reply: FastifyR
           product: { select: { name: true, productType: true } },
           productVariant: { select: { size: true } },
         },
+      },
+      tickets: {
+        select: {
+          code: true,
+          status: true,
+          checkedInAt: true,
+          event: { select: { title: true, date: true, venue: true } },
+        },
+        orderBy: { createdAt: "asc" },
       },
     },
   });

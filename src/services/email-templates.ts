@@ -20,9 +20,16 @@ export function escapeHtml(value: unknown): string {
 const money = (value: unknown) =>
   new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(Number(value));
 
+const longDate = (date: Date) =>
+  new Date(date).toLocaleString("es-ES", {
+    weekday: "long", day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit",
+    timeZone: "Europe/Madrid",
+  });
+
 export const trackUrl = (orderId: string, email: string) =>
   `${env.APP_URL}/track.html?order=${encodeURIComponent(orderId)}&email=${encodeURIComponent(email)}`;
 
+export const ticketQrUrl = (code: string) => `${env.APP_URL}/api/tickets/qr/${encodeURIComponent(code)}`;
 
 function button(href: string, label: string) {
   return `<a href="${escapeHtml(href)}" style="display:inline-block;background:${ACCENT};color:#050505;text-decoration:none;font-weight:bold;text-transform:uppercase;letter-spacing:1px;padding:14px 24px;font-family:Arial,sans-serif;font-size:13px;">${escapeHtml(label)}</a>`;
@@ -75,6 +82,10 @@ export interface OrderEmailData {
     product: { name: string; productType: string };
     productVariant: { size: string };
   }[];
+  tickets: {
+    code: string;
+    event: { title: string; date: Date; venue: string };
+  }[];
 }
 
 function itemsTable(order: OrderEmailData) {
@@ -107,6 +118,29 @@ function itemsText(order: OrderEmailData) {
   ].join("\n");
 }
 
+function ticketsHtml(order: OrderEmailData) {
+  if (!order.tickets.length) return "";
+  const blocks = order.tickets
+    .map((t, idx) => `
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:12px 0;border:1px solid ${ACCENT};">
+        <tr>
+          <td style="padding:16px;vertical-align:top;">
+            <div style="font-size:11px;letter-spacing:2px;color:${ACCENT};text-transform:uppercase;">Entrada ${idx + 1} de ${order.tickets.length}</div>
+            <div style="font-size:18px;font-weight:bold;color:#e5e2e1;text-transform:uppercase;margin-top:4px;">${escapeHtml(t.event.title)}</div>
+            <div style="font-size:13px;margin-top:4px;">${escapeHtml(longDate(t.event.date))}<br>${escapeHtml(t.event.venue)}</div>
+            <div style="font-family:monospace;font-size:12px;margin-top:8px;color:#8e9192;">${escapeHtml(t.code)}</div>
+          </td>
+          <td width="140" style="padding:12px;background:#ffffff;" align="center">
+            <img src="${escapeHtml(ticketQrUrl(t.code))}" width="120" height="120" alt="QR ${escapeHtml(t.code)}" style="display:block;">
+          </td>
+        </tr>
+      </table>`)
+    .join("");
+  return `<h2 style="margin:24px 0 4px;font-size:18px;text-transform:uppercase;color:#e5e2e1;">Tus entradas</h2>
+    <p style="margin:0;">Enseña cada QR en la puerta (en el móvil vale). Cada código solo se puede usar una vez.</p>
+    ${blocks}`;
+}
+
 // --------------------------------------------------------------------------
 // Plantillas
 // --------------------------------------------------------------------------
@@ -122,10 +156,16 @@ export function orderConfirmationEmail(order: OrderEmailData) {
      <p style="margin:8px 0 0;font-family:monospace;font-size:12px;color:#8e9192;">Pedido ${escapeHtml(order.id)}</p>
      ${itemsTable(order)}
      ${address}
-     <p style="margin:24px 0 0;">${button(trackUrl(order.id, order.email), "Seguir mi pedido")}</p>`
+     ${ticketsHtml(order)}
+     <p style="margin:24px 0 0;">${button(trackUrl(order.id, order.email), order.tickets.length ? "Ver pedido y entradas" : "Seguir mi pedido")}</p>`
   );
-  const text = `Pedido confirmado (${order.id})\n\n${itemsText(order)}\n\nSeguimiento: ${trackUrl(order.id, order.email)}`;
-  return { subject: `Pedido confirmado · ${BRAND}`, html, text };
+  const ticketsText = order.tickets.length
+    ? `\n\nTus entradas (enseña el QR en la puerta; también las tienes en el enlace de seguimiento):\n${order.tickets
+        .map((t) => `- ${t.event.title} · ${longDate(t.event.date)} · ${t.event.venue} · código ${t.code}`)
+        .join("\n")}`
+    : "";
+  const text = `Pedido confirmado (${order.id})\n\n${itemsText(order)}${ticketsText}\n\nSeguimiento: ${trackUrl(order.id, order.email)}`;
+  return { subject: order.tickets.length ? `Tus entradas · pedido confirmado` : `Pedido confirmado · ${BRAND}`, html, text };
 }
 
 export function orderShippedEmail(order: OrderEmailData) {
@@ -149,9 +189,10 @@ export function orderRefundedEmail(order: OrderEmailData) {
     "Reembolso emitido",
     `<p style="margin:0;">Hemos reembolsado tu pedido por importe de <strong style="color:#e5e2e1;">${money(order.total)}</strong>. Según tu banco, puede tardar entre 5 y 10 días en aparecer en tu cuenta.</p>
      <p style="margin:8px 0 0;font-family:monospace;font-size:12px;color:#8e9192;">Pedido ${escapeHtml(order.id)}</p>
+     ${order.tickets.length ? `<p style="margin:16px 0 0;">Las entradas de este pedido han quedado anuladas.</p>` : ""}
      ${itemsTable(order)}`
   );
-  const text = `Hemos reembolsado tu pedido ${order.id} (${money(order.total)}). Puede tardar 5-10 días en aparecer en tu cuenta.`;
+  const text = `Hemos reembolsado tu pedido ${order.id} (${money(order.total)}). Puede tardar 5-10 días en aparecer en tu cuenta.${order.tickets.length ? "\nLas entradas de este pedido han quedado anuladas." : ""}`;
   return { subject: `Reembolso de tu pedido · ${BRAND}`, html, text };
 }
 

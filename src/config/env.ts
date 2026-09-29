@@ -43,7 +43,7 @@ const envSchema = z
     CLOUDINARY_API_SECRET: z.string().optional(),
 
     // URL pública de la web (sin barra final). Se usa para los enlaces e imágenes
-    // (seguimiento del pedido) que van dentro de los emails.
+    // (QR de entradas, seguimiento del pedido) que van dentro de los emails.
     APP_URL: z
       .string()
       .url()

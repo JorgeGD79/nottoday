@@ -38,6 +38,7 @@ import { publicOrdersRoutes } from "@/modules/public/orders/orders.routes";
 import { adminShippingRoutes } from "@/modules/admin/shipping/shipping.routes";
 import { adminOrdersRoutes } from "@/modules/admin/orders/orders.routes";
 import { adminUploadsRoutes } from "@/modules/admin/uploads/uploads.routes";
+import { adminTicketsRoutes } from "@/modules/admin/tickets/tickets.routes";
 
 export async function buildApp(): Promise<FastifyInstance> {
   // Dejamos que Fastify construya su propia instancia de pino a partir de
@@ -135,6 +136,12 @@ export async function buildApp(): Promise<FastifyInstance> {
       if (error.code === "P2025") {
         return reply.code(404).send({ error: "Registro no encontrado" });
       }
+      // Violación de clave foránea: el registro tiene otros que dependen de él.
+      if (error.code === "P2003") {
+        return reply.code(409).send({
+          error: "No se puede eliminar: tiene registros asociados. Cámbialo de estado en su lugar.",
+        });
+      }
     }
     // @fastify/rate-limit y @fastify/jwt lanzan errores con statusCode propio.
     if (typeof (error as { statusCode?: number }).statusCode === "number") {
@@ -180,6 +187,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(adminShippingRoutes, { prefix: "/api/admin/shipping" });
   await app.register(adminOrdersRoutes, { prefix: "/api/admin/orders" });
   await app.register(adminUploadsRoutes, { prefix: "/api/admin/uploads" });
+  await app.register(adminTicketsRoutes, { prefix: "/api/admin/tickets" });
 
   app.get("/health", async () => ({ status: "ok" }));
 

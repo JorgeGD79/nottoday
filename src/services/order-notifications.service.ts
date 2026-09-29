@@ -28,6 +28,10 @@ async function loadOrderForEmail(orderId: string): Promise<OrderEmailData | null
           productVariant: { select: { size: true } },
         },
       },
+      tickets: {
+        select: { code: true, event: { select: { title: true, date: true, venue: true } } },
+        orderBy: { createdAt: "asc" },
+      },
     },
   });
 }

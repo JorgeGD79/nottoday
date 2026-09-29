@@ -36,6 +36,7 @@ export async function listOrdersHandler(request: FastifyRequest, reply: FastifyR
           },
         },
         discountCode: { select: { code: true } },
+        _count: { select: { tickets: true } },
       },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * pageSize,
@@ -110,7 +111,7 @@ const refundSchema = z.object({
 /**
  * POST /api/admin/orders/:id/refund — reembolso total de un pedido PAGADO
  * (Stripe, o sin llamar a Stripe si el pago fue simulado en modo demo).
- * Avisa al cliente por email.
+ * Anula las entradas del pedido y avisa al cliente por email.
  */
 export async function refundOrderHandler(request: FastifyRequest, reply: FastifyReply) {
   const { id } = orderIdParamsSchema.parse(request.params);

@@ -31,9 +31,10 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Un usuario con rol ARTISTA puede estar vinculado a su ficha pública de Artista
-  artist    Artist?
-  carts     Cart[]
-  auditLogs AuditLog[]
+  artist           Artist?
+  carts            Cart[]
+  auditLogs        AuditLog[]
+  checkedInTickets Ticket[]
 
   @@index([role])
 }
@@ -158,6 +159,7 @@ model Event {
   updatedAt   DateTime    @updatedAt
 
   lineup        EventLineup[]
+  tickets       Ticket[]
   // Producto de tipo TICKET_EVENTO que vende la entrada de este evento (1:1,
   // igual que DropMetadata <-> Product). Null hasta que el admin crea el ticket.
   ticketProduct Product?
@@ -422,6 +424,7 @@ model Order {
   shippingMethod ShippingMethod? @relation(fields: [shippingMethodId], references: [id], onDelete: SetNull)
   discountCode   Discount?       @relation(fields: [discountCodeId], references: [id], onDelete: SetNull)
   items          OrderItem[]
+  tickets        Ticket[]
 
   @@index([status])
   @@index([fulfillmentStatus])
@@ -439,6 +442,41 @@ model OrderItem {
   order          Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product        Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
   productVariant ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
+  tickets        Ticket[]
+}
+
+// ----------------------------------------------------------------------------
+// ENTRADAS NOMINALES (una fila por unidad vendida de un TICKET_EVENTO)
+// ----------------------------------------------------------------------------
+
+enum TicketStatus {
+  VALIDA
+  USADA
+  ANULADA
+}
+
+// Se generan al confirmarse el pago (una por unidad). `code` es el secreto que
+// va en el QR: aleatorio y no adivinable, se valida en puerta con el check-in.
+model Ticket {
+  id            String       @id @default(cuid())
+  code          String       @unique
+  status        TicketStatus @default(VALIDA)
+  orderId       String
+  orderItemId   String
+  eventId       String
+  holderEmail   String
+  checkedInAt   DateTime?
+  checkedInById String?
+  createdAt     DateTime     @default(now())
+
+  order       Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  // Restrict: un evento con entradas vendidas no se puede borrar (se cancela).
+  event       Event     @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  checkedInBy User?     @relation(fields: [checkedInById], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([eventId, status])
 }
 
 // ----------------------------------------------------------------------------

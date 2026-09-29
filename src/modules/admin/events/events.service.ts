@@ -88,6 +88,14 @@ export async function updateEventWithLineup(eventId: string, input: UpdateEventI
 export async function deleteEvent(eventId: string) {
   const existing = await prisma.event.findUnique({ where: { id: eventId } });
   if (!existing) throw AppError.notFound("Evento");
+  // Con entradas vendidas el evento no se borra (el FK Ticket->Event es RESTRICT):
+  // se cancela o finaliza, para no perder el registro de lo vendido.
+  const soldTickets = await prisma.ticket.count({ where: { eventId } });
+  if (soldTickets > 0) {
+    throw AppError.conflict(
+      `No se puede eliminar: el evento tiene ${soldTickets} entrada(s) emitida(s). Cámbialo a CANCELADO o FINALIZADO.`
+    );
+  }
   await prisma.event.delete({ where: { id: eventId } });
 }
 

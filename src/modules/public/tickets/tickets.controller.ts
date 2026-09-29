@@ -1,4 +1,8 @@
 import { FastifyReply, FastifyRequest } from "fastify";
+import QRCode from "qrcode";
+import { z } from "zod";
+import { AppError } from "@/utils/AppError";
+import { TICKET_CODE_REGEX } from "@/services/ticket.service";
 import { prisma } from "@/lib/prisma";
 import { ProductStatus, ProductType } from "@prisma/client";
 import { CACHE_KEYS, CACHE_TTL_SECONDS, getCached, setCached } from "@/services/cache.service";
@@ -30,4 +34,25 @@ export async function listTicketsHandler(_request: FastifyRequest, reply: Fastif
   await setCached(CACHE_KEYS.tickets, payload, CACHE_TTL_SECONDS.tickets);
 
   return reply.header("X-Cache", "MISS").send(payload);
+}
+
+const qrParamsSchema = z.object({ code: z.string() });
+
+/**
+ * GET /api/tickets/qr/:code — PNG del QR de una entrada.
+ *
+ * Lo cargan el email de confirmación y la página de seguimiento (<img src>).
+ * No consulta la BD: solo dibuja el código que recibe, así que no sirve de
+ * oráculo para adivinar códigos válidos. La validación real es el check-in.
+ */
+export async function ticketQrHandler(request: FastifyRequest, reply: FastifyReply) {
+  const { code } = qrParamsSchema.parse(request.params);
+  if (!TICKET_CODE_REGEX.test(code)) throw new AppError("Código no válido", 400);
+
+  const png = await QRCode.toBuffer(code, { type: "png", width: 360, margin: 2, errorCorrectionLevel: "M" });
+  return reply
+    .header("Content-Type", "image/png")
+    // El QR de un código nunca cambia: cacheable indefinidamente.
+    .header("Cache-Control", "public, max-age=31536000, immutable")
+    .send(png);
 }

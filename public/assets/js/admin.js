@@ -122,8 +122,9 @@ function badge(text, kind = "muted") {
   return `<span class="adm-badge ${kind}">${ntEscapeHtml(text)}</span>`;
 }
 const statusBadge = (status) =>
-  badge(status, { ACTIVO: "ok", PUBLICADO: "ok", ABIERTO: "ok", ACEPTADA: "ok", PAGADO: "ok",
-    AGOTADO: "warn", CANCELADO: "warn", RECHAZADA: "warn", FALLIDO: "warn", REEMBOLSADO: "warn" }[status] || "muted");
+  badge(status, { ACTIVO: "ok", PUBLICADO: "ok", ABIERTO: "ok", ACEPTADA: "ok", PAGADO: "ok", VALIDA: "ok",
+    AGOTADO: "warn", CANCELADO: "warn", RECHAZADA: "warn", FALLIDO: "warn", REEMBOLSADO: "warn",
+    ANULADA: "warn" }[status] || "muted");
 
 const isAdminUser = () => Auth.user && Auth.user.role === "ADMIN";
 
@@ -821,6 +822,7 @@ const Sections = {
                 <p class="font-bold text-on-surface">${(o.items || []).map((i) => `${i.quantity}x ${ntEscapeHtml(i.product.name)}${i.product.productType === "TICKET_EVENTO" ? "" : ` (${i.productVariant.size})`}`).join("<br/>")}</p>
                 <p>${ntEscapeHtml(o.shippingName || "")}<br/>${ntEscapeHtml(o.shippingAddress || "")}<br/>${ntEscapeHtml([o.shippingPostalCode, o.shippingCity, o.shippingCountry].filter(Boolean).join(", "))}${o.shippingPhone ? `<br/>Tel: ${ntEscapeHtml(o.shippingPhone)}` : ""}</p>
                 ${o.discountCode ? `<p>Cupón: <span class="text-secondary">${ntEscapeHtml(o.discountCode.code)}</span></p>` : ""}
+                ${o._count && o._count.tickets ? `<p>Entradas emitidas: <span class="text-secondary">${o._count.tickets}</span></p>` : ""}
                 ${o.refundedAt ? `<p>Reembolso: ${fmtShortDate(o.refundedAt)}${o.stripeRefundId ? ` · ${ntEscapeHtml(o.stripeRefundId)}` : ""}</p>` : ""}
                 <p class="font-label-mono text-[10px]">${o.id}</p>
               </div>
@@ -887,6 +889,7 @@ const Sections = {
         }));
     },
     refundForm(o) {
+      const hasTickets = o._count && o._count.tickets > 0;
       const simulated = (o.stripePaymentIntentId || "").startsWith("simulated_");
       const html = `
         <div class="border border-outline-variant/30 p-4 space-y-2 text-[14px] text-on-surface-variant">
@@ -896,11 +899,12 @@ const Sections = {
         </div>
         <p class="text-[14px] text-on-surface-variant">
           Se devuelve el importe total${simulated ? " (pago simulado en modo demo: no se llama a Stripe)" : " a la tarjeta del cliente vía Stripe"}.
+          ${hasTickets ? "Las entradas del pedido quedarán anuladas y no pasarán el check-in." : ""}
           El cliente recibe un email. Esta acción no se puede deshacer.
         </p>
         <label class="inline-flex items-start gap-2 font-label-mono text-[12px] uppercase text-on-surface-variant">
           <input type="checkbox" id="refund-restock" ${o.fulfillmentStatus === "PENDIENTE" ? "checked" : ""}/>
-          <span>Devolver las unidades al stock<br/>
+          <span>Devolver las unidades al stock${hasTickets ? " (y el aforo de las entradas)" : ""}<br/>
           <span class="normal-case">Márcalo si el pedido no llegó a salir o ha vuelto en buen estado.</span></span>
         </label>`;
       Drawer.open("Reembolsar pedido", html, () => {
@@ -909,6 +913,191 @@ const Sections = {
           adminApi(`/admin/orders/${o.id}/refund`, { method: "POST", body: JSON.stringify({ restock }) }),
           "orders", "Pedido reembolsado");
       }, "Reembolsar");
+    },
+  },
+
+  // ---------------- PUERTA (check-in de entradas) ----------------
+  // Funciona con un lector de códigos USB/Bluetooth (teclea el código + Enter
+  // en el campo) o con la cámara del móvil vía BarcodeDetector (Chrome/Android;
+  // requiere https). Si nada de eso está disponible, se teclea el código.
+  checkin: {
+    title: "Puerta",
+    icon: "qr_code_scanner",
+    eventId: "",
+    query: "",
+    stream: null,
+    scanTimer: null,
+    busy: false,
+    lastCode: "",
+    lastCodeAt: 0,
+    async load() {
+      const { events } = await adminApi("/admin/events");
+      const usable = events
+        .filter((e) => e.status !== "BORRADOR")
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+      if (!usable.length) {
+        host().innerHTML = renderTable([], [], "Sin eventos publicados.");
+        return;
+      }
+      if (!usable.some((e) => e.id === this.eventId)) {
+        // Por defecto: el próximo evento (o el que empezó hace menos de 12 h).
+        const cutoff = Date.now() - 12 * 3600 * 1000;
+        this.eventId = (usable.find((e) => new Date(e.date).getTime() >= cutoff) || usable[usable.length - 1]).id;
+      }
+
+      actionsHost().innerHTML = `
+        <select id="checkin-event" class="nt-input !w-auto font-label-mono text-[12px] uppercase">
+          ${usable.map((e) => `<option value="${e.id}" ${e.id === this.eventId ? "selected" : ""}>${ntEscapeHtml(e.title)} · ${fmtShortDate(e.date)}</option>`).join("")}
+        </select>`;
+      document.getElementById("checkin-event").addEventListener("change", (e) => {
+        this.eventId = e.target.value;
+        this.load();
+      });
+
+      host().innerHTML = `
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div class="lg:col-span-5 space-y-4">
+            <form id="checkin-form" class="flex gap-2" autocomplete="off">
+              <input id="checkin-code" class="nt-input font-label-mono" placeholder="Escanea o teclea el código" autofocus/>
+              <button class="bg-secondary-container text-primary-container font-headline-lg text-[16px] uppercase px-4 hover:bg-on-surface transition-colors" type="submit">Validar</button>
+            </form>
+            <button id="checkin-camera" type="button" class="w-full font-label-mono text-[12px] uppercase border border-outline-variant/30 px-3 py-2 text-on-surface-variant hover:border-secondary hover:text-secondary transition-colors">
+              <span class="material-symbols-outlined text-[18px] align-middle mr-1">photo_camera</span><span id="checkin-camera-label">Escanear con cámara</span>
+            </button>
+            <video id="checkin-video" class="hidden w-full aspect-square object-cover border border-outline-variant/30 bg-black" playsinline muted></video>
+            <div id="checkin-result" class="border border-outline-variant/20 p-6 text-center min-h-[140px] flex flex-col items-center justify-center">
+              <p class="font-label-mono text-[12px] text-on-surface-variant uppercase">Esperando lectura…</p>
+            </div>
+          </div>
+          <div class="lg:col-span-7 space-y-4">
+            <div class="grid grid-cols-3 gap-3" id="checkin-stats"></div>
+            <input id="checkin-search" class="nt-input" placeholder="Buscar por email o código" value="${ntEscapeHtml(this.query)}"/>
+            <div id="checkin-list" class="overflow-x-auto"><div class="nt-skeleton h-40"></div></div>
+          </div>
+        </div>`;
+
+      const codeInput = document.getElementById("checkin-code");
+      document.getElementById("checkin-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const code = codeInput.value.trim();
+        codeInput.value = "";
+        if (code) this.checkIn(code);
+      });
+      document.getElementById("checkin-camera").addEventListener("click", () =>
+        this.stream ? this.stopCamera() : this.startCamera());
+      let searchTimer = null;
+      document.getElementById("checkin-search").addEventListener("input", (e) => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => { this.query = e.target.value.trim(); this.loadList(); }, 250);
+      });
+      await this.loadList();
+      codeInput.focus();
+    },
+    async loadList() {
+      const params = new URLSearchParams({ eventId: this.eventId });
+      if (this.query) params.set("q", this.query);
+      const { tickets, stats } = await adminApi(`/admin/tickets?${params}`);
+      const stat = (label, value, kind = "") => `
+        <div class="border border-outline-variant/20 p-3 text-center">
+          <p class="font-headline-lg text-[28px] leading-none ${kind}">${value}</p>
+          <p class="font-label-mono text-[11px] text-on-surface-variant uppercase mt-1">${label}</p>
+        </div>`;
+      const statsEl = document.getElementById("checkin-stats");
+      const list = document.getElementById("checkin-list");
+      if (!statsEl || !list) return; // se cambió de sección mientras cargaba
+      statsEl.innerHTML =
+        stat("Vendidas", stats.sold) + stat("Dentro", stats.used, "text-secondary") + stat("Pendientes", stats.valid);
+      const rows = tickets.map((t) => `
+        <tr>
+          <td class="font-label-mono text-[12px]">${ntEscapeHtml(t.holderEmail)}</td>
+          <td class="font-label-mono text-[11px] text-on-surface-variant" title="${ntEscapeHtml(t.code)}">${ntEscapeHtml(t.code.slice(0, 8))}…</td>
+          <td>${statusBadge(t.status)}</td>
+          <td class="font-label-mono text-[11px] text-on-surface-variant whitespace-nowrap">${t.checkedInAt ? `${fmtShortDate(t.checkedInAt)}${t.checkedInBy ? `<br/>${ntEscapeHtml(t.checkedInBy.name)}` : ""}` : "—"}</td>
+          <td class="text-right">${t.status === "VALIDA" ? `<button class="adm-icon-btn" data-checkin="${ntEscapeHtml(t.code)}" title="Validar a mano"><span class="material-symbols-outlined text-[20px]">how_to_reg</span></button>` : ""}</td>
+        </tr>`);
+      list.innerHTML = renderTable(["Email", "Código", "Estado", "Check-in", ""], rows,
+        this.query ? "Sin resultados." : "Aún no hay entradas vendidas para este evento.");
+      list.querySelectorAll("[data-checkin]").forEach((btn) =>
+        btn.addEventListener("click", () => {
+          if (confirm("¿Validar esta entrada a mano?")) this.checkIn(btn.dataset.checkin);
+        }));
+    },
+    async checkIn(code) {
+      if (this.busy) return;
+      this.busy = true;
+      const render = (ok, title, lines) => {
+        const box = document.getElementById("checkin-result");
+        if (!box) return;
+        box.className = `border-2 p-6 text-center min-h-[140px] flex flex-col items-center justify-center ${ok ? "border-secondary-container bg-secondary-container/10" : "border-error bg-error-container/20"}`;
+        box.innerHTML = `
+          <span class="material-symbols-outlined text-[48px] ${ok ? "text-secondary-container" : "text-error"}">${ok ? "check_circle" : "block"}</span>
+          <p class="font-headline-lg text-[28px] uppercase leading-none mt-2 ${ok ? "text-on-surface" : "text-error"}">${ntEscapeHtml(title)}</p>
+          ${lines.filter(Boolean).map((l) => `<p class="font-label-mono text-[12px] text-on-surface-variant mt-2">${ntEscapeHtml(l)}</p>`).join("")}`;
+      };
+      try {
+        const { ticket } = await adminApi("/admin/tickets/check-in", {
+          method: "POST",
+          body: JSON.stringify({ code, eventId: this.eventId }),
+        });
+        render(true, "Adelante", [ticket.holderEmail, ticket.event.title]);
+        if (navigator.vibrate) navigator.vibrate(80);
+      } catch (err) {
+        const t = err.details && err.details.ticket;
+        render(false, err.message, [
+          t && t.holderEmail,
+          t && t.checkedInAt ? `Validada: ${fmtShortDate(t.checkedInAt)}` : "",
+        ]);
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+      } finally {
+        this.busy = false;
+        this.loadList().catch(() => {});
+      }
+    },
+    async startCamera() {
+      if (!("BarcodeDetector" in window) || !navigator.mediaDevices) {
+        ntToast("Este navegador no puede leer QR con la cámara. Usa Chrome en Android o un lector USB.", true);
+        return;
+      }
+      try {
+        const detector = new BarcodeDetector({ formats: ["qr_code"] });
+        this.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        const video = document.getElementById("checkin-video");
+        video.srcObject = this.stream;
+        video.classList.remove("hidden");
+        await video.play();
+        document.getElementById("checkin-camera-label").textContent = "Parar cámara";
+        this.scanTimer = setInterval(async () => {
+          if (this.busy || video.readyState < 2) return;
+          try {
+            const [hit] = await detector.detect(video);
+            if (!hit) return;
+            // El mismo QR sigue delante de la cámara: no lo revalidamos durante 3 s.
+            const now = Date.now();
+            if (hit.rawValue === this.lastCode && now - this.lastCodeAt < 3000) return;
+            this.lastCode = hit.rawValue;
+            this.lastCodeAt = now;
+            this.checkIn(hit.rawValue);
+          } catch {
+            /* frame no legible: seguimos */
+          }
+        }, 300);
+      } catch (err) {
+        this.stopCamera();
+        ntToast(`No se pudo abrir la cámara: ${err.message}`, true);
+      }
+    },
+    stopCamera() {
+      clearInterval(this.scanTimer);
+      this.scanTimer = null;
+      if (this.stream) this.stream.getTracks().forEach((t) => t.stop());
+      this.stream = null;
+      const video = document.getElementById("checkin-video");
+      if (video) { video.srcObject = null; video.classList.add("hidden"); }
+      const label = document.getElementById("checkin-camera-label");
+      if (label) label.textContent = "Escanear con cámara";
+    },
+    unload() {
+      this.stopCamera();
     },
   },
 
@@ -1121,6 +1310,8 @@ function renderNav() {
 }
 
 async function showSection(id) {
+  // Libera recursos de la sección anterior (p. ej. la cámara del check-in).
+  Object.values(Sections).forEach((s) => s.unload && s.unload());
   const section = Sections[id] || Sections.products;
   currentSection = Sections[id] ? id : "products";
   renderNav();
