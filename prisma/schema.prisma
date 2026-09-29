@@ -375,6 +375,7 @@ enum OrderStatus {
   PAGADO
   FALLIDO
   CANCELADO
+  REEMBOLSADO
 }
 
 // Estado logístico del pedido, independiente del estado del pago.
@@ -410,6 +411,13 @@ model Order {
 
   fulfillmentStatus FulfillmentStatus @default(PENDIENTE)
   trackingCode      String?
+
+  // --- Reembolso ---
+  // refundedAt se marca ANTES de llamar a Stripe (reclama el reembolso): así un
+  // doble click o el webhook charge.refunded que llega mientras tanto no lo
+  // procesan dos veces. Si Stripe falla, se revierte a null.
+  refundedAt     DateTime?
+  stripeRefundId String?
 
   shippingMethod ShippingMethod? @relation(fields: [shippingMethodId], references: [id], onDelete: SetNull)
   discountCode   Discount?       @relation(fields: [discountCodeId], references: [id], onDelete: SetNull)

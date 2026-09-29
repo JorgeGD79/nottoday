@@ -1,7 +1,9 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import Stripe from "stripe";
+import { OrderStatus } from "@prisma/client";
 import { checkoutSchema } from "./checkout.schema";
-import { checkout, markOrderAsPaid, releaseOrderStock } from "./checkout.service";
+import { checkout, releaseOrderStock } from "./checkout.service";
+import { handleSucceededPayment, markRefundedExternally } from "@/services/order-lifecycle.service";
 import { stripe } from "@/services/stripe.service";
 import { env } from "@/config/env";
 import { AppError } from "@/utils/AppError";
@@ -55,16 +57,37 @@ export async function stripeWebhookHandler(request: FastifyRequest, reply: Fasti
 
   switch (event.type) {
     case "payment_intent.succeeded": {
+      // Incluye el caso tardío: si el pedido ya estaba cancelado, se recupera
+      // (si queda stock) o se reembolsa automáticamente. Ver order-lifecycle.
       const intent = event.data.object as Stripe.PaymentIntent;
       const orderId = intent.metadata.orderId;
-      if (orderId) await markOrderAsPaid(orderId);
+      if (orderId) {
+        const outcome = await handleSucceededPayment(orderId);
+        request.log.info({ orderId, outcome }, "Pago confirmado por Stripe");
+      }
       break;
     }
-    case "payment_intent.payment_failed":
+    case "payment_intent.payment_failed": {
+      // Un intento fallido NO es terminal: el PaymentIntent vuelve a
+      // requires_payment_method y el cliente puede reintentar con otra tarjeta.
+      // Mantenemos la reserva; si no llega a pagar, el barrido de caducados
+      // cancela el PaymentIntent y libera el stock.
+      const intent = event.data.object as Stripe.PaymentIntent;
+      request.log.info({ orderId: intent.metadata.orderId }, "Intento de pago fallido (el cliente puede reintentar)");
+      break;
+    }
     case "payment_intent.canceled": {
       const intent = event.data.object as Stripe.PaymentIntent;
       const orderId = intent.metadata.orderId;
-      if (orderId) await releaseOrderStock(orderId);
+      if (orderId) await releaseOrderStock(orderId, OrderStatus.CANCELADO);
+      break;
+    }
+    case "charge.refunded": {
+      // Reembolso hecho desde el dashboard de Stripe (los nuestros ya se
+      // reflejan al crearlos y aquí se ignoran).
+      const charge = event.data.object as Stripe.Charge;
+      const piId = typeof charge.payment_intent === "string" ? charge.payment_intent : charge.payment_intent?.id;
+      if (piId) await markRefundedExternally(piId, charge.refunded);
       break;
     }
     default:

@@ -1,13 +1,21 @@
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { sendEmail } from "@/services/email.service";
-import { OrderEmailData, orderConfirmationEmail, orderShippedEmail } from "@/services/email-templates";
+import {
+  OrderEmailData,
+  latePaymentRefundedEmail,
+  orderConfirmationEmail,
+  orderRefundedEmail,
+  orderShippedEmail,
+} from "@/services/email-templates";
 
-type OrderEmailKind = "confirmation" | "shipped";
+type OrderEmailKind = "confirmation" | "shipped" | "refunded" | "late-refund";
 
 const TEMPLATES: Record<OrderEmailKind, (o: OrderEmailData) => { subject: string; html: string; text: string }> = {
   confirmation: orderConfirmationEmail,
   shipped: orderShippedEmail,
+  refunded: orderRefundedEmail,
+  "late-refund": latePaymentRefundedEmail,
 };
 
 async function loadOrderForEmail(orderId: string): Promise<OrderEmailData | null> {

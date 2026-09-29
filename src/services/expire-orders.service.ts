@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { OrderStatus } from "@prisma/client";
 import { env } from "@/config/env";
 import { logger } from "@/lib/logger";
-import { releaseOrderStock } from "@/modules/public/checkout/checkout.service";
+import { cancelPendingOrder } from "@/services/order-lifecycle.service";
 
 /**
  * Barrido de pedidos PENDIENTE caducados: cualquier pedido que lleva más de
@@ -11,6 +11,10 @@ import { releaseOrderStock } from "@/modules/public/checkout/checkout.service";
  * de stock se libera vía `releaseOrderStock`, devolviendo las unidades al
  * inventario disponible. Sin esto, un carrito abandonado en checkout bloquearía
  * stock indefinidamente (vector de agotamiento de inventario).
+ *
+ * La cancelación pasa por `cancelPendingOrder`, que antes de liberar el stock
+ * cancela también el PaymentIntent en Stripe (ya no se puede cobrar) o, si el
+ * pago sí se completó y el webhook no llegó, confirma el pedido en su lugar.
  */
 export async function sweepExpiredPendingOrders() {
   const threshold = new Date(Date.now() - env.PENDING_ORDER_TTL_MINUTES * 60 * 1000);
@@ -22,11 +26,12 @@ export async function sweepExpiredPendingOrders() {
 
   let released = 0;
   for (const { id } of expired) {
-    // releaseOrderStock es idempotente (solo actúa sobre pedidos PENDIENTE) y
+    // cancelPendingOrder es idempotente (solo actúa sobre pedidos PENDIENTE) y
     // corre su propia transacción por pedido, así un fallo puntual no aborta el resto.
     try {
-      await releaseOrderStock(id, OrderStatus.CANCELADO);
-      released += 1;
+      const outcome = await cancelPendingOrder(id);
+      if (outcome === "cancelled") released += 1;
+      if (outcome === "paid") logger.warn({ orderId: id }, "Pedido caducado que sí estaba pagado en Stripe: confirmado");
     } catch (err) {
       logger.error({ err, orderId: id }, "No se pudo expirar el pedido pendiente");
     }

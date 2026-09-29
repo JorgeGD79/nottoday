@@ -30,3 +30,22 @@ export async function createPaymentIntent(params: {
 export function toStripeAmount(decimalAmount: number): number {
   return Math.round(decimalAmount * 100);
 }
+
+/**
+ * Los pedidos del modo demo (CHECKOUT_SKIP_STRIPE) llevan un identificador de
+ * pago ficticio "simulated_<orderId>": nunca hay que llamar a Stripe con él.
+ */
+export function isRealPaymentIntent(paymentIntentId: string | null | undefined): paymentIntentId is string {
+  return !!paymentIntentId && !paymentIntentId.startsWith("simulated_");
+}
+
+/**
+ * Reembolso total de un PaymentIntent. La idempotencyKey hace que un reintento
+ * (doble click, webhook repetido) devuelva el mismo reembolso en vez de crear otro.
+ */
+export async function refundPaymentIntent(paymentIntentId: string, idempotencyKey: string, orderId: string) {
+  return stripe.refunds.create(
+    { payment_intent: paymentIntentId, metadata: { orderId } },
+    { idempotencyKey }
+  );
+}

@@ -123,7 +123,9 @@ function badge(text, kind = "muted") {
 }
 const statusBadge = (status) =>
   badge(status, { ACTIVO: "ok", PUBLICADO: "ok", ABIERTO: "ok", ACEPTADA: "ok", PAGADO: "ok",
-    AGOTADO: "warn", CANCELADO: "warn", RECHAZADA: "warn", FALLIDO: "warn" }[status] || "muted");
+    AGOTADO: "warn", CANCELADO: "warn", RECHAZADA: "warn", FALLIDO: "warn", REEMBOLSADO: "warn" }[status] || "muted");
+
+const isAdminUser = () => Auth.user && Auth.user.role === "ADMIN";
 
 // ---------- Constructores de campos de formulario ----------
 
@@ -769,7 +771,7 @@ const Sections = {
     fulfillmentFilter: "",
     items: [],
     async load() {
-      const PAY_STATUSES = ["PENDIENTE", "PAGADO", "FALLIDO", "CANCELADO"];
+      const PAY_STATUSES = ["PENDIENTE", "PAGADO", "FALLIDO", "CANCELADO", "REEMBOLSADO"];
       const FULFILLMENTS = ["PENDIENTE", "ENVIADO", "ENTREGADO"];
       actionsHost().innerHTML = `
         <select id="orders-status" class="nt-input !w-auto font-label-mono text-[12px] uppercase">
@@ -819,6 +821,7 @@ const Sections = {
                 <p class="font-bold text-on-surface">${(o.items || []).map((i) => `${i.quantity}x ${ntEscapeHtml(i.product.name)}${i.product.productType === "TICKET_EVENTO" ? "" : ` (${i.productVariant.size})`}`).join("<br/>")}</p>
                 <p>${ntEscapeHtml(o.shippingName || "")}<br/>${ntEscapeHtml(o.shippingAddress || "")}<br/>${ntEscapeHtml([o.shippingPostalCode, o.shippingCity, o.shippingCountry].filter(Boolean).join(", "))}${o.shippingPhone ? `<br/>Tel: ${ntEscapeHtml(o.shippingPhone)}` : ""}</p>
                 ${o.discountCode ? `<p>Cupón: <span class="text-secondary">${ntEscapeHtml(o.discountCode.code)}</span></p>` : ""}
+                ${o.refundedAt ? `<p>Reembolso: ${fmtShortDate(o.refundedAt)}${o.stripeRefundId ? ` · ${ntEscapeHtml(o.stripeRefundId)}` : ""}</p>` : ""}
                 <p class="font-label-mono text-[10px]">${o.id}</p>
               </div>
             </details>
@@ -829,10 +832,29 @@ const Sections = {
             </select>
             <input type="text" class="nt-input !w-32 font-label-mono text-[11px] mt-1" placeholder="Tracking" value="${ntEscapeHtml(o.trackingCode || "")}" data-order-tracking="${o.id}"/>
           </td>
+          <td class="whitespace-nowrap text-right">
+            ${isAdminUser() && o.status === "PAGADO" ? `<button class="adm-icon-btn danger" data-order-refund="${o.id}" title="Reembolsar"><span class="material-symbols-outlined text-[20px]">currency_exchange</span></button>` : ""}
+            ${isAdminUser() && o.status === "PENDIENTE" ? `<button class="adm-icon-btn danger" data-order-cancel="${o.id}" title="Cancelar pedido"><span class="material-symbols-outlined text-[20px]">cancel</span></button>` : ""}
+          </td>
         </tr>`);
       host().innerHTML = renderTable(
-        ["Fecha", "Email", "Total", "Pago", "Método envío", "Detalle", "Estado envío"],
+        ["Fecha", "Email", "Total", "Pago", "Método envío", "Detalle", "Estado envío", ""],
         rows, "Sin pedidos todavía.");
+
+      host().querySelectorAll("[data-order-refund]").forEach((btn) =>
+        btn.addEventListener("click", () => this.refundForm(this.items.find((o) => o.id === btn.dataset.orderRefund))));
+      host().querySelectorAll("[data-order-cancel]").forEach((btn) =>
+        btn.addEventListener("click", async () => {
+          const id = btn.dataset.orderCancel;
+          if (!confirm("¿Cancelar este pedido pendiente? Se anula el pago en Stripe y se libera el stock reservado.")) return;
+          try {
+            const { outcome } = await adminApi(`/admin/orders/${id}/cancel`, { method: "POST", body: "{}" });
+            ntToast(outcome === "paid" ? "El cliente ya había pagado: pedido confirmado" : "Pedido cancelado");
+          } catch (err) {
+            ntToast(err.message, true);
+          }
+          this.load();
+        }));
 
       host().querySelectorAll("[data-order-fulfillment]").forEach((sel) =>
         sel.addEventListener("change", async () => {
@@ -863,6 +885,30 @@ const Sections = {
             ntToast(err.message, true);
           }
         }));
+    },
+    refundForm(o) {
+      const simulated = (o.stripePaymentIntentId || "").startsWith("simulated_");
+      const html = `
+        <div class="border border-outline-variant/30 p-4 space-y-2 text-[14px] text-on-surface-variant">
+          <p><span class="text-on-surface font-bold">${ntFormatMoney(o.total)}</span> · ${ntEscapeHtml(o.email)}</p>
+          <p class="font-bold text-on-surface">${(o.items || []).map((i) => `${i.quantity}x ${ntEscapeHtml(i.product.name)}${i.product.productType === "TICKET_EVENTO" ? "" : ` (${i.productVariant.size})`}`).join("<br/>")}</p>
+          <p class="font-label-mono text-[11px]">${ntEscapeHtml(o.id)}</p>
+        </div>
+        <p class="text-[14px] text-on-surface-variant">
+          Se devuelve el importe total${simulated ? " (pago simulado en modo demo: no se llama a Stripe)" : " a la tarjeta del cliente vía Stripe"}.
+          El cliente recibe un email. Esta acción no se puede deshacer.
+        </p>
+        <label class="inline-flex items-start gap-2 font-label-mono text-[12px] uppercase text-on-surface-variant">
+          <input type="checkbox" id="refund-restock" ${o.fulfillmentStatus === "PENDIENTE" ? "checked" : ""}/>
+          <span>Devolver las unidades al stock<br/>
+          <span class="normal-case">Márcalo si el pedido no llegó a salir o ha vuelto en buen estado.</span></span>
+        </label>`;
+      Drawer.open("Reembolsar pedido", html, () => {
+        const restock = document.getElementById("refund-restock").checked;
+        return submitAndReload(
+          adminApi(`/admin/orders/${o.id}/refund`, { method: "POST", body: JSON.stringify({ restock }) }),
+          "orders", "Pedido reembolsado");
+      }, "Reembolsar");
     },
   },
 

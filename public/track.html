@@ -61,7 +61,8 @@
     // Timeline: cada hito con estado done / current / pending / failed
     function buildSteps(order) {
         const payFailed = order.status === "FALLIDO" || order.status === "CANCELADO";
-        const paid = order.status === "PAGADO";
+        const refunded = order.status === "REEMBOLSADO";
+        const paid = order.status === "PAGADO" || refunded;
         const shipped = order.fulfillmentStatus === "ENVIADO" || order.fulfillmentStatus === "ENTREGADO";
         const delivered = order.fulfillmentStatus === "ENTREGADO";
 
@@ -72,9 +73,9 @@
                 state: "done",
             },
             {
-                title: payFailed ? "Pago fallido" : "Pago",
+                title: payFailed ? "Pedido cancelado" : "Pago",
                 detail: payFailed
-                    ? "El pago no se completó y el stock fue liberado. Vuelve a intentarlo en la tienda."
+                    ? "El pago no se completó a tiempo y el pedido se canceló. No se te ha cobrado. Vuelve a intentarlo en la tienda."
                     : paid ? "Pago confirmado" : "Esperando confirmación del pago",
                 state: payFailed ? "failed" : paid ? "done" : "current",
             },
@@ -91,6 +92,11 @@
                 detail: delivered ? `Entregado — ${fmtLong(order.updatedAt)}` : "",
                 state: delivered ? "done" : shipped ? "current" : "pending",
             },
+            ...(refunded ? [{
+                title: "Reembolsado",
+                detail: "Te hemos devuelto el importe. Puede tardar entre 5 y 10 días en aparecer en tu cuenta.",
+                state: "failed",
+            }] : []),
         ];
     }
 

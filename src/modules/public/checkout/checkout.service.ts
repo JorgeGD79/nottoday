@@ -68,19 +68,7 @@ export async function checkout(input: CheckoutInput) {
 
   const result = await prisma.$transaction(async (tx) => {
     // --- 1. Row locking: bloqueamos todas las variantes implicadas, en orden estable ---
-    const variantIds = [...new Set(cart.items.map((i) => i.productVariantId))].sort();
-
-    const lockedVariants = new Map<string, LockedVariantRow>();
-    for (const variantId of variantIds) {
-      const rows = await tx.$queryRaw<LockedVariantRow[]>`
-        SELECT id, "stockAvailable", "stockReserved", size
-        FROM "ProductVariant"
-        WHERE id = ${variantId}
-        FOR UPDATE
-      `;
-      if (rows.length === 0) throw AppError.notFound("Variante de producto");
-      lockedVariants.set(variantId, rows[0]);
-    }
+    const lockedVariants = await lockVariants(tx, cart.items.map((i) => i.productVariantId));
 
     // --- 2. Verificación de stock real, ya con el lock en mano ---
     for (const item of cart.items) {
@@ -195,63 +183,108 @@ export async function checkout(input: CheckoutInput) {
 }
 
 /**
+ * Bloquea (SELECT ... FOR UPDATE) las variantes indicadas, siempre en orden de
+ * ID ascendente para que dos transacciones concurrentes no se crucen en deadlock.
+ */
+export async function lockVariants(tx: Prisma.TransactionClient, ids: string[]) {
+  const locked = new Map<string, LockedVariantRow>();
+  for (const variantId of [...new Set(ids)].sort()) {
+    const rows = await tx.$queryRaw<LockedVariantRow[]>`
+      SELECT id, "stockAvailable", "stockReserved", size
+      FROM "ProductVariant"
+      WHERE id = ${variantId}
+      FOR UPDATE
+    `;
+    if (rows.length === 0) throw AppError.notFound("Variante de producto");
+    locked.set(variantId, rows[0]);
+  }
+  return locked;
+}
+
+/**
  * Libera la reserva de stock de un pedido que finalmente no se pagó
- * (PaymentIntent fallido/cancelado, o expiración por TTL). Solo decrementa
+ * (PaymentIntent cancelado, o expiración por TTL). Solo decrementa
  * stockReserved: como en un pedido PENDIENTE nunca se descontó stockAvailable,
  * las unidades vuelven automáticamente a estar disponibles.
  *
- * Se invoca desde el webhook de Stripe y desde el worker de expiración de pedidos.
+ * El cambio de estado es un UPDATE condicional (solo si sigue PENDIENTE), así
+ * que dos llamadas concurrentes (webhook + barrido) nunca liberan dos veces.
  */
 export async function releaseOrderStock(orderId: string, finalStatus: OrderStatus = OrderStatus.FALLIDO) {
-  await prisma.$transaction(async (tx) => {
-    const order = await tx.order.findUnique({ where: { id: orderId }, include: { items: true } });
-    if (!order || order.status !== OrderStatus.PENDIENTE) return;
+  const released = await prisma.$transaction(async (tx) => {
+    const claim = await tx.order.updateMany({
+      where: { id: orderId, status: OrderStatus.PENDIENTE },
+      data: { status: finalStatus },
+    });
+    if (claim.count === 0) return false;
 
-    for (const item of order.items) {
+    const items = await tx.orderItem.findMany({ where: { orderId } });
+    for (const item of items) {
       await tx.productVariant.update({
         where: { id: item.productVariantId },
         data: { stockReserved: { decrement: item.quantity } },
       });
     }
-
-    await tx.order.update({ where: { id: orderId }, data: { status: finalStatus } });
-  });
-
-  await invalidateCatalogCache();
-}
-
-/**
- * Confirma el pago: convierte la reserva en venta real. Por cada línea baja
- * tanto stockReserved (deja de estar reservado) como stockAvailable (sale del
- * inventario de verdad), todo dentro de la misma transacción que marca PAGADO.
- */
-export async function markOrderAsPaid(orderId: string) {
-  const paid = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    const order = await tx.order.findUnique({ where: { id: orderId }, include: { items: true } });
-    if (!order || order.status !== OrderStatus.PENDIENTE) return false;
-
-    for (const item of order.items) {
-      await tx.productVariant.update({
-        where: { id: item.productVariantId },
-        data: {
-          stockReserved: { decrement: item.quantity },
-          stockAvailable: { decrement: item.quantity },
-        },
-      });
-    }
-
-    await tx.order.update({ where: { id: orderId }, data: { status: OrderStatus.PAGADO } });
-
-    if (order.discountCodeId) {
-      await tx.discount.update({
-        where: { id: order.discountCodeId },
-        data: { currentUses: { increment: 1 } },
-      });
-    }
     return true;
   });
 
-  await invalidateCatalogCache();
-  // El email solo sale en la transición real a PAGADO (no en reintentos del webhook).
-  if (paid) await notifyOrder(orderId, "confirmation");
+  if (released) await invalidateCatalogCache();
+  return released;
+}
+
+/**
+ * Convierte un pedido en venta dentro de una transacción ya abierta: lo pasa a
+ * PAGADO (solo si su estado actual está en `claimFrom`), descuenta el stock,
+ * y suma el uso del cupón. Devuelve false si otro proceso
+ * ya lo había movido de estado (webhook duplicado, barrido concurrente...).
+ *
+ * `fromReservation`: el stock estaba reservado (flujo normal) y hay que bajar
+ * también stockReserved; en un pago tardío la reserva ya se había liberado.
+ */
+export async function commitSale(
+  tx: Prisma.TransactionClient,
+  orderId: string,
+  claimFrom: OrderStatus[],
+  fromReservation: boolean
+) {
+  const claim = await tx.order.updateMany({
+    where: { id: orderId, status: { in: claimFrom } },
+    data: { status: OrderStatus.PAGADO },
+  });
+  if (claim.count === 0) return false;
+
+  const order = await tx.order.findUniqueOrThrow({ where: { id: orderId }, include: { items: true } });
+  for (const item of order.items) {
+    await tx.productVariant.update({
+      where: { id: item.productVariantId },
+      data: {
+        stockAvailable: { decrement: item.quantity },
+        ...(fromReservation ? { stockReserved: { decrement: item.quantity } } : {}),
+      },
+    });
+  }
+
+  if (order.discountCodeId) {
+    await tx.discount.update({
+      where: { id: order.discountCodeId },
+      data: { currentUses: { increment: 1 } },
+    });
+  }
+
+  return true;
+}
+
+/**
+ * Confirma el pago de un pedido PENDIENTE: convierte la reserva en venta real,
+ * y envía el email de confirmación. Devuelve true solo si
+ * esta llamada fue la que hizo la transición (idempotente ante reintentos).
+ */
+export async function markOrderAsPaid(orderId: string) {
+  const paid = await prisma.$transaction((tx) => commitSale(tx, orderId, [OrderStatus.PENDIENTE], true));
+
+  if (paid) {
+    await invalidateCatalogCache();
+    await notifyOrder(orderId, "confirmation");
+  }
+  return paid;
 }

@@ -5,6 +5,7 @@ import { AppError } from "@/utils/AppError";
 import { FulfillmentStatus, OrderStatus } from "@prisma/client";
 import { recordAuditLog } from "@/services/audit-log.service";
 import { notifyOrder } from "@/services/order-notifications.service";
+import { cancelPendingOrder, refundOrder } from "@/services/order-lifecycle.service";
 
 const listQuerySchema = z.object({
   status: z.nativeEnum(OrderStatus).optional(),
@@ -99,4 +100,58 @@ export async function updateFulfillmentHandler(request: FastifyRequest, reply: F
   });
 
   return reply.send({ order });
+}
+
+const refundSchema = z.object({
+  // Devolver las unidades al inventario (o el aforo, si son entradas).
+  restock: z.boolean().default(false),
+});
+
+/**
+ * POST /api/admin/orders/:id/refund — reembolso total de un pedido PAGADO
+ * (Stripe, o sin llamar a Stripe si el pago fue simulado en modo demo).
+ * Avisa al cliente por email.
+ */
+export async function refundOrderHandler(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = orderIdParamsSchema.parse(request.params);
+  const { restock } = refundSchema.parse(request.body ?? {});
+
+  await refundOrder(id, { restock });
+
+  await recordAuditLog({
+    userId: request.user.id,
+    action: `Reembolsó el pedido ${id}${restock ? " (stock devuelto)" : ""}`,
+    request,
+    metadata: { orderId: id, restock },
+  });
+
+  const order = await prisma.order.findUniqueOrThrow({ where: { id } });
+  return reply.send({ order });
+}
+
+/**
+ * POST /api/admin/orders/:id/cancel — cancela un pedido PENDIENTE: cancela el
+ * PaymentIntent en Stripe y libera la reserva de stock. Si resulta que el
+ * cliente sí había pagado, el pedido se confirma en vez de cancelarse.
+ */
+export async function cancelOrderHandler(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = orderIdParamsSchema.parse(request.params);
+
+  const outcome = await cancelPendingOrder(id);
+  if (outcome === "not-pending") {
+    throw new AppError("Solo se pueden cancelar pedidos pendientes de pago. Para uno pagado, usa el reembolso.", 422);
+  }
+  if (outcome === "processing") {
+    throw new AppError("El pago está en proceso en Stripe; espera a que se resuelva antes de cancelar.", 409);
+  }
+
+  await recordAuditLog({
+    userId: request.user.id,
+    action: outcome === "paid" ? `Intentó cancelar el pedido ${id}, pero ya estaba pagado en Stripe (confirmado)` : `Canceló el pedido ${id}`,
+    request,
+    metadata: { orderId: id, outcome },
+  });
+
+  const order = await prisma.order.findUniqueOrThrow({ where: { id } });
+  return reply.send({ order, outcome });
 }

@@ -144,6 +144,30 @@ export function orderShippedEmail(order: OrderEmailData) {
   return { subject: `Pedido enviado · ${BRAND}`, html, text };
 }
 
+export function orderRefundedEmail(order: OrderEmailData) {
+  const html = layout(
+    "Reembolso emitido",
+    `<p style="margin:0;">Hemos reembolsado tu pedido por importe de <strong style="color:#e5e2e1;">${money(order.total)}</strong>. Según tu banco, puede tardar entre 5 y 10 días en aparecer en tu cuenta.</p>
+     <p style="margin:8px 0 0;font-family:monospace;font-size:12px;color:#8e9192;">Pedido ${escapeHtml(order.id)}</p>
+     ${itemsTable(order)}`
+  );
+  const text = `Hemos reembolsado tu pedido ${order.id} (${money(order.total)}). Puede tardar 5-10 días en aparecer en tu cuenta.`;
+  return { subject: `Reembolso de tu pedido · ${BRAND}`, html, text };
+}
+
+/** Pago recibido cuando el pedido ya había caducado y el stock ya no estaba disponible. */
+export function latePaymentRefundedEmail(order: OrderEmailData) {
+  const html = layout(
+    "No hemos podido completar tu pedido",
+    `<p style="margin:0;">Tu pago llegó cuando la reserva del pedido ya había caducado y las unidades se habían vendido. <strong style="color:#e5e2e1;">Te hemos devuelto el importe completo (${money(order.total)})</strong>; según tu banco, puede tardar entre 5 y 10 días en aparecer.</p>
+     <p style="margin:8px 0 0;font-family:monospace;font-size:12px;color:#8e9192;">Pedido ${escapeHtml(order.id)}</p>
+     ${itemsTable(order)}
+     <p style="margin:16px 0 0;">Sentimos las molestias.</p>`
+  );
+  const text = `Tu pago del pedido ${order.id} llegó cuando la reserva ya había caducado y no quedaba stock. Te hemos devuelto el importe completo (${money(order.total)}).`;
+  return { subject: `Pedido no completado: reembolso emitido · ${BRAND}`, html, text };
+}
+
 export function bookingReceivedEmail(booking: { type: string; requesterName: string; email: string; details: string }) {
   const label = booking.type === "CONTRATACION" ? "Booking" : "Colaboración";
   const html = layout(
