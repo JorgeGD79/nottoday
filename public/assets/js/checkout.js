@@ -240,6 +240,9 @@ const Checkout = {
       this.pay();
     });
     document.getElementById("ship-country").addEventListener("change", () => this.refreshQuote());
+    document.getElementById("want-invoice").addEventListener("change", (e) => {
+      document.getElementById("invoice-fields").classList.toggle("hidden", !e.target.checked);
+    });
   },
 
   async pay() {
@@ -266,6 +269,12 @@ const Checkout = {
       };
     } else if (country) {
       body.billingCountry = country;
+    }
+    if (document.getElementById("want-invoice").checked) {
+      body.billing = {
+        name: document.getElementById("bill-name").value.trim() || undefined,
+        taxId: document.getElementById("bill-taxid").value.trim() || undefined,
+      };
     }
 
     const btn = document.getElementById("pay-btn");
@@ -301,7 +310,7 @@ const Checkout = {
     const payHost = document.getElementById("confirmation-payment-host");
 
     if (simulated) {
-      sub.textContent = "Tu pago se ha confirmado. Tienes el pedido y tus entradas en el seguimiento.";
+      sub.textContent = "Tu pago se ha confirmado. Tienes el pedido, la factura y tus entradas en el seguimiento.";
       payHost.innerHTML = `
         <p class="font-label-mono text-[11px] text-secondary uppercase leading-relaxed">
           Modo simulación (CHECKOUT_SKIP_STRIPE): pedido marcado como PAGADO automáticamente.

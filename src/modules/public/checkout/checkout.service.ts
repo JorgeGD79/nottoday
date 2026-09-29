@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { env } from "@/config/env";
 import { AppError } from "@/utils/AppError";
 import { quoteCart } from "@/services/pricing.service";
+import { assignInvoiceNumber } from "@/services/invoice.service";
 import { variantLabel } from "@/utils/slug";
 import { assertDropPurchasable } from "@/services/drop.service";
 import { createPaymentIntent, toStripeAmount } from "@/services/stripe.service";
@@ -112,6 +113,8 @@ export async function checkout(input: CheckoutInput) {
         taxAmount: quote.taxAmount,
         taxExempt: quote.taxExempt,
         shippingTaxRate: quote.shippingTaxRate,
+        billingName: input.billing?.name || null,
+        billingTaxId: input.billing?.taxId || null,
         // Snapshot del envío: si el admin luego edita o borra el método,
         // el pedido conserva el nombre y el coste que realmente se cobraron.
         shippingMethodId: quote.shippingMethod?.id ?? null,
@@ -272,6 +275,7 @@ export async function commitSale(
   }
 
   await issueTicketsForOrder(tx, orderId);
+  await assignInvoiceNumber(tx, orderId);
   return true;
 }
 

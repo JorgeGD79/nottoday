@@ -55,6 +55,15 @@
                         <input type="email" id="checkout-email" class="nt-input" placeholder="tu@email.com" required autocomplete="email"/></div>
                     <div><label class="nt-label" for="ship-country">País</label>
                         <select id="ship-country" class="nt-input" required autocomplete="country"></select></div>
+                    <label class="flex items-center gap-2 font-label-mono text-[12px] text-on-surface-variant uppercase cursor-pointer">
+                        <input type="checkbox" id="want-invoice" class="bg-transparent border-outline-variant text-secondary focus:ring-0"/> Necesito factura a nombre de empresa / autónomo
+                    </label>
+                    <div id="invoice-fields" class="hidden grid grid-cols-1 md:grid-cols-2 gap-stack-md">
+                        <div><label class="nt-label" for="bill-name">Razón social / nombre</label>
+                            <input type="text" id="bill-name" class="nt-input" autocomplete="organization"/></div>
+                        <div><label class="nt-label" for="bill-taxid">NIF / CIF / VAT</label>
+                            <input type="text" id="bill-taxid" class="nt-input font-label-mono" autocomplete="off"/></div>
+                    </div>
                 </div>
             </section>
 

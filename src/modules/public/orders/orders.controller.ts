@@ -2,6 +2,7 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { AppError } from "@/utils/AppError";
+import { creditNotePdf, invoicePdf } from "@/services/invoice.service";
 
 const paramsSchema = z.object({ id: z.string().cuid() });
 const querySchema = z.object({ email: z.string().email() });
@@ -35,6 +36,8 @@ export async function trackOrderHandler(request: FastifyRequest, reply: FastifyR
       total: true,
       taxAmount: true,
       taxExempt: true,
+      invoiceNumber: true,
+      creditNoteNumber: true,
       shippingMethodName: true,
       shippingCity: true,
       shippingCountry: true,
@@ -62,4 +65,28 @@ export async function trackOrderHandler(request: FastifyRequest, reply: FastifyR
   if (!order) throw AppError.notFound("Pedido");
 
   return reply.send({ order });
+}
+
+/**
+ * GET /api/orders/:id/invoice?email=... (y /credit-note) — PDF de la factura.
+ * Mismo control de acceso que el seguimiento: id del pedido + email de compra.
+ */
+export async function invoiceHandler(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = paramsSchema.parse(request.params);
+  const { email } = querySchema.parse(request.query);
+  return sendPdf(reply, await invoicePdf(id, email));
+}
+
+export async function creditNoteHandler(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = paramsSchema.parse(request.params);
+  const { email } = querySchema.parse(request.query);
+  return sendPdf(reply, await creditNotePdf(id, email));
+}
+
+export function sendPdf(reply: FastifyReply, { filename, pdf }: { filename: string; pdf: Buffer }) {
+  return reply
+    .header("Content-Type", "application/pdf")
+    .header("Content-Disposition", `inline; filename="${filename}"`)
+    .header("Cache-Control", "private, no-store")
+    .send(pdf);
 }

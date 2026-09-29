@@ -477,6 +477,14 @@ model Order {
   taxExempt       Boolean @default(false) // exportación: físicos sin IVA
   shippingTaxRate Decimal @default(21) @db.Decimal(5, 2)
 
+  // --- Facturación ---
+  billingName      String? // razón social / nombre para factura completa
+  billingTaxId     String? // NIF/CIF/VAT del cliente (opcional)
+  invoiceNumber    String?   @unique // se asigna al confirmarse el pago
+  invoiceDate      DateTime?
+  creditNoteNumber String?   @unique // factura rectificativa, al reembolsar
+  creditNoteDate   DateTime?
+
   // --- Reembolso ---
   // refundedAt se marca ANTES de llamar a Stripe (reclama el reembolso): así un
   // doble click o el webhook charge.refunded que llega mientras tanto no lo
@@ -578,6 +586,13 @@ model Booking {
   artist Artist? @relation(fields: [artistId], references: [id], onDelete: SetNull)
 
   @@index([status, createdAt])
+}
+
+// Numeración correlativa de facturas por serie y año ("F2026", "R2026").
+// Se incrementa con un UPSERT atómico dentro de la transacción del pago.
+model InvoiceCounter {
+  id   String @id
+  last Int    @default(0)
 }
 
 // ----------------------------------------------------------------------------

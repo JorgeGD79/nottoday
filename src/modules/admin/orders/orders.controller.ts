@@ -6,6 +6,8 @@ import { FulfillmentStatus, OrderStatus } from "@prisma/client";
 import { recordAuditLog } from "@/services/audit-log.service";
 import { notifyOrder } from "@/services/order-notifications.service";
 import { cancelPendingOrder, refundOrder } from "@/services/order-lifecycle.service";
+import { creditNotePdf, invoicePdf } from "@/services/invoice.service";
+import { sendPdf } from "@/modules/public/orders/orders.controller";
 
 const listQuerySchema = z.object({
   status: z.nativeEnum(OrderStatus).optional(),
@@ -155,4 +157,15 @@ export async function cancelOrderHandler(request: FastifyRequest, reply: Fastify
 
   const order = await prisma.order.findUniqueOrThrow({ where: { id } });
   return reply.send({ order, outcome });
+}
+
+/** GET /api/admin/orders/:id/invoice (y /credit-note) — PDF sin pedir el email. */
+export async function adminInvoiceHandler(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = orderIdParamsSchema.parse(request.params);
+  return sendPdf(reply, await invoicePdf(id));
+}
+
+export async function adminCreditNoteHandler(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = orderIdParamsSchema.parse(request.params);
+  return sendPdf(reply, await creditNotePdf(id));
 }

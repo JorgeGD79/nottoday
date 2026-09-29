@@ -53,6 +53,15 @@ services:
         value: "NOT TODAY <no-reply@nottoday.com>"
       - key: EMAIL_REPLY_TO
         sync: false
+      # Datos fiscales del emisor para las facturas PDF (a mano en el dashboard).
+      - key: COMPANY_NAME
+        value: "NOT TODAY COLLECTIVE"
+      - key: COMPANY_TAX_ID
+        sync: false
+      - key: COMPANY_ADDRESS
+        sync: false
+      - key: COMPANY_EMAIL
+        sync: false
       # Cloudinary (subida de fotos). sync:false = las metes a mano en el dashboard
       # de Render (Environment), no se guardan en git.
       - key: CLOUDINARY_CLOUD_NAME

@@ -159,6 +159,22 @@
         </div>`;
     }
 
+    // Enlaces a los PDF: mismo acceso que el seguimiento (id + email).
+    function invoiceLinks(order) {
+        if (!order.invoiceNumber && !order.creditNoteNumber) return "";
+        const qs = `email=${encodeURIComponent(currentEmail)}`;
+        const link = (href, label, sub) => `
+            <a href="${href}" target="_blank" rel="noopener" class="flex items-center justify-between gap-3 border border-outline-variant/30 px-3 py-2 hover:border-secondary-container transition-colors">
+                <span class="flex items-center gap-2 font-label-mono text-[12px] uppercase text-on-surface"><span class="material-symbols-outlined text-[18px] text-secondary-container">receipt_long</span>${label}</span>
+                <span class="font-label-mono text-[11px] text-on-surface-variant">${ntEscapeHtml(sub)}</span>
+            </a>`;
+        return `<div class="mt-stack-md space-y-2">
+            ${order.invoiceNumber ? link(`/api/orders/${encodeURIComponent(order.id)}/invoice?${qs}`, "Factura (PDF)", order.invoiceNumber) : ""}
+            ${order.creditNoteNumber ? link(`/api/orders/${encodeURIComponent(order.id)}/credit-note?${qs}`, "Factura rectificativa (PDF)", order.creditNoteNumber) : ""}
+        </div>`;
+    }
+
+    let currentEmail = "";
     function renderOrder(order) {
         const steps = buildSteps(order);
         const result = document.getElementById("track-result");
@@ -190,6 +206,7 @@
                 <div class="flex justify-between text-on-surface border-t border-outline-variant/30 pt-2"><span class="uppercase font-bold">Total</span><span class="font-bold">${ntFormatMoney(order.total)}</span></div>
                 <p class="text-[11px] text-on-surface-variant uppercase text-right">${order.taxExempt ? "Productos sin IVA (exportación)" : `IVA incluido: ${ntFormatMoney(order.taxAmount)}`}</p>
             </div>
+            ${invoiceLinks(order)}
         </div>
         ${ticketsHtml(order.tickets)}`;
 
@@ -214,6 +231,7 @@
         resultEl.classList.remove("grid");
         try {
             const { order } = await ntApi(`/orders/${encodeURIComponent(orderId)}?email=${encodeURIComponent(email)}`);
+            currentEmail = email;
             renderOrder(order);
         } catch (err) {
             errEl.textContent = err.status === 404

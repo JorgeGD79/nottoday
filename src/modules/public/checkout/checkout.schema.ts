@@ -23,8 +23,15 @@ export const checkoutSchema = z.object({
       phone: z.string().max(30).optional(),
     })
     .optional(),
-  // País del comprador cuando no hay envío (pedidos solo de entradas).
+  // País del comprador cuando no hay envío (solo informativo en la factura).
   billingCountry: countryCode.optional(),
+  // Datos para factura completa (empresa/autónomo). Sin ellos: factura simplificada.
+  billing: z
+    .object({
+      name: z.string().trim().max(200).optional(),
+      taxId: z.string().trim().max(40).optional(),
+    })
+    .optional(),
 });
 
 export type CheckoutInput = z.infer<typeof checkoutSchema>;

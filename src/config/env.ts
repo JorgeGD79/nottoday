@@ -61,6 +61,11 @@ const envSchema = z
     // Buzón que recibe los avisos internos (bookings nuevos) y las respuestas.
     EMAIL_REPLY_TO: z.string().email().optional(),
 
+    // Datos fiscales del emisor que aparecen en las facturas.
+    COMPANY_NAME: z.string().default("NOT TODAY COLLECTIVE"),
+    COMPANY_TAX_ID: z.string().default("[NIF PENDIENTE]"),
+    COMPANY_ADDRESS: z.string().default("[Dirección fiscal pendiente]"),
+    COMPANY_EMAIL: z.string().default(""),
     // IVA aplicado al envío (los productos llevan el suyo propio).
     SHIPPING_TAX_RATE: z.coerce.number().min(0).max(100).default(21),
 

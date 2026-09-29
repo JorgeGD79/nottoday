@@ -4,6 +4,7 @@ import { logger } from "@/lib/logger";
 import { AppError } from "@/utils/AppError";
 import { invalidateCatalogCache } from "@/services/cache.service";
 import { voidTicketsForOrder } from "@/services/ticket.service";
+import { assignCreditNoteNumber } from "@/services/invoice.service";
 import { notifyOrder } from "@/services/order-notifications.service";
 import { isRealPaymentIntent, refundPaymentIntent, stripe } from "@/services/stripe.service";
 import {
@@ -81,7 +82,8 @@ async function recoverLatePayment(orderId: string) {
  *   1. Reclama el reembolso poniendo refundedAt (UPDATE condicional): un doble
  *      click o el webhook charge.refunded que llega a la vez no lo repiten.
  *   2. Llama a Stripe (con idempotencyKey). Si falla, se deshace el paso 1.
- *   3. Marca REEMBOLSADO, anula las entradas y, si se pide, devuelve el stock.
+ *   3. Marca REEMBOLSADO, anula las entradas, emite la factura rectificativa
+ *      (si el pedido estaba facturado) y, si se pide, devuelve el stock.
  *
  * Los pedidos del modo demo (pago simulado) se reembolsan sin llamar a Stripe.
  */
@@ -117,6 +119,7 @@ async function refundAndClose(
       data: { status: OrderStatus.REEMBOLSADO, stripeRefundId },
     });
     await voidTicketsForOrder(tx, orderId);
+    await assignCreditNoteNumber(tx, orderId);
     if (opts.restock) {
       for (const item of order.items) {
         await tx.productVariant.update({
@@ -169,6 +172,7 @@ export async function markRefundedExternally(paymentIntentId: string, fullyRefun
     });
     if (claim.count === 0) return false;
     await voidTicketsForOrder(tx, order.id);
+    await assignCreditNoteNumber(tx, order.id);
     return true;
   });
 

@@ -79,6 +79,27 @@ async function uploadAudioFiles(files) {
   return body.urls;
 }
 
+// Descarga un PDF protegido (facturas): hace falta el Authorization header,
+// así que no vale un <a href>: se pide como blob y se ofrece como archivo.
+async function downloadPdf(url) {
+  try {
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${Auth.token}` } });
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      throw new Error((body && body.error) || `Error ${res.status}`);
+    }
+    const name = (res.headers.get("Content-Disposition") || "").match(/filename="([^"]+)"/);
+    const href = URL.createObjectURL(await res.blob());
+    const a = document.createElement("a");
+    a.href = href;
+    a.download = name ? name[1] : "factura.pdf";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(href), 10000);
+  } catch (err) {
+    ntToast(err.message, true);
+  }
+}
+
 // ---------- Helpers de formato ----------
 
 const fmtShortDate = (iso) =>
@@ -937,7 +958,10 @@ const Sections = {
               <div class="mt-2 text-[13px] text-on-surface-variant space-y-1">
                 <p class="font-bold text-on-surface">${(o.items || []).map((i) => `${i.quantity}x ${ntEscapeHtml(i.product.name)}${i.product.productType === "TICKET_EVENTO" || !i.variantLabel ? "" : ` (${ntEscapeHtml(i.variantLabel)})`}`).join("<br/>")}</p>
                 <p>${ntEscapeHtml(o.shippingName || "")}<br/>${ntEscapeHtml(o.shippingAddress || "")}<br/>${ntEscapeHtml([o.shippingPostalCode, o.shippingCity, ntCountryName(o.shippingCountry)].filter(Boolean).join(", "))}${o.shippingPhone ? `<br/>Tel: ${ntEscapeHtml(o.shippingPhone)}` : ""}</p>
+                ${o.billingTaxId ? `<p>Factura a: ${ntEscapeHtml(o.billingName || "")} · ${ntEscapeHtml(o.billingTaxId)}</p>` : ""}
                 <p>IVA: ${o.taxExempt ? "exento (exportación)" : ntFormatMoney(o.taxAmount)}</p>
+                ${o.invoiceNumber ? `<p><button type="button" class="text-secondary underline" data-pdf="/api/admin/orders/${o.id}/invoice">Factura ${ntEscapeHtml(o.invoiceNumber)}</button></p>` : ""}
+                ${o.creditNoteNumber ? `<p><button type="button" class="text-secondary underline" data-pdf="/api/admin/orders/${o.id}/credit-note">Rectificativa ${ntEscapeHtml(o.creditNoteNumber)}</button></p>` : ""}
                 ${o.discountCode ? `<p>Cupón: <span class="text-secondary">${ntEscapeHtml(o.discountCode.code)}</span></p>` : ""}
                 ${o._count && o._count.tickets ? `<p>Entradas emitidas: <span class="text-secondary">${o._count.tickets}</span></p>` : ""}
                 ${o.refundedAt ? `<p>Reembolso: ${fmtShortDate(o.refundedAt)}${o.stripeRefundId ? ` · ${ntEscapeHtml(o.stripeRefundId)}` : ""}</p>` : ""}
@@ -960,6 +984,8 @@ const Sections = {
         ["Fecha", "Email", "Total", "Pago", "Método envío", "Detalle", "Estado envío", ""],
         rows, "Sin pedidos todavía.");
 
+      host().querySelectorAll("[data-pdf]").forEach((btn) =>
+        btn.addEventListener("click", () => downloadPdf(btn.dataset.pdf)));
       host().querySelectorAll("[data-order-refund]").forEach((btn) =>
         btn.addEventListener("click", () => this.refundForm(this.items.find((o) => o.id === btn.dataset.orderRefund))));
       host().querySelectorAll("[data-order-cancel]").forEach((btn) =>
