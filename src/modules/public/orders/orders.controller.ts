@@ -40,6 +40,7 @@ export async function trackOrderHandler(request: FastifyRequest, reply: FastifyR
         select: {
           quantity: true,
           unitPrice: true,
+          variantLabel: true,
           product: { select: { name: true, productType: true } },
           productVariant: { select: { size: true } },
         },

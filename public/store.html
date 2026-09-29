@@ -68,19 +68,16 @@
     const productIndex = new Map();
     let catalog = [];
 
-    const SIZE_ORDER = ["S", "M", "L", "XL"];
-
     function sizeButtons(product) {
-        const variants = [...product.variants].sort(
-            (a, b) => SIZE_ORDER.indexOf(a.size) - SIZE_ORDER.indexOf(b.size)
-        );
+        // Las variantes llegan ya en el orden fijado en el panel.
+        const variants = product.variants;
         return variants
             .map(
                 (v) => `
             <button class="size-btn" data-product="${product.id}" data-variant="${v.id}"
                 ${v.stockAvailable <= 0 ? "disabled" : ""}
                 title="${v.stockAvailable <= 0 ? "Agotado" : `${v.stockAvailable} disponibles`}">
-                ${v.size}
+                ${ntEscapeHtml(ntVariantLabel(v))}
             </button>`
             )
             .join("");
@@ -286,7 +283,7 @@
     function renderProductModal() {
         const p = pmProduct;
         const images = (p.images && p.images.length) ? p.images : [ntPlaceholderImage(p.name)];
-        const sizes = [...p.variants].sort((a, b) => SIZE_ORDER.indexOf(a.size) - SIZE_ORDER.indexOf(b.size));
+        const sizes = p.variants;
         const soldOut = p.status === "AGOTADO" || p.variants.every((v) => v.stockAvailable <= 0);
         const dropLocked = p.dropMeta && p.dropMeta.dropStatus !== "ABIERTO";
         const canBuy = !soldOut && !dropLocked;
@@ -301,7 +298,7 @@
         const sizeBtns = sizes.map((v) => `
             <button data-size="${v.id}" ${v.stockAvailable <= 0 ? "disabled" : ""}
                 class="size-btn ${pmVariantId === v.id ? "selected" : ""}"
-                title="${v.stockAvailable <= 0 ? "Agotado" : `${v.stockAvailable} disponibles`}">${v.size}</button>`).join("");
+                title="${v.stockAvailable <= 0 ? "Agotado" : `${v.stockAvailable} disponibles`}">${ntEscapeHtml(ntVariantLabel(v))}</button>`).join("");
 
         document.getElementById("pm-panel").innerHTML = `
             <div class="grid grid-cols-1 md:grid-cols-2">

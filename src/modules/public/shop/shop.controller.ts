@@ -32,7 +32,13 @@ export async function listShopProductsHandler(request: FastifyRequest, reply: Fa
     prisma.product.findMany({
       where,
       // El frontend necesita el id de la variante para poder añadirla al carrito.
-      include: { variants: { select: { id: true, size: true, stockAvailable: true } } },
+      include: {
+        variants: {
+          where: { active: true },
+          select: { id: true, size: true, color: true, stockAvailable: true },
+          orderBy: { sortOrder: "asc" },
+        },
+      },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * pageSize,
       take: pageSize,

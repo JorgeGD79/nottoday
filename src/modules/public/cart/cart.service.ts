@@ -3,6 +3,7 @@ import { AppError } from "@/utils/AppError";
 import { CartStatus } from "@prisma/client";
 import { validateAndPriceDiscount } from "@/services/discount.service";
 import { assertDropPurchasable } from "@/services/drop.service";
+import { variantLabel } from "@/utils/slug";
 
 const cartInclude = {
   items: { include: { product: true, productVariant: true } },
@@ -37,14 +38,16 @@ export async function addItemToCart(input: {
     throw AppError.notFound("Variante de producto");
   }
 
-  // No se puede añadir un drop que aún no está abierto (gate de servidor).
+  // No se puede añadir un drop que aún no está abierto (gate de servidor),
+  // ni una variante retirada del catálogo.
   assertDropPurchasable(variant.product);
+  if (!variant.active) throw new AppError("Esa variante ya no está a la venta", 422);
 
   // Comprobación "optimista" de stock a nivel de carrito. La verdad definitiva
   // (con row locking) se aplica en el checkout, aquí solo evitamos UX confusa.
   const availableToPromise = variant.stockAvailable - variant.stockReserved;
   if (availableToPromise < input.quantity) {
-    throw new AppError(`Stock insuficiente para la talla ${variant.size}`, 422);
+    throw new AppError(`Stock insuficiente para ${variantLabel(variant)}`, 422);
   }
 
   const cart = await getOrCreateCart(input.cartId, input.email);
@@ -96,7 +99,7 @@ export async function setItemQuantity(cartId: string, productVariantId: string, 
 
   const availableToPromise = variant.stockAvailable - variant.stockReserved;
   if (availableToPromise < quantity) {
-    throw new AppError(`Stock insuficiente para la talla ${variant.size} (disponible: ${availableToPromise})`, 422);
+    throw new AppError(`Stock insuficiente para ${variantLabel(variant)} (disponible: ${availableToPromise})`, 422);
   }
 
   // updateMany para no lanzar si la línea no existe (no-op idempotente).

@@ -99,3 +99,10 @@ function ntEscapeHtml(value) {
     (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch])
   );
 }
+
+// Etiqueta legible de una variante: "L", "Negro / L", "Entrada general".
+function ntVariantLabel(v) {
+  if (!v) return "";
+  if (v.size === "GENERAL") return "Entrada general";
+  return v.color ? `${v.color} / ${v.size}` : v.size;
+}

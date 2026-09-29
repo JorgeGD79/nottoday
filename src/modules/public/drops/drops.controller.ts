@@ -21,7 +21,11 @@ export async function listDropsHandler(_request: FastifyRequest, reply: FastifyR
   const fetched = await prisma.product.findMany({
     where: { productType: ProductType.DROP_EXCLUSIVO, dropMeta: { isNot: null } },
     include: {
-      variants: { select: { id: true, size: true, stockAvailable: true } },
+      variants: {
+        where: { active: true },
+        select: { id: true, size: true, color: true, stockAvailable: true },
+        orderBy: { sortOrder: "asc" },
+      },
       dropMeta: true,
     },
     orderBy: { dropMeta: { releaseAt: "asc" } },

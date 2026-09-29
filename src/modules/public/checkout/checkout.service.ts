@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { env } from "@/config/env";
 import { AppError } from "@/utils/AppError";
 import { validateAndPriceDiscount } from "@/services/discount.service";
+import { variantLabel } from "@/utils/slug";
 import { assertDropPurchasable } from "@/services/drop.service";
 import { createPaymentIntent, toStripeAmount } from "@/services/stripe.service";
 import { invalidateCatalogCache } from "@/services/cache.service";
@@ -48,10 +49,13 @@ export async function checkout(input: CheckoutInput) {
   if (cart.items.length === 0) throw new AppError("El carrito está vacío", 422);
   if (cart.status === CartStatus.CONVERTIDO) throw AppError.conflict("Este carrito ya fue procesado");
 
-  // Gate autoritativo: ningún item puede ser un drop cerrado, aunque se haya
-  // saltado el frontend y el add-to-cart. Se comprueba antes de tocar stock.
+  // Gate autoritativo: ningún item puede ser un drop cerrado ni una variante
+  // retirada, aunque se haya saltado el frontend y el add-to-cart.
   for (const item of cart.items) {
     assertDropPurchasable(item.product);
+    if (!item.productVariant.active) {
+      throw new AppError(`"${item.product.name}" (${variantLabel(item.productVariant)}) ya no está a la venta`, 422);
+    }
   }
 
   const subtotal = cart.items.reduce(
@@ -77,7 +81,7 @@ export async function checkout(input: CheckoutInput) {
       const available = variant.stockAvailable - variant.stockReserved;
       if (available < item.quantity) {
         throw new AppError(
-          `Sin stock suficiente para la talla ${variant.size} (disponible: ${available})`,
+          `Sin stock suficiente para ${item.product.name} (${variantLabel(item.productVariant)}): disponible ${available}`,
           409
         );
       }
@@ -133,6 +137,8 @@ export async function checkout(input: CheckoutInput) {
             productVariantId: item.productVariantId,
             quantity: item.quantity,
             unitPrice: item.product.price,
+            // Snapshot de la variante: el pedido no cambia si luego se renombra.
+            variantLabel: variantLabel(item.productVariant),
           })),
         },
       },

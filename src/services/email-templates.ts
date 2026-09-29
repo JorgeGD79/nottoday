@@ -79,8 +79,8 @@ export interface OrderEmailData {
   items: {
     quantity: number;
     unitPrice: unknown;
+    variantLabel: string;
     product: { name: string; productType: string };
-    productVariant: { size: string };
   }[];
   tickets: {
     code: string;
@@ -91,7 +91,7 @@ export interface OrderEmailData {
 function itemsTable(order: OrderEmailData) {
   const rows = order.items
     .map((i) => {
-      const size = i.product.productType === "TICKET_EVENTO" ? "" : ` (${i.productVariant.size})`;
+      const size = i.product.productType === "TICKET_EVENTO" || !i.variantLabel ? "" : ` (${i.variantLabel})`;
       return `<tr>
         <td style="padding:8px 0;border-bottom:1px solid #353535;color:#e5e2e1;">${i.quantity}x ${escapeHtml(i.product.name)}${escapeHtml(size)}</td>
         <td style="padding:8px 0;border-bottom:1px solid #353535;text-align:right;white-space:nowrap;">${money(Number(i.unitPrice) * i.quantity)}</td>
@@ -113,7 +113,7 @@ function itemsTable(order: OrderEmailData) {
 function itemsText(order: OrderEmailData) {
   return [
     ...order.items.map((i) =>
-      `${i.quantity}x ${i.product.name}${i.product.productType === "TICKET_EVENTO" ? "" : ` (${i.productVariant.size})`} — ${money(Number(i.unitPrice) * i.quantity)}`),
+      `${i.quantity}x ${i.product.name}${i.product.productType === "TICKET_EVENTO" || !i.variantLabel ? "" : ` (${i.variantLabel})`} — ${money(Number(i.unitPrice) * i.quantity)}`),
     `Total: ${money(order.total)}`,
   ].join("\n");
 }

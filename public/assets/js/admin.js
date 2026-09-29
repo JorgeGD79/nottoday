@@ -333,7 +333,13 @@ async function eventOptions() {
 // SECCIONES
 // ============================================================
 
-const SIZES = ["S", "M", "L", "XL"];
+// Plantillas de variantes para no teclear las tallas a mano.
+const VARIANT_PRESETS = {
+  "Ropa S–XL": ["S", "M", "L", "XL"],
+  "Ropa XS–XXL": ["XS", "S", "M", "L", "XL", "XXL"],
+  "Calzado 36–46": ["36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46"],
+  "Talla única": ["Única"],
+};
 
 const Sections = {
   // ---------------- PRODUCTOS ----------------
@@ -347,6 +353,13 @@ const Sections = {
       host().innerHTML = `<div class="nt-skeleton h-40"></div>`;
       const { products } = await adminApi("/admin/products");
       this.items = products;
+      const stockCell = (p) => {
+        const active = p.variants.filter((v) => v.active);
+        if (!active.length) return "—";
+        return active.map((v) =>
+          `<span title="${v.stockReserved ? `${v.stockReserved} reservadas en pedidos pendientes` : ""}">${ntEscapeHtml(v.color ? `${v.color}/${v.size}` : v.size)}:${v.stockAvailable}</span>`
+        ).join(" · ");
+      };
       const rows = products.map((p) => `
         <tr>
           <td class="font-bold uppercase">${ntEscapeHtml(p.name)}</td>
@@ -356,23 +369,31 @@ const Sections = {
             { DROP_EXCLUSIVO: "ok", TICKET_EVENTO: "ok" }[p.productType] || "muted"
           )}</td>
           <td>${statusBadge(p.status)}</td>
-          <td class="font-label-mono text-[12px]">${p.variants.map((v) => `${v.size}:${v.stockAvailable}`).join(" · ") || "—"}</td>
+          <td class="font-label-mono text-[12px]">${stockCell(p)}</td>
           <td>${p.dropMeta ? `${badge(p.dropMeta.dropStatus, p.dropMeta.dropStatus === "ABIERTO" ? "ok" : "muted")}<br/><span class="font-label-mono text-[11px] text-on-surface-variant">${fmtShortDate(p.dropMeta.releaseAt)}</span>` : "—"}</td>
           ${rowActions(p.id)}
         </tr>`);
       host().innerHTML = renderTable(
-        ["Nombre", "Precio", "Tipo", "Estado", "Stock por talla", "Drop", ""],
+        ["Nombre", "Precio", "Tipo", "Estado", "Stock por variante", "Drop", ""],
         rows, "Sin productos. Crea el primero.");
       wireRowActions(this.items, (p) => this.form(p), (p) =>
         submitAndReload(adminApi(`/admin/products/${p.id}`, { method: "DELETE" }), "products", "Producto eliminado"));
     },
+    variantRow(v = {}) {
+      return `
+        <div class="grid grid-cols-[1fr_1fr_80px_auto] gap-2 items-center" data-variant-row>
+          <input class="nt-input" data-v-size placeholder="Talla (M, 42, Única...)" value="${ntEscapeHtml(v.size || "")}"/>
+          <input class="nt-input" data-v-color placeholder="Color (opcional)" value="${ntEscapeHtml(v.color || "")}"/>
+          <input class="nt-input text-center" data-v-stock type="number" min="0" placeholder="Stock" value="${v.stockAvailable ?? ""}"
+            title="${v.stockReserved ? `${v.stockReserved} reservadas en pedidos pendientes` : ""}"/>
+          <button type="button" class="adm-icon-btn danger" data-v-remove title="Quitar (se retira de la venta)"><span class="material-symbols-outlined text-[20px]">close</span></button>
+        </div>`;
+    },
     async form(p = null) {
-      const stockOf = (size) => {
-        const v = p && p.variants.find((x) => x.size === size);
-        return v ? v.stockAvailable : "";
-      };
       const isTicket = p?.productType === "TICKET_EVENTO";
       const events = await eventOptions();
+      const activeVariants = p ? p.variants.filter((v) => v.active && v.size !== "GENERAL") : [];
+      const generalStock = p?.variants.find((v) => v.size === "GENERAL")?.stockAvailable ?? "";
       const html = `
         ${fText("name", "Nombre", p?.name, { required: true })}
         ${fTextarea("description", "Descripción", p?.description)}
@@ -381,14 +402,15 @@ const Sections = {
         ${fSelect("productType", "Tipo", [["TIENDA_GENERAL", "Tienda general"], ["DROP_EXCLUSIVO", "Drop exclusivo"], ["TICKET_EVENTO", "Ticket de evento"]], p?.productType || "TIENDA_GENERAL")}
         ${fSelect("status", "Estado", ["BORRADOR", "ACTIVO", "AGOTADO"], p?.status || "BORRADOR")}
         <div id="size-stock-fields" class="${isTicket ? "hidden" : ""}">
-          <label class="nt-label">Stock por talla ${p ? "(se actualizan/añaden las tallas indicadas)" : "(mínimo una)"}</label>
-          <div class="grid grid-cols-4 gap-3 mt-2">
-            ${SIZES.map((s) => `
-              <div class="border border-outline-variant/30 p-2 text-center">
-                <span class="font-label-mono text-[12px] text-secondary uppercase block mb-1">${s}</span>
-                <input class="nt-input text-center" name="stock-${s}" type="number" min="0" value="${stockOf(s)}" placeholder="—"/>
-              </div>`).join("")}
+          <label class="nt-label">Variantes (talla / color / stock) — en el orden en que se muestran</label>
+          <div class="flex flex-wrap gap-2 mt-2">
+            ${Object.keys(VARIANT_PRESETS).map((k) => `<button type="button" data-preset="${k}" class="font-label-mono text-[11px] uppercase border border-outline-variant/30 px-2 py-1 text-on-surface-variant hover:border-secondary hover:text-secondary">${k}</button>`).join("")}
           </div>
+          <div class="space-y-2 mt-2" id="variant-rows">
+            ${(activeVariants.length ? activeVariants : [{}]).map((v) => this.variantRow(v)).join("")}
+          </div>
+          <button type="button" id="variant-add" class="mt-2 font-label-mono text-[12px] uppercase border border-outline-variant/30 px-3 py-1.5 text-on-surface-variant hover:border-secondary hover:text-secondary transition-colors">+ Añadir variante</button>
+          <p class="font-label-mono text-[11px] text-on-surface-variant uppercase mt-1">Quitar una variante la retira de la venta; los pedidos antiguos la conservan.</p>
         </div>
         <fieldset id="drop-fields" class="border border-secondary-container/40 p-4 space-y-4 ${(p?.productType || "TIENDA_GENERAL") === "DROP_EXCLUSIVO" ? "" : "hidden"}">
           <legend class="font-label-mono text-[12px] text-secondary uppercase px-2">Metadatos del drop</legend>
@@ -400,17 +422,22 @@ const Sections = {
           ${events.length
             ? fSelect("eventId", "Evento", events, p?.eventId || "")
             : `<p class="font-label-mono text-[12px] text-error uppercase">Crea primero un evento en la sección Eventos.</p>`}
-          ${fText("ticketCapacity", "Aforo (capacidad)", p ? stockOf("GENERAL") : "", { type: "number", step: "1", min: 0 })}
+          ${fText("ticketCapacity", "Aforo (capacidad)", generalStock, { type: "number", step: "1", min: 0 })}
         </fieldset>`;
 
       Drawer.open(p ? "Editar producto" : "Nuevo producto", html, () => {
         const v = drawerValues();
         const variants =
           v.productType === "TICKET_EVENTO"
-            ? [{ size: "GENERAL", stockAvailable: parseInt(v.ticketCapacity, 10) || 0 }]
-            : SIZES
-                .filter((s) => v[`stock-${s}`] !== "")
-                .map((s) => ({ size: s, stockAvailable: parseInt(v[`stock-${s}`], 10) }));
+            ? [{ size: "GENERAL", color: "", stockAvailable: parseInt(v.ticketCapacity, 10) || 0 }]
+            : [...document.querySelectorAll("[data-variant-row]")]
+                .map((row) => ({
+                  size: row.querySelector("[data-v-size]").value.trim(),
+                  color: row.querySelector("[data-v-color]").value.trim(),
+                  stockAvailable: parseInt(row.querySelector("[data-v-stock]").value, 10) || 0,
+                }))
+                .filter((x) => x.size);
+        if (!variants.length) { ntToast("Añade al menos una variante (talla)", true); return; }
         const payload = clean({
           name: v.name,
           description: v.description,
@@ -420,7 +447,7 @@ const Sections = {
           eventId: v.productType === "TICKET_EVENTO" ? v.eventId : undefined,
         });
         payload.images = ImageField.get("prod-images");
-        if (variants.length) payload.variants = variants;
+        payload.variants = variants;
         if (v.productType === "DROP_EXCLUSIVO" && v.releaseAt) {
           payload.dropMeta = { releaseAt: fromLocalInput(v.releaseAt), dropStatus: v.dropStatus };
         }
@@ -431,13 +458,28 @@ const Sections = {
       });
 
       ImageField.wire("prod-images", true, "products");
-      document.getElementById("drawer-form")
-        .querySelector("[name=productType]")
-        .addEventListener("change", (e) => {
-          document.getElementById("drop-fields").classList.toggle("hidden", e.target.value !== "DROP_EXCLUSIVO");
-          document.getElementById("ticket-fields").classList.toggle("hidden", e.target.value !== "TICKET_EVENTO");
-          document.getElementById("size-stock-fields").classList.toggle("hidden", e.target.value === "TICKET_EVENTO");
-        });
+      const form = document.getElementById("drawer-form");
+      form.querySelector("[name=productType]").addEventListener("change", (e) => {
+        document.getElementById("drop-fields").classList.toggle("hidden", e.target.value !== "DROP_EXCLUSIVO");
+        document.getElementById("ticket-fields").classList.toggle("hidden", e.target.value !== "TICKET_EVENTO");
+        document.getElementById("size-stock-fields").classList.toggle("hidden", e.target.value === "TICKET_EVENTO");
+      });
+      const rows = document.getElementById("variant-rows");
+      document.getElementById("variant-add").addEventListener("click", () => rows.insertAdjacentHTML("beforeend", this.variantRow()));
+      form.addEventListener("click", (ev) => {
+        const rm = ev.target.closest("[data-v-remove]");
+        if (rm) rm.closest("[data-variant-row]").remove();
+        const preset = ev.target.closest("[data-preset]");
+        if (preset) {
+          const hasData = [...rows.querySelectorAll("[data-v-size]")].some((i) => i.value.trim());
+          if (hasData && !confirm("¿Sustituir las variantes actuales por la plantilla? El stock de las tallas que coincidan se mantiene.")) return;
+          const stockBySize = new Map([...rows.querySelectorAll("[data-variant-row]")].map((r) =>
+            [r.querySelector("[data-v-size]").value.trim().toLowerCase(), r.querySelector("[data-v-stock]").value]));
+          rows.innerHTML = VARIANT_PRESETS[preset.dataset.preset]
+            .map((size) => this.variantRow({ size, stockAvailable: stockBySize.get(size.toLowerCase()) ?? "" }))
+            .join("");
+        }
+      });
     },
   },
 
@@ -819,7 +861,7 @@ const Sections = {
             <details>
               <summary class="cursor-pointer font-label-mono text-[12px] text-secondary uppercase">Detalle</summary>
               <div class="mt-2 text-[13px] text-on-surface-variant space-y-1">
-                <p class="font-bold text-on-surface">${(o.items || []).map((i) => `${i.quantity}x ${ntEscapeHtml(i.product.name)}${i.product.productType === "TICKET_EVENTO" ? "" : ` (${i.productVariant.size})`}`).join("<br/>")}</p>
+                <p class="font-bold text-on-surface">${(o.items || []).map((i) => `${i.quantity}x ${ntEscapeHtml(i.product.name)}${i.product.productType === "TICKET_EVENTO" || !i.variantLabel ? "" : ` (${ntEscapeHtml(i.variantLabel)})`}`).join("<br/>")}</p>
                 <p>${ntEscapeHtml(o.shippingName || "")}<br/>${ntEscapeHtml(o.shippingAddress || "")}<br/>${ntEscapeHtml([o.shippingPostalCode, o.shippingCity, o.shippingCountry].filter(Boolean).join(", "))}${o.shippingPhone ? `<br/>Tel: ${ntEscapeHtml(o.shippingPhone)}` : ""}</p>
                 ${o.discountCode ? `<p>Cupón: <span class="text-secondary">${ntEscapeHtml(o.discountCode.code)}</span></p>` : ""}
                 ${o._count && o._count.tickets ? `<p>Entradas emitidas: <span class="text-secondary">${o._count.tickets}</span></p>` : ""}
@@ -894,7 +936,7 @@ const Sections = {
       const html = `
         <div class="border border-outline-variant/30 p-4 space-y-2 text-[14px] text-on-surface-variant">
           <p><span class="text-on-surface font-bold">${ntFormatMoney(o.total)}</span> · ${ntEscapeHtml(o.email)}</p>
-          <p class="font-bold text-on-surface">${(o.items || []).map((i) => `${i.quantity}x ${ntEscapeHtml(i.product.name)}${i.product.productType === "TICKET_EVENTO" ? "" : ` (${i.productVariant.size})`}`).join("<br/>")}</p>
+          <p class="font-bold text-on-surface">${(o.items || []).map((i) => `${i.quantity}x ${ntEscapeHtml(i.product.name)}${i.product.productType === "TICKET_EVENTO" || !i.variantLabel ? "" : ` (${ntEscapeHtml(i.variantLabel)})`}`).join("<br/>")}</p>
           <p class="font-label-mono text-[11px]">${ntEscapeHtml(o.id)}</p>
         </div>
         <p class="text-[14px] text-on-surface-variant">

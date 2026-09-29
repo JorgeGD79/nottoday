@@ -242,22 +242,20 @@ model DropMetadata {
   @@index([dropStatus, releaseAt])
 }
 
-// Inventario por talla — la unidad real de stock/reserva/checkout.
-// GENERAL no es una talla de ropa: es la única variante de un producto
-// TICKET_EVENTO, donde stockAvailable = aforo del evento. Reutiliza así
-// entero el pipeline de Cart/Checkout/Stripe sin tocarlo.
-enum Size {
-  S
-  M
-  L
-  XL
-  GENERAL
-}
-
+// Inventario por variante — la unidad real de stock/reserva/checkout.
+// `size` es texto libre ("XS", "XXL", "42", "Única", "12 pulgadas"...) y
+// `color` opcional ("" = sin color). "GENERAL" es la única variante de un
+// producto TICKET_EVENTO, donde stockAvailable = aforo del evento.
 model ProductVariant {
   id             String   @id @default(cuid())
   productId      String
-  size           Size
+  size           String
+  color          String   @default("")
+  sku            String?
+  sortOrder      Int      @default(0)
+  // Una variante retirada deja de venderse pero se conserva: los pedidos
+  // antiguos la referencian (borrarla arrastraría sus líneas de pedido).
+  active         Boolean  @default(true)
   stockAvailable Int      @default(0)
   stockReserved  Int      @default(0)
   updatedAt      DateTime @updatedAt
@@ -266,7 +264,7 @@ model ProductVariant {
   cartItems  CartItem[]
   orderItems OrderItem[]
 
-  @@unique([productId, size])
+  @@unique([productId, size, color])
   @@index([productId])
 }
 
@@ -438,6 +436,8 @@ model OrderItem {
   productVariantId String
   quantity         Int
   unitPrice        Decimal @db.Decimal(10, 2)
+  // Snapshot de la variante: la factura no cambia si luego se renombra.
+  variantLabel     String  @default("")
 
   order          Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product        Product        @relation(fields: [productId], references: [id], onDelete: Cascade)

@@ -21,8 +21,8 @@ export async function listProductsHandler(_request: FastifyRequest, reply: Fasti
 /**
  * POST /api/admin/products
  *
- * Crea un producto y, en la MISMA operación, su inventario por talla
- * (S/M/L/XL con stock inicial) y, si el admin lo marca como DROP_EXCLUSIVO,
+ * Crea un producto y, en la MISMA operación, su inventario por variante
+ * (talla libre + color opcional, con stock inicial) y, si el admin lo marca como DROP_EXCLUSIVO,
  * la configuración de la cuenta atrás (fecha/hora de lanzamiento + estado).
  *
  * Requiere rol ADMIN o STAFF (ver rutas). Cada creación queda registrada
@@ -39,12 +39,12 @@ export async function createProductHandler(request: FastifyRequest, reply: Fasti
 
   await recordAuditLog({
     userId: request.user.id,
-    action: `Creó producto "${product.name}" (${product.productType}) con ${product.variants.length} talla(s)`,
+    action: `Creó producto "${product.name}" (${product.productType}) con ${product.variants.length} variante(s)`,
     request,
     metadata: {
       productId: product.id,
       productType: product.productType,
-      sizes: product.variants.map((v) => ({ size: v.size, stock: v.stockAvailable })),
+      variants: product.variants.map((v) => ({ size: v.size, color: v.color, stock: v.stockAvailable })),
     },
   });
 
