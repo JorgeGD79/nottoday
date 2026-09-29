@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { AppError } from "@/utils/AppError";
 import { FulfillmentStatus, OrderStatus } from "@prisma/client";
 import { recordAuditLog } from "@/services/audit-log.service";
+import { notifyOrder } from "@/services/order-notifications.service";
 
 const listQuerySchema = z.object({
   status: z.nativeEnum(OrderStatus).optional(),
@@ -79,6 +80,11 @@ export async function updateFulfillmentHandler(request: FastifyRequest, reply: F
       trackingCode: input.trackingCode ?? existing.trackingCode,
     },
   });
+
+  // Aviso al cliente solo en la transición a ENVIADO (no al re-guardar el tracking).
+  if (input.fulfillmentStatus === FulfillmentStatus.ENVIADO && existing.fulfillmentStatus !== FulfillmentStatus.ENVIADO) {
+    await notifyOrder(id, "shipped");
+  }
 
   await recordAuditLog({
     userId: request.user.id,

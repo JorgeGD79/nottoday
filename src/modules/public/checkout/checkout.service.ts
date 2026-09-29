@@ -6,6 +6,7 @@ import { validateAndPriceDiscount } from "@/services/discount.service";
 import { assertDropPurchasable } from "@/services/drop.service";
 import { createPaymentIntent, toStripeAmount } from "@/services/stripe.service";
 import { invalidateCatalogCache } from "@/services/cache.service";
+import { notifyOrder } from "@/services/order-notifications.service";
 import { CheckoutInput } from "./checkout.schema";
 
 interface LockedVariantRow {
@@ -225,9 +226,9 @@ export async function releaseOrderStock(orderId: string, finalStatus: OrderStatu
  * inventario de verdad), todo dentro de la misma transacción que marca PAGADO.
  */
 export async function markOrderAsPaid(orderId: string) {
-  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+  const paid = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const order = await tx.order.findUnique({ where: { id: orderId }, include: { items: true } });
-    if (!order || order.status !== OrderStatus.PENDIENTE) return;
+    if (!order || order.status !== OrderStatus.PENDIENTE) return false;
 
     for (const item of order.items) {
       await tx.productVariant.update({
@@ -247,7 +248,10 @@ export async function markOrderAsPaid(orderId: string) {
         data: { currentUses: { increment: 1 } },
       });
     }
+    return true;
   });
 
   await invalidateCatalogCache();
+  // El email solo sale en la transición real a PAGADO (no en reintentos del webhook).
+  if (paid) await notifyOrder(orderId, "confirmation");
 }

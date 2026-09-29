@@ -42,6 +42,25 @@ const envSchema = z
     CLOUDINARY_API_KEY: z.string().optional(),
     CLOUDINARY_API_SECRET: z.string().optional(),
 
+    // URL pública de la web (sin barra final). Se usa para los enlaces e imágenes
+    // (seguimiento del pedido) que van dentro de los emails.
+    APP_URL: z
+      .string()
+      .url()
+      .default("http://localhost:4000")
+      .transform((v) => v.replace(/\/+$/, "")),
+
+    // Interruptor general de emails. Apagado por defecto: mientras sea false no
+    // sale ningún correo (se registran en el log), aunque haya RESEND_API_KEY.
+    EMAILS_ENABLED: booleanFlag,
+
+    // Emails transaccionales vía Resend (https://resend.com). Opcional: sin
+    // RESEND_API_KEY los emails no se envían, solo se registran en el log.
+    RESEND_API_KEY: z.string().optional(),
+    EMAIL_FROM: z.string().default("NOT TODAY <no-reply@nottoday.com>"),
+    // Buzón que recibe los avisos internos (bookings nuevos) y las respuestas.
+    EMAIL_REPLY_TO: z.string().email().optional(),
+
     // Solo desarrollo/pruebas: salta la llamada a Stripe en el checkout y confirma
     // el pedido como pagado directamente, para poder simular la web de punta a punta
     // sin claves de Stripe reales. PROHIBIDO en producción (ver superRefine).
