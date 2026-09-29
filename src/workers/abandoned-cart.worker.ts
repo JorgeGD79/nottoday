@@ -10,8 +10,9 @@ import { ABANDONED_CART_QUEUE, abandonedCartQueue } from "./queues";
  * Proceso independiente (arrancar con `npm run worker`) que:
  *   1. Programa el job repetible "sweep" con el patrón cron de
  *      ABANDONED_CART_CRON (cada 2 horas por defecto).
- *   2. Consume esa cola y ejecuta el barrido de carritos abandonados y los
- *      avisos de la lista de espera de drops que ya han abierto por fecha.
+ *   2. Consume esa cola y ejecuta el barrido de carritos abandonados (con su
+ *      recordatorio por email) y los avisos de la lista de espera de drops
+ *      que ya han abierto por fecha.
  *
  * Se ejecuta separado del proceso HTTP (server.ts) para que un pico de
  * checkout/tráfico público nunca compita por CPU/latencia con este trabajo

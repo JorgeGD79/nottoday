@@ -2,6 +2,7 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import {
   addItemSchema,
   applyDiscountSchema,
+  cartEmailSchema,
   cartIdParamsSchema,
   quoteSchema,
   removeItemParamsSchema,
@@ -12,6 +13,8 @@ import {
   applyDiscountToCart,
   getCart,
   quoteForCart,
+  restoreCart,
+  setCartEmail,
   removeItemFromCart,
   setItemQuantity,
 } from "./cart.service";
@@ -45,6 +48,19 @@ export async function applyDiscountHandler(request: FastifyRequest, reply: Fasti
   const input = applyDiscountSchema.parse(request.body);
   const { cart, evaluation } = await applyDiscountToCart(input.cartId, input.code);
   return reply.send({ cart, discount: evaluation });
+}
+
+export async function setCartEmailHandler(request: FastifyRequest, reply: FastifyReply) {
+  const { cartId } = cartIdParamsSchema.parse(request.params);
+  const { email } = cartEmailSchema.parse(request.body);
+  await setCartEmail(cartId, email);
+  return reply.code(204).send();
+}
+
+export async function restoreCartHandler(request: FastifyRequest, reply: FastifyReply) {
+  const { cartId } = cartIdParamsSchema.parse(request.params);
+  const cart = await restoreCart(cartId);
+  return reply.send({ cart });
 }
 
 export async function quoteHandler(request: FastifyRequest, reply: FastifyReply) {

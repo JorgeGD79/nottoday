@@ -130,6 +130,34 @@ export async function getCart(cartId: string) {
 }
 
 /**
+ * Guarda el email del comprador en cuanto lo escribe en el checkout, para
+ * poder recordarle el carrito si lo abandona (interés legítimo: una compra
+ * iniciada por él; ver política de privacidad). Solo en carritos vivos.
+ */
+export async function setCartEmail(cartId: string, email: string) {
+  const result = await prisma.cart.updateMany({
+    where: { id: cartId, status: { in: [CartStatus.ACTIVO, CartStatus.ABANDONADO] } },
+    // updatedAt se conserva: escribir el email no es "actividad" de compra.
+    data: { email },
+  });
+  if (result.count === 0) throw AppError.notFound("Carrito");
+}
+
+/**
+ * Enlace del recordatorio: un carrito ABANDONADO vuelve a ACTIVO para poder
+ * terminar la compra. Uno ya convertido en pedido no se puede reabrir.
+ */
+export async function restoreCart(cartId: string) {
+  const cart = await prisma.cart.findUnique({ where: { id: cartId } });
+  if (!cart) throw AppError.notFound("Carrito");
+  if (cart.status === CartStatus.CONVERTIDO) throw AppError.conflict("Este carrito ya se convirtió en un pedido");
+  if (cart.status === CartStatus.ABANDONADO) {
+    await prisma.cart.update({ where: { id: cartId }, data: { status: CartStatus.ACTIVO } });
+  }
+  return getCart(cartId);
+}
+
+/**
  * Presupuesto del carrito con el motor de precios: IVA, cupón, opciones de
  * envío para el país (con su coste según peso) y total. Es lo que pinta el
  * checkout; el cobro usa exactamente el mismo cálculo.

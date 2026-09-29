@@ -70,6 +70,8 @@ const envSchema = z
     SHIPPING_TAX_RATE: z.coerce.number().min(0).max(100).default(21),
     // Unidades disponibles a partir de las cuales se avisa de stock bajo.
     LOW_STOCK_THRESHOLD: z.coerce.number().int().nonnegative().default(3),
+    // Solo se recuerdan carritos abandonados hace menos de N días.
+    ABANDONED_CART_REMINDER_MAX_AGE_DAYS: z.coerce.number().int().positive().default(7),
 
     // Solo desarrollo/pruebas: salta la llamada a Stripe en el checkout y confirma
     // el pedido como pagado directamente, para poder simular la web de punta a punta

@@ -15,6 +15,8 @@ export const applyDiscountSchema = z.object({
 
 export const cartIdParamsSchema = z.object({ cartId: z.string().cuid() });
 
+export const cartEmailSchema = z.object({ email: z.string().trim().toLowerCase().email().max(254) });
+
 export const quoteSchema = z.object({
   country: z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/).optional(),
   shippingMethodId: z.string().cuid().optional(),

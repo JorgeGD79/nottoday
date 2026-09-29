@@ -43,6 +43,19 @@ const Checkout = {
   // ---------- Carga inicial ----------
 
   async init() {
+    // Enlace del email de carrito abandonado: checkout.html?cart=<id>
+    const fromLink = new URLSearchParams(window.location.search).get("cart");
+    if (fromLink) {
+      try {
+        await ntApi(`/cart/${encodeURIComponent(fromLink)}/restore`, { method: "POST", body: "{}" });
+        localStorage.setItem(CO_CART_KEY, fromLink);
+        if (typeof NTCart !== "undefined") NTCart.load();
+      } catch {
+        /* carrito ya convertido o inexistente: se sigue con el que hubiera */
+      }
+      history.replaceState(null, "", window.location.pathname);
+    }
+
     const id = this.cartId();
     if (!id) return this.showEmpty();
     try {
@@ -53,6 +66,7 @@ const Checkout = {
       if (!cart || cart.status !== "ACTIVO" || cart.items.length === 0) return this.showEmpty();
       this.cart = cart;
       this.countries = countries;
+      if (cart.email) document.getElementById("checkout-email").value = cart.email;
     } catch (err) {
       if (err.status === 404) localStorage.removeItem(CO_CART_KEY);
       return this.showEmpty();
@@ -242,6 +256,13 @@ const Checkout = {
     document.getElementById("ship-country").addEventListener("change", () => this.refreshQuote());
     document.getElementById("want-invoice").addEventListener("change", (e) => {
       document.getElementById("invoice-fields").classList.toggle("hidden", !e.target.checked);
+    });
+    // Guardamos el email en el carrito en cuanto se escribe: si la compra se
+    // queda a medias, podemos enviarle UN recordatorio con su carrito.
+    document.getElementById("checkout-email").addEventListener("change", (e) => {
+      const email = e.target.value.trim();
+      if (!/.+@.+\..+/.test(email) || !this.cartId()) return;
+      ntApi(`/cart/${this.cartId()}/email`, { method: "PATCH", body: JSON.stringify({ email }) }).catch(() => {});
     });
   },
 

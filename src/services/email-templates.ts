@@ -246,7 +246,7 @@ export function bookingReceivedEmail(booking: { type: string; requesterName: str
 }
 
 // --------------------------------------------------------------------------
-// Stock y drops
+// Stock, drops y carritos
 // --------------------------------------------------------------------------
 
 export const productUrl = (slug: string) => `${env.APP_URL}/producto/${encodeURIComponent(slug)}`;
@@ -286,4 +286,26 @@ export function dropOpenEmail(p: { name: string; slug: string }) {
     `Recibes este aviso porque te apuntaste a la lista de espera del drop. Solo te escribimos una vez.`
   );
   return { subject: `Ya disponible: ${p.name}`, html, text: `${p.name} ya está a la venta: ${url}` };
+}
+
+export function abandonedCartEmail(cart: {
+  id: string;
+  items: { quantity: number; product: { name: string; price: unknown }; productVariant: { size: string; color: string } }[];
+}) {
+  const url = `${env.APP_URL}/checkout.html?cart=${encodeURIComponent(cart.id)}`;
+  const rows = cart.items
+    .map((i) => `<tr><td style="padding:6px 0;border-bottom:1px solid #353535;color:#e5e2e1;">${i.quantity}x ${escapeHtml(i.product.name)} <span style="color:#8e9192;">(${escapeHtml(i.productVariant.color ? `${i.productVariant.color} / ${i.productVariant.size}` : i.productVariant.size)})</span></td><td style="padding:6px 0;border-bottom:1px solid #353535;text-align:right;">${money(Number(i.product.price) * i.quantity)}</td></tr>`)
+    .join("");
+  const html = layout(
+    "Te dejaste algo",
+    `<p style="margin:0;">Tu carrito sigue aquí, pero el stock no te espera: las unidades no quedan reservadas hasta que completas el pago.</p>
+     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;margin:16px 0;">${rows}</table>
+     <p style="margin:24px 0 0;">${button(url, "Terminar la compra")}</p>`,
+    `Recibes este correo porque dejaste un carrito a medias en ${escapeHtml(env.APP_URL.replace(/^https?:\/\//, ""))}. Solo te lo recordamos una vez.`
+  );
+  return {
+    subject: `Tu carrito te espera · ${BRAND}`,
+    html,
+    text: `Tu carrito sigue esperándote: ${url}`,
+  };
 }
