@@ -117,6 +117,8 @@ export async function createEventWithLineup(input: CreateEventInput) {
         posterUrl: input.posterUrl,
         price: input.price,
         capacity: input.capacity,
+        maxTicketsPerEmail: input.maxTicketsPerEmail,
+        nominativeTickets: input.nominativeTickets,
         status: input.status,
         lineup: {
           create: input.lineup.map((entry) => ({
@@ -149,6 +151,8 @@ export async function updateEventWithLineup(eventId: string, input: UpdateEventI
         posterUrl: input.posterUrl,
         price: input.price,
         capacity: input.capacity,
+        maxTicketsPerEmail: input.maxTicketsPerEmail,
+        nominativeTickets: input.nominativeTickets,
         status: input.status,
       },
     });

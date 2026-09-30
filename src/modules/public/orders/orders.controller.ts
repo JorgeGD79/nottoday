@@ -54,6 +54,7 @@ export async function trackOrderHandler(request: FastifyRequest, reply: FastifyR
         select: {
           code: true,
           status: true,
+          holderName: true,
           checkedInAt: true,
           event: { select: { title: true, date: true, venue: true } },
         },

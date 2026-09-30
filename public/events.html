@@ -89,6 +89,9 @@
     const poster = (ev) => ev.posterUrl || ntPlaceholderImage(ev.title);
     const lineupNames = (ev) => ev.lineup.map((l) => l.artist.stageName);
 
+    // Entradas que se pueden añadir de una vez: stock, tope por persona y un máximo razonable.
+    const ticketMax = (ev) => Math.min(MAX_TICKETS_PER_ADD, ev.tickets.available, ev.tickets.maxPerEmail || Infinity);
+
     // Estado de venta de un evento próximo.
     function ticketState(ev) {
         if (ev.tickets) return ev.tickets.available > 0 ? "on-sale" : "sold-out";
@@ -122,7 +125,11 @@
                 ${Number(ev.price) > 0 ? `<span class="font-label-mono text-label-mono text-secondary-container">${ntFormatMoney(ev.price)}</span>` : ""}
             </div>`;
         }
-        const max = Math.min(MAX_TICKETS_PER_ADD, ev.tickets.available);
+        const max = ticketMax(ev);
+        const rules = [
+            ev.tickets.maxPerEmail ? `Máximo ${ev.tickets.maxPerEmail} por persona (por email de compra)` : "",
+            ev.tickets.nominative ? "Nominativas: al pagar te pedimos el nombre de cada asistente" : "",
+        ].filter(Boolean);
         return `
         <div class="border border-secondary-container/60 p-stack-md flex flex-col gap-stack-sm">
             <div class="flex items-baseline justify-between gap-4">
@@ -147,7 +154,8 @@
                 class="w-full bg-secondary-container text-on-secondary font-headline-lg text-headline-lg-mobile uppercase py-3 hover:bg-on-surface hover:text-primary-container transition-colors disabled:opacity-40">
                 Comprar entradas
             </button>
-            <p class="font-label-mono text-[11px] text-on-surface-variant uppercase">Entrada nominal con QR, por email tras el pago. Sin reventa.</p>
+            ${rules.map((r) => `<p class="font-label-mono text-[11px] text-secondary-container uppercase">${r}</p>`).join("")}
+            <p class="font-label-mono text-[11px] text-on-surface-variant uppercase">Entrada con QR, por email tras el pago. Sin reventa.</p>
         </div>`;
     }
 
@@ -190,7 +198,7 @@
     function wireTicketBox(ev) {
         const btn = document.getElementById("buy-btn");
         if (!btn) return;
-        const max = Math.min(MAX_TICKETS_PER_ADD, ev.tickets.available);
+        const max = ticketMax(ev);
         qty = Math.max(1, Math.min(qty, max));
         document.querySelectorAll("[data-qty]").forEach((b) => b.addEventListener("click", () => {
             qty = Math.max(1, Math.min(max, qty + Number(b.dataset.qty)));

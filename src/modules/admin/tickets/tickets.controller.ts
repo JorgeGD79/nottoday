@@ -13,7 +13,7 @@ const listQuerySchema = z.object({
  * GET /api/admin/tickets?eventId=...&q=...
  *
  * Lista de asistentes de un evento (una fila por entrada) con los contadores
- * de la puerta. `q` filtra por email o por el principio del código.
+ * de la puerta. `q` filtra por email, nombre del asistente o el principio del código.
  */
 export async function listTicketsHandler(request: FastifyRequest, reply: FastifyReply) {
   const { eventId, q } = listQuerySchema.parse(request.query);
@@ -23,7 +23,11 @@ export async function listTicketsHandler(request: FastifyRequest, reply: Fastify
       where: {
         eventId,
         ...(q
-          ? { OR: [{ holderEmail: { contains: q, mode: "insensitive" } }, { code: { startsWith: q } }] }
+          ? { OR: [
+                { holderEmail: { contains: q, mode: "insensitive" } },
+                { holderName: { contains: q, mode: "insensitive" } },
+                { code: { startsWith: q } },
+              ] }
           : {}),
       },
       select: {
@@ -31,6 +35,7 @@ export async function listTicketsHandler(request: FastifyRequest, reply: Fastify
         code: true,
         status: true,
         holderEmail: true,
+        holderName: true,
         checkedInAt: true,
         orderId: true,
         createdAt: true,

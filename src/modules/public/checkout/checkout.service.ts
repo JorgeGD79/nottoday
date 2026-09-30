@@ -9,7 +9,13 @@ import { variantLabel } from "@/utils/slug";
 import { assertDropPurchasable } from "@/services/drop.service";
 import { createPaymentIntent, toStripeAmount } from "@/services/stripe.service";
 import { invalidateCatalogCache } from "@/services/cache.service";
-import { issueTicketsForOrder } from "@/services/ticket.service";
+import {
+  assertTicketLimitForEmail,
+  assertTicketQuantity,
+  attendeeNamesFor,
+  issueTicketsForOrder,
+  ticketRulesSelect,
+} from "@/services/ticket.service";
 import { notifyOrder } from "@/services/order-notifications.service";
 import { CheckoutInput } from "./checkout.schema";
 
@@ -43,7 +49,12 @@ export async function checkout(input: CheckoutInput) {
   const cart = await prisma.cart.findUnique({
     where: { id: input.cartId },
     include: {
-      items: { include: { product: { include: { dropMeta: true } }, productVariant: true } },
+      items: {
+        include: {
+          product: { include: { dropMeta: true, event: { select: ticketRulesSelect } } },
+          productVariant: true,
+        },
+      },
       discountCode: true,
     },
   });
@@ -63,6 +74,15 @@ export async function checkout(input: CheckoutInput) {
     if (!item.productVariant.active) {
       throw new AppError(`"${item.product.name}" (${variantLabel(item.productVariant)}) ya no está a la venta`, 422);
     }
+  }
+
+  // Entradas: tope por pedido y, si son nominativas, un nombre por unidad.
+  const attendeeNames = new Map<string, string[]>();
+  for (const item of cart.items) {
+    const event = item.product.event;
+    if (!event) continue;
+    assertTicketQuantity(event, item.quantity);
+    attendeeNames.set(item.productVariantId, attendeeNamesFor(event, item.quantity, input.attendees?.[item.productVariantId]));
   }
 
   const requiresShipping = cart.items.some((i) => i.product.productType !== ProductType.TICKET_EVENTO);
@@ -85,6 +105,11 @@ export async function checkout(input: CheckoutInput) {
           409
         );
       }
+    }
+
+    // --- 2b. Límite de entradas por email (con la variante ya bloqueada) ---
+    for (const item of cart.items) {
+      if (item.product.event) await assertTicketLimitForEmail(tx, item.product.event, input.email, item.quantity);
     }
 
     // --- 3. Precio definitivo: IVA, cupón (revalidado en caliente) y envío por país/peso ---
@@ -140,6 +165,7 @@ export async function checkout(input: CheckoutInput) {
             taxRate: line.taxRate,
             discountAmount: line.discountAmount,
             variantLabel: line.variantLabel,
+            attendeeNames: attendeeNames.get(line.productVariantId) ?? [],
           })),
         },
       },

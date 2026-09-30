@@ -32,7 +32,18 @@ export async function listTicketsHandler(_request: FastifyRequest, reply: Fastif
     },
     include: {
       variants: { select: { id: true, size: true, stockAvailable: true } },
-      event: { select: { id: true, title: true, date: true, venue: true, posterUrl: true, status: true } },
+      event: {
+        select: {
+          id: true,
+          title: true,
+          date: true,
+          venue: true,
+          posterUrl: true,
+          status: true,
+          maxTicketsPerEmail: true,
+          nominativeTickets: true,
+        },
+      },
     },
     orderBy: { event: { date: "asc" } },
   });

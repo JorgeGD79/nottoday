@@ -5,9 +5,11 @@ import { validateAndPriceDiscount } from "@/services/discount.service";
 import { assertDropPurchasable } from "@/services/drop.service";
 import { quoteCart } from "@/services/pricing.service";
 import { variantLabel } from "@/utils/slug";
+import { assertTicketQuantity, ticketRulesSelect } from "@/services/ticket.service";
 
 const cartInclude = {
-  items: { include: { product: true, productVariant: true } },
+  // event: reglas de las entradas (tope por persona, nominativas) para el checkout.
+  items: { include: { product: { include: { event: { select: ticketRulesSelect } } }, productVariant: true } },
   discountCode: true,
 } as const;
 
@@ -33,7 +35,7 @@ export async function addItemToCart(input: {
 }) {
   const variant = await prisma.productVariant.findUnique({
     where: { id: input.productVariantId },
-    include: { product: { include: { dropMeta: true } } },
+    include: { product: { include: { dropMeta: true, event: { select: ticketRulesSelect } } } },
   });
   if (!variant || variant.productId !== input.productId) {
     throw AppError.notFound("Variante de producto");
@@ -54,6 +56,14 @@ export async function addItemToCart(input: {
   }
 
   const cart = await getOrCreateCart(input.cartId, input.email);
+
+  // Entradas con tope por persona: el carrito no puede superarlo en una línea.
+  if (variant.product.event?.maxTicketsPerEmail) {
+    const line = await prisma.cartItem.findUnique({
+      where: { cartId_productVariantId: { cartId: cart.id, productVariantId: input.productVariantId } },
+    });
+    assertTicketQuantity(variant.product.event, (line?.quantity ?? 0) + input.quantity);
+  }
 
   await prisma.cartItem.upsert({
     where: { cartId_productVariantId: { cartId: cart.id, productVariantId: input.productVariantId } },
@@ -97,8 +107,12 @@ export async function setItemQuantity(cartId: string, productVariantId: string, 
     return removeItemFromCart(cartId, productVariantId);
   }
 
-  const variant = await prisma.productVariant.findUnique({ where: { id: productVariantId } });
+  const variant = await prisma.productVariant.findUnique({
+    where: { id: productVariantId },
+    include: { product: { select: { event: { select: ticketRulesSelect } } } },
+  });
   if (!variant) throw AppError.notFound("Variante de producto");
+  assertTicketQuantity(variant.product.event, quantity);
 
   const availableToPromise = variant.stockAvailable - variant.stockReserved;
   if (availableToPromise < quantity) {

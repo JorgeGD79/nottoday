@@ -41,6 +41,8 @@ function toPublicEvent({ ticketProduct, ...event }: PublicEventRow, upcoming: bo
           variantId: variant.id,
           price: ticketProduct.price,
           available: Math.max(0, variant.stockAvailable - variant.stockReserved),
+          maxPerEmail: event.maxTicketsPerEmail,
+          nominative: event.nominativeTickets,
         }
       : null,
   };

@@ -639,7 +639,8 @@ const Sections = {
       const ticketsCell = (e) => {
         if (!e.capacity) return `<span class="text-on-surface-variant">Sin venta</span>`;
         const left = e.capacity - e.ticketsSold;
-        return `<span class="font-label-mono text-[12px] ${left <= 0 ? "text-error" : ""}">${e.ticketsSold} / ${e.capacity}</span>
+        const rules = [e.maxTicketsPerEmail ? `máx. ${e.maxTicketsPerEmail}/email` : "", e.nominativeTickets ? "nominativas" : ""].filter(Boolean).join(" · ");
+        return `<span class="font-label-mono text-[12px] ${left <= 0 ? "text-error" : ""}">${e.ticketsSold} / ${e.capacity}</span>${rules ? `<span class="font-label-mono text-[11px] text-on-surface-variant block">${rules}</span>` : ""}
           <span class="block mt-1">${e.ticketsOnSale ? badge(left > 0 ? "A la venta" : "Agotadas", left > 0 ? "ok" : "warn") : badge("No publicadas", "muted")}</span>`;
       };
       const rows = events.map((e) => `
@@ -691,10 +692,15 @@ const Sections = {
             ${fText("price", "Precio entrada (EUR, IVA incl.)", e?.price ?? 0, { type: "number", step: "0.01", min: 0 })}
             ${fText("capacity", "Aforo", e?.capacity ?? "", { type: "number", step: "1", min: Math.max(1, sold), placeholder: "sin venta" })}
           </div>
+          <div class="grid grid-cols-2 gap-3">
+            ${fText("maxTicketsPerEmail", "Máx. entradas por email", e?.maxTicketsPerEmail ?? "", { type: "number", step: "1", min: 1, placeholder: "sin límite" })}
+            ${fSelect("nominativeTickets", "Nominativas", [["no", "No"], ["si", "Sí: nombre de cada asistente"]], e?.nominativeTickets ? "si" : "no")}
+          </div>
           ${e?.capacity ? `<p class="font-label-mono text-[12px] text-on-surface uppercase">Vendidas: ${sold} · Quedan: ${Math.max(0, e.capacity - sold)}</p>` : ""}
           <p class="font-label-mono text-[11px] text-on-surface-variant uppercase">
             Con aforo y precio, las entradas se ponen a la venta al PUBLICAR el evento (páginas Eventos y Tickets).
-            Deja el aforo vacío si es gratis o se vende fuera.
+            Deja el aforo vacío si es gratis o se vende fuera. El máximo por email cuenta todas las compras con ese correo.
+            Nominativas: al pagar se pide el nombre de cada asistente; sale en la entrada y en la puerta.
           </p>
         </fieldset>
         <fieldset class="border border-outline-variant/30 p-4 space-y-2">
@@ -726,6 +732,8 @@ const Sections = {
           status: v.status,
         });
         payload.capacity = capacity;
+        payload.maxTicketsPerEmail = v.maxTicketsPerEmail ? parseInt(v.maxTicketsPerEmail, 10) : null;
+        payload.nominativeTickets = v.nominativeTickets === "si";
         const poster = ImageField.get("event-poster")[0];
         if (poster) payload.posterUrl = poster;
         payload.lineup = lineup;
@@ -1182,13 +1190,13 @@ const Sections = {
         stat("Vendidas", stats.sold) + stat("Dentro", stats.used, "text-secondary") + stat("Pendientes", stats.valid);
       const rows = tickets.map((t) => `
         <tr>
-          <td class="font-label-mono text-[12px]">${ntEscapeHtml(t.holderEmail)}</td>
+          <td class="font-label-mono text-[12px]">${t.holderName ? `<span class="font-bold text-on-surface uppercase">${ntEscapeHtml(t.holderName)}</span><br/>` : ""}${ntEscapeHtml(t.holderEmail)}</td>
           <td class="font-label-mono text-[11px] text-on-surface-variant" title="${ntEscapeHtml(t.code)}">${ntEscapeHtml(t.code.slice(0, 8))}…</td>
           <td>${statusBadge(t.status)}</td>
           <td class="font-label-mono text-[11px] text-on-surface-variant whitespace-nowrap">${t.checkedInAt ? `${fmtShortDate(t.checkedInAt)}${t.checkedInBy ? `<br/>${ntEscapeHtml(t.checkedInBy.name)}` : ""}` : "—"}</td>
           <td class="text-right">${t.status === "VALIDA" ? `<button class="adm-icon-btn" data-checkin="${ntEscapeHtml(t.code)}" title="Validar a mano"><span class="material-symbols-outlined text-[20px]">how_to_reg</span></button>` : ""}</td>
         </tr>`);
-      list.innerHTML = renderTable(["Email", "Código", "Estado", "Check-in", ""], rows,
+      list.innerHTML = renderTable(["Asistente / email", "Código", "Estado", "Check-in", ""], rows,
         this.query ? "Sin resultados." : "Aún no hay entradas vendidas para este evento.");
       list.querySelectorAll("[data-checkin]").forEach((btn) =>
         btn.addEventListener("click", () => {
@@ -1198,13 +1206,15 @@ const Sections = {
     async checkIn(code) {
       if (this.busy) return;
       this.busy = true;
-      const render = (ok, title, lines) => {
+      // holder: nombre de la entrada nominativa, en grande para cotejarlo con el DNI.
+      const render = (ok, title, lines, holder = "") => {
         const box = document.getElementById("checkin-result");
         if (!box) return;
         box.className = `border-2 p-6 text-center min-h-[140px] flex flex-col items-center justify-center ${ok ? "border-secondary-container bg-secondary-container/10" : "border-error bg-error-container/20"}`;
         box.innerHTML = `
           <span class="material-symbols-outlined text-[48px] ${ok ? "text-secondary-container" : "text-error"}">${ok ? "check_circle" : "block"}</span>
           <p class="font-headline-lg text-[28px] uppercase leading-none mt-2 ${ok ? "text-on-surface" : "text-error"}">${ntEscapeHtml(title)}</p>
+          ${holder ? `<p class="font-headline-lg text-[22px] uppercase leading-none mt-3 text-secondary-container">${ntEscapeHtml(holder)}</p><p class="font-label-mono text-[11px] text-on-surface-variant uppercase">Nominativa · comprueba la identificación</p>` : ""}
           ${lines.filter(Boolean).map((l) => `<p class="font-label-mono text-[12px] text-on-surface-variant mt-2">${ntEscapeHtml(l)}</p>`).join("")}`;
       };
       try {
@@ -1212,14 +1222,14 @@ const Sections = {
           method: "POST",
           body: JSON.stringify({ code, eventId: this.eventId }),
         });
-        render(true, "Adelante", [ticket.holderEmail, ticket.event.title]);
+        render(true, "Adelante", [ticket.holderEmail, ticket.event.title], ticket.holderName);
         if (navigator.vibrate) navigator.vibrate(80);
       } catch (err) {
         const t = err.details && err.details.ticket;
         render(false, err.message, [
           t && t.holderEmail,
           t && t.checkedInAt ? `Validada: ${fmtShortDate(t.checkedInAt)}` : "",
-        ]);
+        ], t && t.holderName);
         if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
       } finally {
         this.busy = false;

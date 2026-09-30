@@ -17,6 +17,10 @@ const baseFields = {
   price: z.number().nonnegative(),
   // Aforo total; null = el evento no vende entradas.
   capacity: z.number().int().positive().max(100_000).nullable(),
+  // Máximo de entradas por email de compra; null = sin límite.
+  maxTicketsPerEmail: z.number().int().positive().max(100).nullable(),
+  // Nominativas: el checkout pide el nombre de cada asistente.
+  nominativeTickets: z.boolean(),
   status: z.nativeEnum(EventStatus),
   lineup: z.array(lineupEntrySchema),
 };
@@ -35,6 +39,8 @@ export const createEventSchema = z
     ...baseFields,
     price: baseFields.price.default(0),
     capacity: baseFields.capacity.default(null),
+    maxTicketsPerEmail: baseFields.maxTicketsPerEmail.default(null),
+    nominativeTickets: baseFields.nominativeTickets.default(false),
     status: baseFields.status.default(EventStatus.BORRADOR),
     lineup: baseFields.lineup.default([]),
   })

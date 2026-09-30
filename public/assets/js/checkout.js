@@ -76,6 +76,7 @@ const Checkout = {
     document.getElementById("checkout-view").classList.remove("hidden");
     this.renderCountries();
     this.toggleShippingSections();
+    this.renderAttendees();
     this.renderPaymentMethods();
     this.wire();
     await this.refreshQuote();
@@ -98,6 +99,31 @@ const Checkout = {
     select.innerHTML = options
       .map(([code, name]) => `<option value="${code}" ${code === preferred ? "selected" : ""}>${ntEscapeHtml(name)}</option>`)
       .join("");
+  },
+
+  // Entradas nominativas: un campo de nombre por cada entrada del carrito.
+  nominativeItems() {
+    return this.cart.items.filter((i) => i.product.event && i.product.event.nominativeTickets);
+  },
+
+  renderAttendees() {
+    const items = this.nominativeItems();
+    document.getElementById("attendees-section").classList.toggle("hidden", !items.length);
+    document.getElementById("attendees-fields").innerHTML = items.map((item) => `
+      <fieldset class="space-y-2">
+        <legend class="nt-label">${ntEscapeHtml(item.product.event.title)} · ${item.quantity} entrada${item.quantity === 1 ? "" : "s"}</legend>
+        ${Array.from({ length: item.quantity }, (_, n) => `
+          <input type="text" class="nt-input" data-attendee="${item.productVariantId}" required minlength="2" maxlength="120"
+            placeholder="Asistente ${n + 1}: nombre y apellidos" aria-label="Asistente ${n + 1}" autocomplete="${n === 0 ? "name" : "off"}"/>`).join("")}
+      </fieldset>`).join("");
+  },
+
+  attendees() {
+    const out = {};
+    document.querySelectorAll("[data-attendee]").forEach((input) => {
+      (out[input.dataset.attendee] ||= []).push(input.value.trim());
+    });
+    return out;
   },
 
   toggleShippingSections() {
@@ -291,6 +317,7 @@ const Checkout = {
     } else if (country) {
       body.billingCountry = country;
     }
+    if (this.nominativeItems().length) body.attendees = this.attendees();
     if (document.getElementById("want-invoice").checked) {
       body.billing = {
         name: document.getElementById("bill-name").value.trim() || undefined,
