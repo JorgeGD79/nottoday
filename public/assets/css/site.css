@@ -83,16 +83,17 @@
     bottom: 100%;
 }
 
-/* Grid "brutalist" de líneas de 1px: fondo del contenedor = color de línea,
-   gap:1px + celdas opacas simulan bordes compartidos entre celdas. */
+/* Grid "brutalist" de líneas de 1px: cada celda dibuja su contorno (outline)
+   sobre el gap de 1px, así las líneas se comparten entre celdas vecinas y los
+   huecos de una última fila incompleta quedan vacíos (no como un bloque gris). */
 .nt-grid-lines {
     display: grid;
     gap: 1px;
-    background-color: #444748;
     border: 1px solid #444748;
 }
 .nt-grid-lines > * {
     background-color: #0e0e0e;
+    outline: 1px solid #444748;
 }
 
 body {

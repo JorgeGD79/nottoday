@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000" viewBox="0 0 800 1000">
+  <rect width="800" height="1000" fill="#0b0b0b"/>
+  <line x1="60" y1="0" x2="560" y2="1000" stroke="#ff8a00" stroke-width="3" opacity="0.15"/><line x1="100" y1="0" x2="600" y2="1000" stroke="#ff8a00" stroke-width="3" opacity="0.27"/><line x1="140" y1="0" x2="640" y2="1000" stroke="#ff8a00" stroke-width="3" opacity="0.39"/><line x1="180" y1="0" x2="680" y2="1000" stroke="#ff8a00" stroke-width="3" opacity="0.51"/><line x1="220" y1="0" x2="720" y2="1000" stroke="#ff8a00" stroke-width="3" opacity="0.63"/><line x1="260" y1="0" x2="760" y2="1000" stroke="#ff8a00" stroke-width="3" opacity="0.75"/>
+  <text x="48" y="90" fill="#ff8a00" font-family="Courier New, monospace" font-size="30" letter-spacing="4">NOT TODAY PRESENTA</text>
+  <text x="44" y="250" fill="#f2efee" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="80">BLOQUE CERO</text><text x="44" y="338" fill="#f2efee" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="80">CLUB NIGHT</text>
+  <text x="48" y="760" fill="#ff8a00" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="40">DÚO CIANURO</text><text x="48" y="804" fill="#c4c7c8" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="32">OZONO FM</text>
+  <text x="48" y="950" fill="#8e9192" font-family="Courier New, monospace" font-size="24">ALMACÉN 7 / VALENCIA</text>
+</svg>

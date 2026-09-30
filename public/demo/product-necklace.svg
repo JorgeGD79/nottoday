@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000" viewBox="0 0 800 1000">
+  <rect width="800" height="1000" fill="#0e0e0e"/>
+  <line x1="0" y1="0" x2="0" y2="1000" stroke="#1f1f1f" stroke-width="2"/><line x1="100" y1="0" x2="100" y2="1000" stroke="#1f1f1f" stroke-width="2"/><line x1="200" y1="0" x2="200" y2="1000" stroke="#1f1f1f" stroke-width="2"/><line x1="300" y1="0" x2="300" y2="1000" stroke="#1f1f1f" stroke-width="2"/><line x1="400" y1="0" x2="400" y2="1000" stroke="#1f1f1f" stroke-width="2"/><line x1="500" y1="0" x2="500" y2="1000" stroke="#1f1f1f" stroke-width="2"/><line x1="600" y1="0" x2="600" y2="1000" stroke="#1f1f1f" stroke-width="2"/><line x1="700" y1="0" x2="700" y2="1000" stroke="#1f1f1f" stroke-width="2"/><line x1="800" y1="0" x2="800" y2="1000" stroke="#1f1f1f" stroke-width="2"/>
+  <text x="48" y="80" fill="#ff8a00" font-family="Courier New, monospace" font-size="26" letter-spacing="4">JOYAS</text>
+  <text x="752" y="80" fill="#5c5f60" font-family="Courier New, monospace" font-size="26" text-anchor="end">NT/</text>
+  <ellipse cx="200" cy="510" rx="70" ry="42" fill="none" stroke="#ff8a00" stroke-width="6"/><ellipse cx="300" cy="530" rx="70" ry="42" fill="none" stroke="#ff8a00" stroke-width="6"/><ellipse cx="400" cy="510" rx="70" ry="42" fill="none" stroke="#ff8a00" stroke-width="6"/><ellipse cx="500" cy="530" rx="70" ry="42" fill="none" stroke="#ff8a00" stroke-width="6"/><ellipse cx="600" cy="510" rx="70" ry="42" fill="none" stroke="#ff8a00" stroke-width="6"/>
+  <text x="48" y="960" fill="#5c5f60" font-family="Courier New, monospace" font-size="22">NOT TODAY — DEMO</text>
+</svg>
