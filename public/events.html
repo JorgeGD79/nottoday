@@ -128,7 +128,7 @@
         const max = ticketMax(ev);
         const rules = [
             ev.tickets.maxPerEmail ? `Máximo ${ev.tickets.maxPerEmail} por persona (por email de compra)` : "",
-            ev.tickets.nominative ? "Nominativas: al pagar te pedimos el nombre de cada asistente" : "",
+            ev.tickets.nominative ? "Nominativas: al pagar te pedimos nombre y DNI de cada asistente" : "",
         ].filter(Boolean);
         return `
         <div class="border border-secondary-container/60 p-stack-md flex flex-col gap-stack-sm">
@@ -209,7 +209,7 @@
             try {
                 await NTCart.add({ productId: ev.tickets.productId, productVariantId: ev.tickets.variantId, quantity: qty });
                 const added = qty === 1 ? "Entrada añadida al carrito" : `${qty} entradas añadidas al carrito`;
-                ntToast(ev.tickets.nominative ? `${added}. Al pagar te pediremos el nombre de cada asistente` : added);
+                ntToast(ev.tickets.nominative ? `${added}. Al pagar te pediremos nombre y DNI de cada asistente` : added);
             } catch (err) {
                 ntToast(err.message, true);
             } finally {

@@ -3,6 +3,9 @@ import { env } from "@/config/env";
 import { prisma } from "@/lib/prisma";
 import { redis } from "@/lib/redis";
 import { resumeNewsletterCampaigns } from "@/services/newsletter.service";
+import { purgeOldHolderDocuments } from "@/services/ticket.service";
+
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 async function main() {
   const app = await buildApp();
@@ -35,6 +38,14 @@ async function main() {
     await app.listen({ port: env.PORT, host: "0.0.0.0" });
     // Una newsletter a medio enviar (reinicio, despliegue) continúa donde se quedó.
     resumeNewsletterCampaigns().catch((err) => app.log.error({ err }, "No se pudieron reanudar las newsletters"));
+    // Borrado de los DNI de entradas nominativas de eventos pasados (al arrancar y
+    // una vez al día; va en el proceso web porque los workers son opcionales).
+    const purgeDocuments = () =>
+      purgeOldHolderDocuments()
+        .then((r) => { if (r.tickets || r.orderItems) app.log.info(r, "DNI de asistentes de eventos pasados borrados"); })
+        .catch((err) => app.log.error({ err }, "No se pudieron borrar los DNI antiguos"));
+    purgeDocuments();
+    setInterval(purgeDocuments, ONE_DAY_MS).unref();
   } catch (err) {
     app.log.error(err);
     process.exit(1);

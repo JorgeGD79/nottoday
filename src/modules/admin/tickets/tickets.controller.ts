@@ -3,6 +3,7 @@ import { z } from "zod";
 import { TicketStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { checkInTicket } from "@/services/ticket.service";
+import { normalizeIdDocument } from "@/utils/id-document";
 
 const listQuerySchema = z.object({
   eventId: z.string().cuid(),
@@ -13,7 +14,7 @@ const listQuerySchema = z.object({
  * GET /api/admin/tickets?eventId=...&q=...
  *
  * Lista de asistentes de un evento (una fila por entrada) con los contadores
- * de la puerta. `q` filtra por email, nombre del asistente o el principio del código.
+ * de la puerta. `q` filtra por email, nombre o DNI del asistente, o por el principio del código.
  */
 export async function listTicketsHandler(request: FastifyRequest, reply: FastifyReply) {
   const { eventId, q } = listQuerySchema.parse(request.query);
@@ -26,6 +27,7 @@ export async function listTicketsHandler(request: FastifyRequest, reply: Fastify
           ? { OR: [
                 { holderEmail: { contains: q, mode: "insensitive" } },
                 { holderName: { contains: q, mode: "insensitive" } },
+                { holderDocument: { contains: normalizeIdDocument(q) } },
                 { code: { startsWith: q } },
               ] }
           : {}),
@@ -36,6 +38,7 @@ export async function listTicketsHandler(request: FastifyRequest, reply: Fastify
         status: true,
         holderEmail: true,
         holderName: true,
+        holderDocument: true,
         checkedInAt: true,
         orderId: true,
         createdAt: true,

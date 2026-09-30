@@ -101,27 +101,54 @@ const Checkout = {
       .join("");
   },
 
-  // Entradas nominativas: un campo de nombre por cada entrada del carrito.
+  // Entradas nominativas: nombre y documento (DNI/NIE/pasaporte) por cada entrada.
   nominativeItems() {
     return this.cart.items.filter((i) => i.product.event && i.product.event.nominativeTickets);
+  },
+
+  // Misma comprobación que el servidor (src/utils/id-document.ts): letra de
+  // control del DNI/NIE o, si no, pasaporte alfanumérico. "" = válido.
+  idDocumentError(raw) {
+    const value = raw.toUpperCase().replace(/[\s.\-/]/g, "");
+    const letters = "TRWAGMYFPDXBNJZSQVHLCKE";
+    let m = /^(\d{8})([A-Z])$/.exec(value);
+    if (m) return letters[Number(m[1]) % 23] === m[2] ? "" : "DNI no válido: revisa la letra";
+    m = /^([XYZ])(\d{7})([A-Z])$/.exec(value);
+    if (m) return letters[Number(`${"XYZ".indexOf(m[1])}${m[2]}`) % 23] === m[3] ? "" : "NIE no válido: revisa la letra";
+    if (/^\d{7,8}$/.test(value) || /^[XYZ]\d{6,7}$/.test(value)) return "Falta la letra del documento";
+    return /^[A-Z0-9]{5,20}$/.test(value) ? "" : "Indica un DNI, NIE o pasaporte válido";
   },
 
   renderAttendees() {
     const items = this.nominativeItems();
     document.getElementById("attendees-section").classList.toggle("hidden", !items.length);
-    document.getElementById("attendees-fields").innerHTML = items.map((item) => `
-      <fieldset class="space-y-2">
+    const box = document.getElementById("attendees-fields");
+    box.innerHTML = items.map((item) => `
+      <fieldset class="space-y-3">
         <legend class="nt-label">${ntEscapeHtml(item.product.event.title)} · ${item.quantity} entrada${item.quantity === 1 ? "" : "s"}</legend>
         ${Array.from({ length: item.quantity }, (_, n) => `
-          <input type="text" class="nt-input" data-attendee="${item.productVariantId}" required minlength="2" maxlength="120"
-            placeholder="Asistente ${n + 1}: nombre y apellidos" aria-label="Asistente ${n + 1}" autocomplete="${n === 0 ? "name" : "off"}"/>`).join("")}
+          <div class="grid grid-cols-1 sm:grid-cols-[1fr_180px] gap-2" data-attendee="${item.productVariantId}">
+            <input type="text" class="nt-input" data-attendee-name required minlength="2" maxlength="120"
+              placeholder="Asistente ${n + 1}: nombre y apellidos" aria-label="Asistente ${n + 1}: nombre y apellidos" autocomplete="${n === 0 ? "name" : "off"}"/>
+            <input type="text" class="nt-input font-label-mono uppercase" data-attendee-doc required maxlength="30"
+              placeholder="DNI / NIE / pasaporte" aria-label="Asistente ${n + 1}: DNI, NIE o pasaporte" autocomplete="off" autocapitalize="characters"/>
+          </div>`).join("")}
       </fieldset>`).join("");
+    // Aviso del documento al salir del campo y al pagar (reportValidity).
+    box.querySelectorAll("[data-attendee-doc]").forEach((input) => {
+      const check = () => input.setCustomValidity(input.value.trim() ? this.idDocumentError(input.value) : "");
+      input.addEventListener("input", check);
+      input.addEventListener("blur", () => { check(); if (input.value.trim()) input.reportValidity(); });
+    });
   },
 
   attendees() {
     const out = {};
-    document.querySelectorAll("[data-attendee]").forEach((input) => {
-      (out[input.dataset.attendee] ||= []).push(input.value.trim());
+    document.querySelectorAll("[data-attendee]").forEach((row) => {
+      (out[row.dataset.attendee] ||= []).push({
+        name: row.querySelector("[data-attendee-name]").value.trim(),
+        document: row.querySelector("[data-attendee-doc]").value.trim(),
+      });
     });
     return out;
   },

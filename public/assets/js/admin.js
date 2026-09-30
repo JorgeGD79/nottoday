@@ -700,7 +700,7 @@ const Sections = {
           <p class="font-label-mono text-[11px] text-on-surface-variant uppercase">
             Con aforo y precio, las entradas se ponen a la venta al PUBLICAR el evento (páginas Eventos y Tickets).
             Deja el aforo vacío si es gratis o se vende fuera. El máximo por email cuenta todas las compras con ese correo.
-            Nominativas: al pagar se pide el nombre de cada asistente; sale en la entrada y en la puerta.
+            Nominativas: al pagar se pide nombre y DNI (o NIE/pasaporte) de cada asistente; en la puerta, al escanear, se ven para cotejarlos.
           </p>
         </fieldset>
         <fieldset class="border border-outline-variant/30 p-4 space-y-2">
@@ -1192,7 +1192,7 @@ const Sections = {
         stat("Vendidas", stats.sold) + stat("Dentro", stats.used, "text-secondary") + stat("Pendientes", stats.valid);
       const rows = tickets.map((t) => `
         <tr>
-          <td class="font-label-mono text-[12px]">${t.holderName ? `<span class="font-bold text-on-surface uppercase">${ntEscapeHtml(t.holderName)}</span><br/>` : ""}${ntEscapeHtml(t.holderEmail)}</td>
+          <td class="font-label-mono text-[12px]">${t.holderName ? `<span class="font-bold text-on-surface uppercase">${ntEscapeHtml(t.holderName)}</span>${t.holderDocument ? ` <span class="text-secondary">${ntEscapeHtml(t.holderDocument)}</span>` : ""}<br/>` : ""}${ntEscapeHtml(t.holderEmail)}</td>
           <td class="font-label-mono text-[11px] text-on-surface-variant" title="${ntEscapeHtml(t.code)}">${ntEscapeHtml(t.code.slice(0, 8))}…</td>
           <td>${statusBadge(t.status)}</td>
           <td class="font-label-mono text-[11px] text-on-surface-variant whitespace-nowrap">${t.checkedInAt ? `${fmtShortDate(t.checkedInAt)}${t.checkedInBy ? `<br/>${ntEscapeHtml(t.checkedInBy.name)}` : ""}` : "—"}</td>
@@ -1208,15 +1208,23 @@ const Sections = {
     async checkIn(code) {
       if (this.busy) return;
       this.busy = true;
-      // holder: nombre de la entrada nominativa, en grande para cotejarlo con el DNI.
-      const render = (ok, title, lines, holder = "") => {
+      // holder: la entrada (si es nominativa trae nombre y DNI), en grande para
+      // cotejarlo con el documento físico del asistente.
+      const render = (ok, title, lines, holder = null) => {
+        const name = holder && holder.holderName;
+        const doc = holder && holder.holderDocument;
         const box = document.getElementById("checkin-result");
         if (!box) return;
         box.className = `border-2 p-6 text-center min-h-[140px] flex flex-col items-center justify-center ${ok ? "border-secondary-container bg-secondary-container/10" : "border-error bg-error-container/20"}`;
         box.innerHTML = `
           <span class="material-symbols-outlined text-[48px] ${ok ? "text-secondary-container" : "text-error"}">${ok ? "check_circle" : "block"}</span>
           <p class="font-headline-lg text-[28px] uppercase leading-none mt-2 ${ok ? "text-on-surface" : "text-error"}">${ntEscapeHtml(title)}</p>
-          ${holder ? `<p class="font-headline-lg text-[22px] uppercase leading-none mt-3 text-secondary-container">${ntEscapeHtml(holder)}</p><p class="font-label-mono text-[11px] text-on-surface-variant uppercase">Nominativa · comprueba la identificación</p>` : ""}
+          ${name ? `
+            <div class="mt-4 border border-secondary-container/60 px-5 py-3 w-full max-w-sm">
+              <p class="font-label-mono text-[10px] text-on-surface-variant uppercase tracking-widest">Entrada nominativa · comprueba el documento</p>
+              <p class="font-headline-lg text-[22px] uppercase leading-tight mt-1 text-on-surface">${ntEscapeHtml(name)}</p>
+              ${doc ? `<p class="font-label-mono text-[30px] font-bold tracking-[0.12em] leading-none mt-2 text-secondary-container">${ntEscapeHtml(doc)}</p>` : ""}
+            </div>` : ""}
           ${lines.filter(Boolean).map((l) => `<p class="font-label-mono text-[12px] text-on-surface-variant mt-2">${ntEscapeHtml(l)}</p>`).join("")}`;
       };
       try {
@@ -1224,14 +1232,14 @@ const Sections = {
           method: "POST",
           body: JSON.stringify({ code, eventId: this.eventId }),
         });
-        render(true, "Adelante", [ticket.holderEmail, ticket.event.title], ticket.holderName);
+        render(true, "Adelante", [ticket.holderEmail, ticket.event.title], ticket);
         if (navigator.vibrate) navigator.vibrate(80);
       } catch (err) {
         const t = err.details && err.details.ticket;
         render(false, err.message, [
           t && t.holderEmail,
           t && t.checkedInAt ? `Validada: ${fmtShortDate(t.checkedInAt)}` : "",
-        ], t && t.holderName);
+        ], t);
         if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
       } finally {
         this.busy = false;

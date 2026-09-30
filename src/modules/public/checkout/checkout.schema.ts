@@ -25,9 +25,14 @@ export const checkoutSchema = z.object({
     .optional(),
   // País del comprador cuando no hay envío (solo informativo en la factura).
   billingCountry: countryCode.optional(),
-  // Entradas nominativas: nombres de los asistentes por productVariantId de la
-  // entrada, uno por unidad y en orden.
-  attendees: z.record(z.string().cuid(), z.array(z.string().max(120)).max(100)).optional(),
+  // Entradas nominativas: asistentes (nombre y DNI/NIE/pasaporte) por
+  // productVariantId de la entrada, uno por unidad y en orden.
+  attendees: z
+    .record(
+      z.string().cuid(),
+      z.array(z.object({ name: z.string().max(120), document: z.string().max(30) })).max(100)
+    )
+    .optional(),
   // Datos para factura completa (empresa/autónomo). Sin ellos: factura simplificada.
   billing: z
     .object({

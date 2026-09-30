@@ -544,21 +544,23 @@ model Order {
 }
 
 model OrderItem {
-  id               String   @id @default(cuid())
-  orderId          String
-  productId        String
-  productVariantId String
-  quantity         Int
+  id                String   @id @default(cuid())
+  orderId           String
+  productId         String
+  productVariantId  String
+  quantity          Int
   // Precio unitario cobrado (IVA incluido; sin IVA si el pedido es de exportación).
-  unitPrice        Decimal  @db.Decimal(10, 2)
-  taxRate          Decimal  @default(21) @db.Decimal(5, 2)
+  unitPrice         Decimal  @db.Decimal(10, 2)
+  taxRate           Decimal  @default(21) @db.Decimal(5, 2)
   // Descuento del cupón prorrateado a esta línea (para la factura).
-  discountAmount   Decimal  @default(0) @db.Decimal(10, 2)
+  discountAmount    Decimal  @default(0) @db.Decimal(10, 2)
   // Snapshot de la variante: la factura no cambia si luego se renombra.
-  variantLabel     String   @default("")
+  variantLabel      String   @default("")
   // Entradas nominativas: un nombre por unidad, en orden. Se copian a cada
   // Ticket al confirmarse el pago.
-  attendeeNames    String[] @default([])
+  attendeeNames     String[] @default([])
+  // Documento (DNI/NIE/pasaporte) de cada asistente, en el mismo orden que los nombres.
+  attendeeDocuments String[] @default([])
 
   order          Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product        Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -579,18 +581,21 @@ enum TicketStatus {
 // Se generan al confirmarse el pago (una por unidad). `code` es el secreto que
 // va en el QR: aleatorio y no adivinable, se valida en puerta con el check-in.
 model Ticket {
-  id            String       @id @default(cuid())
-  code          String       @unique
-  status        TicketStatus @default(VALIDA)
-  orderId       String
-  orderItemId   String
-  eventId       String
-  holderEmail   String
+  id             String       @id @default(cuid())
+  code           String       @unique
+  status         TicketStatus @default(VALIDA)
+  orderId        String
+  orderItemId    String
+  eventId        String
+  holderEmail    String
   // Nombre del asistente (solo en eventos con entradas nominativas).
-  holderName    String?
-  checkedInAt   DateTime?
-  checkedInById String?
-  createdAt     DateTime     @default(now())
+  holderName     String?
+  // Documento del asistente (DNI/NIE/pasaporte), para cotejarlo en la puerta.
+  // Solo se muestra completo en el panel y el check-in; al comprador, enmascarado.
+  holderDocument String?
+  checkedInAt    DateTime?
+  checkedInById  String?
+  createdAt      DateTime     @default(now())
 
   order       Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
   orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)

@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { OrderStatus, Prisma, ProductType, TicketStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { AppError } from "@/utils/AppError";
+import { checkIdDocument } from "@/utils/id-document";
 
 /**
  * Código de entrada: 16 bytes aleatorios en base64url (22 caracteres). Es lo que
@@ -72,16 +73,30 @@ export async function assertTicketLimitForEmail(
 }
 
 /**
- * Nombres de los asistentes de una línea de entradas nominativas: uno por
- * unidad, sin vacíos. Devuelve [] si el evento no es nominativo.
+ * Asistentes de una línea de entradas nominativas: nombre y documento
+ * (DNI/NIE/pasaporte) de cada unidad, en orden. Devuelve listas vacías si el
+ * evento no es nominativo.
  */
-export function attendeeNamesFor(event: TicketRules, quantity: number, names: string[] | undefined) {
-  if (!event.nominativeTickets) return [];
-  const clean = (names ?? []).map((n) => n.trim().replace(/\s+/g, " "));
-  if (clean.length !== quantity || clean.some((n) => n.length < 2)) {
-    throw new AppError(`Las entradas de ${event.title} son nominativas: indica el nombre de cada asistente`, 422);
+export function attendeesFor(
+  event: TicketRules,
+  quantity: number,
+  attendees: { name: string; document: string }[] | undefined
+) {
+  if (!event.nominativeTickets) return { names: [], documents: [] };
+  const list = attendees ?? [];
+  const names = list.map((a) => a.name.trim().replace(/\s+/g, " "));
+  if (list.length !== quantity || names.some((n) => n.length < 2)) {
+    throw new AppError(`Las entradas de ${event.title} son nominativas: indica el nombre y el DNI de cada asistente`, 422);
   }
-  return clean;
+  const documents = list.map((a, i) => {
+    const check = checkIdDocument(a.document ?? "");
+    if (!check.ok) throw new AppError(`Asistente ${i + 1} (${names[i]}): ${check.error}`, 422);
+    return check.value;
+  });
+  if (new Set(documents).size !== documents.length) {
+    throw new AppError(`Cada entrada de ${event.title} tiene que ir a nombre de una persona distinta (DNI repetido)`, 422);
+  }
+  return { names, documents };
 }
 
 /**
@@ -107,12 +122,38 @@ export async function issueTicketsForOrder(tx: Prisma.TransactionClient, orderId
         eventId: item.product.eventId,
         holderEmail: order.email,
         holderName: item.attendeeNames[n] || null,
+        holderDocument: item.attendeeDocuments[n] || null,
       });
     }
   }
 
   if (data.length) await tx.ticket.createMany({ data });
   return data.length;
+}
+
+// Días que se conserva el DNI de las entradas nominativas tras el evento
+// (lo anuncia la política de privacidad; cambiarlo aquí exige cambiarlo allí).
+const HOLDER_DOCUMENT_RETENTION_DAYS = 30;
+
+/**
+ * Minimización de datos: borra el documento de los asistentes (entradas y
+ * líneas de pedido) de los eventos celebrados hace más de 30 días. El nombre
+ * se conserva (aparece en la factura/historial); el DNI ya no sirve para nada.
+ */
+export async function purgeOldHolderDocuments() {
+  const cutoff = new Date(Date.now() - HOLDER_DOCUMENT_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+  const oldEvent = { date: { lt: cutoff } };
+  const [tickets, items] = await prisma.$transaction([
+    prisma.ticket.updateMany({
+      where: { holderDocument: { not: null }, event: oldEvent },
+      data: { holderDocument: null },
+    }),
+    prisma.orderItem.updateMany({
+      where: { NOT: { attendeeDocuments: { isEmpty: true } }, product: { event: oldEvent } },
+      data: { attendeeDocuments: [] },
+    }),
+  ]);
+  return { tickets: tickets.count, orderItems: items.count };
 }
 
 /** Anula todas las entradas aún válidas de un pedido (reembolso/cancelación). */
@@ -130,6 +171,7 @@ const ticketPublicSelect = {
   status: true,
   holderEmail: true,
   holderName: true,
+  holderDocument: true,
   checkedInAt: true,
   orderId: true,
   event: { select: { id: true, title: true, date: true, venue: true } },

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { AppError } from "@/utils/AppError";
 import { creditNotePdf, invoicePdf } from "@/services/invoice.service";
+import { maskIdDocument } from "@/utils/id-document";
 
 const paramsSchema = z.object({ id: z.string().cuid() });
 const querySchema = z.object({ email: z.string().email() });
@@ -55,6 +56,7 @@ export async function trackOrderHandler(request: FastifyRequest, reply: FastifyR
           code: true,
           status: true,
           holderName: true,
+          holderDocument: true,
           checkedInAt: true,
           event: { select: { title: true, date: true, venue: true } },
         },
@@ -65,7 +67,11 @@ export async function trackOrderHandler(request: FastifyRequest, reply: FastifyR
 
   if (!order) throw AppError.notFound("Pedido");
 
-  return reply.send({ order });
+  // El DNI de las entradas nominativas nunca sale completo por esta vía pública
+  // (basta con conocer el nº de pedido y el email): solo los 4 últimos caracteres.
+  return reply.send({
+    order: { ...order, tickets: order.tickets.map((t) => ({ ...t, holderDocument: maskIdDocument(t.holderDocument) })) },
+  });
 }
 
 /**

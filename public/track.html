@@ -157,7 +157,7 @@
                                 <span class="font-label-mono text-[11px] text-on-surface-variant uppercase">Entrada ${i + 1} / ${tickets.length}</span>
                                 <h3 class="font-headline-lg text-[18px] uppercase leading-tight text-on-surface mt-1">${ntEscapeHtml(t.event.title)}</h3>
                                 <p class="font-label-mono text-[12px] text-on-surface-variant mt-1">${ntEscapeHtml(ntFormatEventDate(t.event.date))} · ${ntEscapeHtml(t.event.venue)}</p>
-                                ${t.holderName ? `<p class="font-label-mono text-[12px] text-secondary-container uppercase mt-1">A nombre de ${ntEscapeHtml(t.holderName)}</p>` : ""}
+                                ${t.holderName ? `<p class="font-label-mono text-[12px] text-secondary-container uppercase mt-1">A nombre de ${ntEscapeHtml(t.holderName)}${t.holderDocument ? ` · DNI ${ntEscapeHtml(t.holderDocument)}` : ""}</p>` : ""}
                             </div>
                             <span class="border px-2 py-0.5 font-label-mono text-[11px] uppercase whitespace-nowrap ${st.cls}">${st.label}</span>
                         </div>

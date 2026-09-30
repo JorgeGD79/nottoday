@@ -12,7 +12,7 @@ import { invalidateCatalogCache } from "@/services/cache.service";
 import {
   assertTicketLimitForEmail,
   assertTicketQuantity,
-  attendeeNamesFor,
+  attendeesFor,
   issueTicketsForOrder,
   ticketRulesSelect,
 } from "@/services/ticket.service";
@@ -76,13 +76,13 @@ export async function checkout(input: CheckoutInput) {
     }
   }
 
-  // Entradas: tope por pedido y, si son nominativas, un nombre por unidad.
-  const attendeeNames = new Map<string, string[]>();
+  // Entradas: tope por pedido y, si son nominativas, nombre y DNI por unidad.
+  const attendees = new Map<string, { names: string[]; documents: string[] }>();
   for (const item of cart.items) {
     const event = item.product.event;
     if (!event) continue;
     assertTicketQuantity(event, item.quantity);
-    attendeeNames.set(item.productVariantId, attendeeNamesFor(event, item.quantity, input.attendees?.[item.productVariantId]));
+    attendees.set(item.productVariantId, attendeesFor(event, item.quantity, input.attendees?.[item.productVariantId]));
   }
 
   const requiresShipping = cart.items.some((i) => i.product.productType !== ProductType.TICKET_EVENTO);
@@ -165,7 +165,8 @@ export async function checkout(input: CheckoutInput) {
             taxRate: line.taxRate,
             discountAmount: line.discountAmount,
             variantLabel: line.variantLabel,
-            attendeeNames: attendeeNames.get(line.productVariantId) ?? [],
+            attendeeNames: attendees.get(line.productVariantId)?.names ?? [],
+            attendeeDocuments: attendees.get(line.productVariantId)?.documents ?? [],
           })),
         },
       },

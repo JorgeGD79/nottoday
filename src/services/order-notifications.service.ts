@@ -29,7 +29,7 @@ async function loadOrderForEmail(orderId: string): Promise<OrderEmailData | null
         },
       },
       tickets: {
-        select: { code: true, holderName: true, event: { select: { title: true, date: true, venue: true } } },
+        select: { code: true, holderName: true, holderDocument: true, event: { select: { title: true, date: true, venue: true } } },
         orderBy: { createdAt: "asc" },
       },
     },

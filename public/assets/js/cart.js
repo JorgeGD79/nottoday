@@ -163,7 +163,7 @@ const NTCart = {
               <p class="font-label-mono text-label-mono text-on-surface-variant mt-1">${ntEscapeHtml(ntVariantLabel(item.productVariant))}</p>
               ${item.product.event && item.product.event.nominativeTickets
                 ? `<p class="flex items-start gap-1 font-label-mono text-[10px] text-secondary uppercase tracking-wide mt-2">
-                     <span class="material-symbols-outlined text-[14px]">badge</span>Nominativas: el nombre de cada asistente se pide al pagar
+                     <span class="material-symbols-outlined text-[14px]">badge</span>Nominativas: nombre y DNI de cada asistente se piden al pagar
                    </p>`
                 : ""}
             </div>

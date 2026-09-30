@@ -273,6 +273,11 @@ const EVENTS: EventDef[] = [
 const FIRST = ["Lucía", "Hugo", "Martina", "Pablo", "Sara", "Daniel", "Julia", "Álvaro", "Paula", "Mario", "Carla", "Adrián", "Irene", "Javier", "Noa", "Diego", "Elena", "Marcos", "Alba", "Iván"];
 const LAST = ["García", "Martín", "López", "Sánchez", "Romero", "Navarro", "Torres", "Gil", "Ruiz", "Moreno", "Ortega", "Delgado", "Castro", "Vidal", "Serrano", "Molina"];
 const personName = () => `${pick(FIRST)} ${pick(LAST)} ${pick(LAST)}`;
+// DNI ficticio pero con la letra de control correcta (pasa la validación del checkout).
+const personDni = () => {
+  const number = between(10_000_000, 99_999_999);
+  return `${number}${"TRWAGMYFPDXBNJZSQVHLCKE"[number % 23]}`;
+};
 
 // ---------------------------------------------------------------------------
 // Borrado de la demo
@@ -457,6 +462,7 @@ async function createDemo() {
       const total = round2(qty * e.price);
       const createdAt = new Date(Math.min(Date.now(), date.getTime()) - between(1, 20) * 86400000 - between(0, 23) * 3600000);
       const names = e.nominative ? [buyer, ...Array.from({ length: qty - 1 }, personName)] : [];
+      const documents = names.map(() => personDni());
       const itemId = `${orderId}i0`;
       await prisma.order.create({
         data: {
@@ -471,7 +477,7 @@ async function createDemo() {
           createdAt,
           items: {
             create: [{ id: itemId, productId: ticketProductId, productVariantId: variantId, quantity: qty, unitPrice: e.price,
-              variantLabel: "Entrada general", attendeeNames: names }],
+              variantLabel: "Entrada general", attendeeNames: names, attendeeDocuments: documents }],
           },
         },
       });
@@ -488,6 +494,7 @@ async function createDemo() {
             eventId: id,
             holderEmail: email,
             holderName: names[t] ?? null,
+            holderDocument: documents[t] ?? null,
             checkedInAt: used ? new Date(date.getTime() + between(10, 180) * 60000) : null,
           },
         });

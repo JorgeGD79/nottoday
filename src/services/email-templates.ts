@@ -1,5 +1,6 @@
 import { env } from "@/config/env";
 import { renderNewsletterBodyHtml, renderNewsletterBodyText } from "@/services/newsletter-content";
+import { maskIdDocument } from "@/utils/id-document";
 
 // ============================================================================
 // Plantillas de email transaccional. HTML con estilos inline (los clientes de
@@ -90,6 +91,7 @@ export interface OrderEmailData {
   tickets: {
     code: string;
     holderName: string | null;
+    holderDocument: string | null;
     event: { title: string; date: Date; venue: string };
   }[];
 }
@@ -135,7 +137,7 @@ function ticketsHtml(order: OrderEmailData) {
             <div style="font-size:11px;letter-spacing:2px;color:${ACCENT};text-transform:uppercase;">Entrada ${idx + 1} de ${order.tickets.length}</div>
             <div style="font-size:18px;font-weight:bold;color:#e5e2e1;text-transform:uppercase;margin-top:4px;">${escapeHtml(t.event.title)}</div>
             <div style="font-size:13px;margin-top:4px;">${escapeHtml(longDate(t.event.date))}<br>${escapeHtml(t.event.venue)}</div>
-            ${t.holderName ? `<div style="font-size:13px;margin-top:8px;color:#e5e2e1;">A nombre de <strong>${escapeHtml(t.holderName)}</strong> · en la puerta pueden pedir identificación</div>` : ""}
+            ${t.holderName ? `<div style="font-size:13px;margin-top:8px;color:#e5e2e1;">A nombre de <strong>${escapeHtml(t.holderName)}</strong>${t.holderDocument ? ` · DNI ${escapeHtml(maskIdDocument(t.holderDocument))}` : ""} · en la puerta te pedirán ese documento</div>` : ""}
             <div style="font-family:monospace;font-size:12px;margin-top:8px;color:#8e9192;">${escapeHtml(t.code)}</div>
           </td>
           <td width="140" style="padding:12px;background:#ffffff;" align="center">
@@ -169,7 +171,7 @@ export function orderConfirmationEmail(order: OrderEmailData) {
   );
   const ticketsText = order.tickets.length
     ? `\n\nTus entradas (enseña el QR en la puerta; también las tienes en el enlace de seguimiento):\n${order.tickets
-        .map((t) => `- ${t.event.title} · ${longDate(t.event.date)} · ${t.event.venue}${t.holderName ? ` · a nombre de ${t.holderName}` : ""} · código ${t.code}`)
+        .map((t) => `- ${t.event.title} · ${longDate(t.event.date)} · ${t.event.venue}${t.holderName ? ` · a nombre de ${t.holderName}${t.holderDocument ? ` (DNI ${maskIdDocument(t.holderDocument)})` : ""}` : ""} · código ${t.code}`)
         .join("\n")}`
     : "";
   const text = `Pedido confirmado (${order.id})\n\n${itemsText(order)}${ticketsText}\n\nSeguimiento: ${trackUrl(order.id, order.email)}`;
