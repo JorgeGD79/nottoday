@@ -35,7 +35,7 @@ import {
   ProductType,
   TicketStatus,
 } from "@prisma/client";
-import { normalizeSearch } from "../src/utils/slug";
+import { normalizeSearch, slugify } from "../src/utils/slug";
 
 const prisma = new PrismaClient();
 const args = new Set(process.argv.slice(2));
@@ -340,7 +340,7 @@ async function createDemo() {
   const artistId = new Map<ArtistKey, string>();
   for (const [i, a] of ARTISTS.entries()) {
     const id = `${DEMO_PREFIX}art${pad(i + 1)}`;
-    await prisma.artist.create({ data: { id, stageName: a.name, bio: a.bio, images: image(`artist-${a.key}.svg`) } });
+    await prisma.artist.create({ data: { id, stageName: a.name, slug: slugify(a.name), bio: a.bio, images: image(`artist-${a.key}.svg`) } });
     artistId.set(a.key, id);
   }
 
@@ -413,6 +413,7 @@ async function createDemo() {
       data: {
         id,
         title: e.title,
+        slug: slugify(`${e.title} ${date.toISOString().slice(0, 10)}`),
         date,
         venue: e.venue,
         description: e.description,

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { AppError } from "@/utils/AppError";
 import { recordAuditLog } from "@/services/audit-log.service";
 import { invalidateArtistsCache } from "@/services/cache.service";
+import { uniqueSlug } from "@/utils/slug";
 import { artistIdParamsSchema, createArtistSchema, updateArtistSchema } from "./artists.schema";
 
 export async function listArtistsHandler(_request: FastifyRequest, reply: FastifyReply) {
@@ -12,7 +13,10 @@ export async function listArtistsHandler(_request: FastifyRequest, reply: Fastif
 
 export async function createArtistHandler(request: FastifyRequest, reply: FastifyReply) {
   const input = createArtistSchema.parse(request.body);
-  const artist = await prisma.artist.create({ data: input });
+  // Slug estable: se fija al dar de alta y no cambia al renombrar (no rompe enlaces).
+  const slug = await uniqueSlug(input.stageName, async (s) =>
+    !!(await prisma.artist.findUnique({ where: { slug: s }, select: { id: true } })));
+  const artist = await prisma.artist.create({ data: { ...input, slug } });
   await invalidateArtistsCache();
 
   await recordAuditLog({

@@ -16,7 +16,7 @@ export async function listPublicSessionsHandler(_request: FastifyRequest, reply:
 
   const sessions = await prisma.session.findMany({
     include: {
-      artist: { select: { id: true, stageName: true, instagram: true } },
+      artist: { select: { id: true, slug: true, stageName: true, instagram: true } },
     },
     orderBy: { publishedAt: "desc" },
   });

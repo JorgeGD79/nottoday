@@ -6,7 +6,10 @@
   "type": "commonjs",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json",
+    "build": "npm run build:css && tsc -p tsconfig.json && tsc-alias -p tsconfig.json",
+    "build:css": "tailwindcss -i ./src/styles/tailwind.css -o ./public/assets/css/tailwind.css --minify",
+    "dev:css": "tailwindcss -i ./src/styles/tailwind.css -o ./public/assets/css/tailwind.css --watch",
+    "predev": "npm run build:css",
     "start": "node dist/server.js",
     "worker": "tsx watch src/workers/abandoned-cart.worker.ts",
     "worker:orders": "tsx watch src/workers/expire-orders.worker.ts",
@@ -39,11 +42,14 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@tailwindcss/container-queries": "^0.1.1",
+    "@tailwindcss/forms": "^0.5.11",
     "@types/bcrypt": "^5.0.2",
     "@types/node": "^22.5.4",
     "@types/pdfkit": "^0.13.9",
     "@types/qrcode": "^1.5.6",
     "prisma": "^5.19.1",
+    "tailwindcss": "^3.4.19",
     "tsc-alias": "^1.8.10",
     "tsx": "^4.19.1",
     "typescript": "^5.6.2"

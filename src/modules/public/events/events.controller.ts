@@ -14,7 +14,7 @@ const publicEventInclude = {
     select: {
       billing: true,
       setTime: true,
-      artist: { select: { id: true, stageName: true, instagram: true } },
+      artist: { select: { id: true, slug: true, stageName: true, instagram: true } },
     },
   },
   ticketProduct: {
@@ -86,4 +86,20 @@ export async function listPublicEventsHandler(_request: FastifyRequest, reply: F
   await setCached(CACHE_KEYS.events, payload, CACHE_TTL_SECONDS.events);
 
   return reply.header("X-Cache", "MISS").send(payload);
+}
+
+/**
+ * Evento público por slug para su página /evento/<slug> (SEO), con la misma
+ * forma que cada elemento de GET /api/events. `upcoming` indica si sigue en la
+ * agenda (se venden entradas) o ya es del archivo. null si no es público.
+ */
+export async function findPublicEvent(slug: string) {
+  const event = await prisma.event.findFirst({
+    where: { slug, status: { in: [EventStatus.PUBLICADO, EventStatus.FINALIZADO] } },
+    include: publicEventInclude,
+  });
+  if (!event) return null;
+  const upcoming =
+    event.status === EventStatus.PUBLICADO && event.date.getTime() >= Date.now() - UPCOMING_GRACE_MS;
+  return { event: toPublicEvent(event, upcoming), upcoming };
 }

@@ -108,9 +108,13 @@ export async function createEventWithLineup(input: CreateEventInput) {
   await assertArtistsExist(input.lineup);
 
   return prisma.$transaction(async (tx) => {
+    // Slug estable (título + fecha): se fija al crear y no cambia al editar.
+    const slug = await uniqueSlug(`${input.title} ${input.date.toISOString().slice(0, 10)}`, async (s) =>
+      !!(await tx.event.findUnique({ where: { slug: s }, select: { id: true } })));
     const event = await tx.event.create({
       data: {
         title: input.title,
+        slug,
         date: input.date,
         venue: input.venue,
         description: input.description,

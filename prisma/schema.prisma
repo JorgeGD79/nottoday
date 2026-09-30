@@ -52,6 +52,8 @@ enum ArtistStatus {
 model Artist {
   id           String       @id @default(cuid())
   stageName    String
+  // URL pública estable (/artista/<slug>): se genera del nombre al crear.
+  slug         String       @unique
   bio          String?      @db.Text
   spotifyId    String?
   soundcloudId String?
@@ -150,6 +152,8 @@ enum EventStatus {
 model Event {
   id                 String      @id @default(cuid())
   title              String
+  // URL pública estable (/evento/<slug>): título + fecha, generada al crear.
+  slug               String      @unique
   date               DateTime
   venue              String
   description        String?     @db.Text

@@ -78,14 +78,14 @@ export async function buildApp(): Promise<FastifyInstance> {
   });
 
   // --- Seguridad / plataforma ---
-  // CSP relajada solo en lo que exige el frontend estático: Tailwind por CDN
-  // (script remoto + config inline + estilos inyectados), Google Fonts e
-  // imágenes remotas (posters/productos alojados en cualquier https).
+  // CSP relajada solo en lo que exige el frontend estático: scripts y estilos
+  // inline de las páginas, Google Fonts e imágenes remotas (posters/productos
+  // alojados en cualquier https). Tailwind ya no va por CDN: se compila en el build.
   await app.register(helmet, {
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.tailwindcss.com", "https://js.stripe.com"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "https://js.stripe.com"],
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         imgSrc: ["'self'", "data:", "https:"],

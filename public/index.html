@@ -12,8 +12,6 @@
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script src="assets/js/tailwind.config.js?v=3"></script>
 <link href="assets/css/site.css?v=9" rel="stylesheet"/>
 <style>
   /* Glitch de dos capas del titular del hero (activo al pasar el ratón),
@@ -23,6 +21,8 @@
   .nty-hero-title:hover .nty-glitch-a { animation: nty-glitch-1 0.4s steps(2, end); }
   .nty-hero-title:hover .nty-glitch-b { animation: nty-glitch-2 0.4s steps(2, end); }
 </style>
+<!-- Tailwind compilado (npm run build:css). Va el último, como hacía el CDN. -->
+<link href="assets/css/tailwind.css?v=1" rel="stylesheet"/>
 </head>
 <body class="antialiased min-h-screen pb-28 md:pb-0">
 
@@ -150,7 +150,7 @@
     function bigEventCard(ev) {
         const lineup = ev.lineup.map((l) => l.artist.stageName).join(" · ");
         return `
-        <a href="events.html#evento-${ev.id}" class="brutal-card md:col-span-2 group relative overflow-hidden h-[400px] flex flex-col justify-end p-stack-md cursor-pointer">
+        <a href="/evento/${encodeURIComponent(ev.slug)}" class="brutal-card md:col-span-2 group relative overflow-hidden h-[400px] flex flex-col justify-end p-stack-md cursor-pointer">
             <div class="absolute inset-0 z-0">
                 <img class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" src="${ev.posterUrl || ntPlaceholderImage(ev.title)}" alt="${ntEscapeHtml(ev.title)}"/>
                 <div class="absolute inset-0 bg-gradient-to-t from-primary-container via-primary-container/50 to-transparent"></div>
@@ -168,9 +168,9 @@
 
     function smallEventCard(ev) {
         return `
-        <a href="events.html#evento-${ev.id}" class="brutal-card flex-1 p-stack-md flex flex-col justify-between group relative overflow-hidden cursor-pointer h-[192px]">
+        <a href="/evento/${encodeURIComponent(ev.slug)}" class="brutal-card flex-1 p-stack-md flex flex-col justify-between group relative overflow-hidden cursor-pointer h-[192px]">
             <div class="absolute inset-0 z-0 opacity-20 group-hover:opacity-40 transition-opacity">
-                <img class="w-full h-full object-cover grayscale" src="${ev.posterUrl || ntPlaceholderImage(ev.title)}" alt=""/>
+                <img class="w-full h-full object-cover grayscale" src="${ev.posterUrl || ntPlaceholderImage(ev.title)}" alt="Cartel de ${ntEscapeHtml(ev.title)}"/>
             </div>
             <div class="relative z-10 flex justify-between items-start">
                 <span class="bg-primary-container border border-on-surface px-2 py-1 font-label-mono text-[12px] text-on-surface uppercase">${ntEscapeHtml(eventCity(ev.venue))}</span>

@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<!-- También se sirve en /evento/:slug: todas las rutas relativas cuelgan de la raíz. -->
+<base href="/"/>
 <title>NOT TODAY - Eventos</title>
 <link href="favicon.jpg" rel="icon" type="image/jpeg"/>
 <link href="favicon.jpg" rel="apple-touch-icon"/>
@@ -12,10 +14,9 @@
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script src="assets/js/tailwind.config.js?v=3"></script>
 <link href="assets/css/site.css?v=9" rel="stylesheet"/>
-<meta name="description" content="Agenda de NOT TODAY: próximas fiestas, line-ups y entradas, y el archivo de eventos pasados."/>
+<!-- Tailwind compilado (npm run build:css). Va el último, como hacía el CDN. -->
+<link href="assets/css/tailwind.css?v=1" rel="stylesheet"/>
 </head>
 <body class="antialiased min-h-screen pb-28 md:pb-0">
 
@@ -31,12 +32,13 @@
         </p>
     </header>
 
-    <!-- Evento destacado: el más próximo, o el elegido en la lista / #evento-<id> -->
+    <!-- Evento destacado: el más próximo, o el de /evento/<slug> (el servidor
+         deja aquí su ficha en HTML para buscadores y el JS la vuelve a pintar). -->
     <section id="featured" aria-live="polite">
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+        <!--SSR--><div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
             <div class="nt-skeleton md:col-span-5 aspect-[4/5]"></div>
             <div class="nt-skeleton md:col-span-7 h-[420px]"></div>
-        </div>
+        </div><!--/SSR-->
     </section>
 
     <!-- Resto de próximas fechas -->
@@ -65,6 +67,7 @@
     </section>
 </main>
 
+<!--DATA-->
 <script src="assets/js/api.js"></script>
 <script src="assets/js/chrome.js"></script>
 <script>NTChrome.mount({ active: "events" });</script>
@@ -111,12 +114,18 @@
         }
         return `<ul class="flex flex-col gap-1">${ev.lineup.map((l, i) => `
             <li class="flex items-baseline justify-between gap-4 border-b border-outline-variant/20 py-2">
-                <span class="${i === 0 ? "font-headline-lg text-[28px]" : "font-headline-lg text-[20px] text-on-surface-variant"} uppercase leading-none">${ntEscapeHtml(l.artist.stageName)}</span>
+                <a href="/artista/${encodeURIComponent(l.artist.slug)}" class="${i === 0 ? "font-headline-lg text-[28px]" : "font-headline-lg text-[20px] text-on-surface-variant"} uppercase leading-none hover:text-secondary-container transition-colors">${ntEscapeHtml(l.artist.stageName)}</a>
                 ${l.setTime ? `<span class="font-label-mono text-[12px] text-on-surface-variant">${dateParts(l.setTime).time}</span>` : ""}
             </li>`).join("")}</ul>`;
     }
 
-    function ticketBoxHtml(ev) {
+    function ticketBoxHtml(ev, past) {
+        if (past) {
+            return `
+            <div class="border border-outline-variant/40 p-stack-md">
+                <span class="font-headline-lg text-headline-lg-mobile uppercase text-on-surface-variant">Evento finalizado</span>
+            </div>`;
+        }
         const state = ticketState(ev);
         if (state !== "on-sale") {
             return `
@@ -159,7 +168,10 @@
         </div>`;
     }
 
-    function renderFeatured(ev) {
+    const eventPath = (ev) => `/evento/${encodeURIComponent(ev.slug)}`;
+
+    // `past`: evento del archivo abierto por su URL (/evento/<slug>), sin venta.
+    function renderFeatured(ev, past = false) {
         const d = dateParts(ev.date);
         const section = document.getElementById("featured");
         section.innerHTML = `
@@ -167,7 +179,7 @@
             <div class="md:col-span-5 relative aspect-[4/5] bg-primary-container overflow-hidden border border-outline-variant/20">
                 <img src="${poster(ev)}" alt="Cartel de ${ntEscapeHtml(ev.title)}" class="w-full h-full object-cover"/>
                 <span class="absolute top-3 left-3 bg-secondary-container text-on-secondary px-2 py-1 font-label-mono text-[11px] uppercase font-bold">
-                    ${ev.id === upcoming[0].id ? "Próximo evento" : "Evento"}
+                    ${past ? "Evento pasado" : ev.id === upcoming[0].id ? "Próximo evento" : "Evento"}
                 </span>
             </div>
             <div class="md:col-span-7 flex flex-col gap-stack-md">
@@ -189,10 +201,10 @@
                     <span class="font-label-mono text-[11px] text-on-surface-variant uppercase tracking-[0.18em]">Line-up</span>
                     ${lineupHtml(ev)}
                 </div>
-                <div class="mt-auto">${ticketBoxHtml(ev)}</div>
+                <div class="mt-auto">${ticketBoxHtml(ev, past)}</div>
             </div>
         </article>`;
-        wireTicketBox(ev);
+        if (!past) wireTicketBox(ev);
     }
 
     function wireTicketBox(ev) {
@@ -225,7 +237,7 @@
         const names = lineupNames(ev);
         return `
         <li>
-            <button type="button" data-select="${ev.id}" class="w-full text-left grid grid-cols-[72px_1fr] md:grid-cols-[96px_1fr_auto] gap-stack-md items-center py-stack-md border-b border-outline-variant/20 group hover:bg-surface-container transition-colors ${ev.id === selectedId ? "bg-surface-container" : ""}">
+            <a href="${eventPath(ev)}" data-select="${ev.id}" class="w-full text-left grid grid-cols-[72px_1fr] md:grid-cols-[96px_1fr_auto] gap-stack-md items-center py-stack-md border-b border-outline-variant/20 group hover:bg-surface-container transition-colors ${ev.id === selectedId ? "bg-surface-container" : ""}">
                 <span class="flex flex-col items-center">
                     <span class="font-display-lg text-[32px] md:text-[40px] leading-none">${d.day}</span>
                     <span class="font-label-mono text-[11px] uppercase tracking-widest text-on-surface-variant">${d.month} ${d.year}</span>
@@ -239,7 +251,7 @@
                     ${Number(ev.price) > 0 ? `<span class="font-label-mono text-label-mono text-secondary-container">${ntFormatMoney(ev.price)}</span>` : ""}
                     <span class="font-label-mono text-[10px] tracking-widest px-2 py-1 border uppercase whitespace-nowrap ${state === "on-sale" ? "border-secondary-container text-secondary-container" : "border-outline text-outline"}">${STATE_LABEL[state]}</span>
                 </span>
-            </button>
+            </a>
         </li>`;
     }
 
@@ -249,9 +261,12 @@
         document.getElementById("upcoming-count").textContent = `${upcoming.length} fecha${upcoming.length === 1 ? "" : "s"}`;
         const list = document.getElementById("upcoming-list");
         list.innerHTML = others.map(upcomingRow).join("");
-        list.querySelectorAll("[data-select]").forEach((b) => b.addEventListener("click", () => {
+        // Enlaces reales (rastreables y compartibles); con JS se cambia el destacado sin recargar.
+        list.querySelectorAll("[data-select]").forEach((b) => b.addEventListener("click", (e) => {
+            if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+            e.preventDefault();
             select(b.dataset.select);
-            history.replaceState(null, "", `#evento-${b.dataset.select}`);
+            history.replaceState(null, "", b.getAttribute("href"));
             document.getElementById("featured").scrollIntoView({ behavior: "smooth", block: "start" });
         }));
     }
@@ -269,15 +284,15 @@
         const d = dateParts(ev.date);
         const names = lineupNames(ev);
         return `
-        <article id="evento-${ev.id}" class="group relative aspect-square bg-primary-container overflow-hidden">
-            <img src="${poster(ev)}" alt="" loading="lazy" class="absolute inset-0 w-full h-full object-cover opacity-50 grayscale group-hover:grayscale-0 group-hover:opacity-90 transition-all duration-500"/>
+        <a href="${eventPath(ev)}" id="evento-${ev.id}" class="group relative block aspect-square bg-primary-container overflow-hidden">
+            <img src="${poster(ev)}" alt="Cartel de ${ntEscapeHtml(ev.title)}" loading="lazy" class="absolute inset-0 w-full h-full object-cover opacity-50 grayscale group-hover:grayscale-0 group-hover:opacity-90 transition-all duration-500"/>
             <div class="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent"></div>
             <div class="absolute bottom-0 left-0 right-0 p-stack-md flex flex-col gap-1">
                 <span class="font-label-mono text-[11px] text-secondary-container uppercase">${d.day} ${d.month} ${d.year}</span>
                 <h3 class="font-headline-lg text-[18px] md:text-[22px] leading-none text-on-surface uppercase tracking-tight">${ntEscapeHtml(ev.title)}</h3>
                 <p class="font-label-mono text-[11px] text-on-surface-variant uppercase truncate">${ntEscapeHtml(ev.venue)}${names.length ? ` · ${ntEscapeHtml(names.join(" · "))}` : ""}</p>
             </div>
-        </article>`;
+        </a>`;
     }
 
     // ------- Arranque -------
@@ -287,9 +302,18 @@
             const { events, past } = await ntApi("/events");
             upcoming = events;
 
-            if (upcoming.length) {
-                const fromHash = window.location.hash.replace("#evento-", "");
+            // /evento/<slug>: el servidor embebe el evento (null si no existe).
+            const pre = window.__EVENT__;
+            const fromHash = window.location.hash.replace("#evento-", "");
+            if (pre && upcoming.some((e) => e.id === pre.id)) {
+                select(pre.id);
+            } else if (pre) {
+                renderFeatured(pre, true);
+                renderUpcoming();
+            } else if (upcoming.length) {
+                // Enlace antiguo events.html#evento-<id>.
                 select(upcoming.some((e) => e.id === fromHash) ? fromHash : upcoming[0].id);
+                if (pre === null) ntToast("Ese evento no existe o ya no está publicado", true);
             } else {
                 featured.innerHTML = `
                 <div class="border border-outline-variant/20 p-stack-lg flex flex-col items-center justify-center gap-stack-sm min-h-[240px] text-center">

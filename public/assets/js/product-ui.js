@@ -130,7 +130,7 @@ const NTProductUI = {
       const thumbs = images.length > 1
         ? `<div class="flex gap-px bg-outline-variant/40">${images.map((img, i) => `
             <button type="button" data-thumb="${i}" class="flex-1 h-16 bg-surface-container-lowest overflow-hidden border-b-2 ${i === state.img ? "border-secondary-container" : "border-transparent"}">
-              <img src="${ntEscapeHtml(img)}" class="w-full h-full object-cover" alt=""/>
+              <img src="${ntEscapeHtml(img)}" class="w-full h-full object-cover" alt="${ntEscapeHtml(p.name)} — foto ${i + 1}"/>
             </button>`).join("")}</div>`
         : "";
 
@@ -160,7 +160,7 @@ const NTProductUI = {
             ${opts.modal ? `<button type="button" data-close class="self-end text-on-surface-variant hover:text-secondary-container transition-colors p-1" aria-label="Cerrar"><span class="material-symbols-outlined text-2xl">close</span></button>` : ""}
             <div>
               <span class="font-label-mono text-[11px] uppercase tracking-widest ${p.productType === "DROP_EXCLUSIVO" ? "text-secondary-container" : "text-on-surface-variant"}">
-                ${p.productType === "DROP_EXCLUSIVO" ? "Drop exclusivo" : p.category ? `<a href="/store.html?categoria=${encodeURIComponent(p.category.slug)}" class="hover:text-secondary-container">${ntEscapeHtml(p.category.name)}</a>` : "Tienda"}
+                ${p.productType === "DROP_EXCLUSIVO" ? "Drop exclusivo" : p.category ? `<a href="/tienda/${encodeURIComponent(p.category.slug)}" class="hover:text-secondary-container">${ntEscapeHtml(p.category.name)}</a>` : "Tienda"}
               </span>
               ${opts.modal ? `<h2 class="font-headline-xl text-[28px] text-on-surface uppercase leading-none mt-1">${ntEscapeHtml(p.name)}</h2>`
                            : `<h1 class="font-headline-xl text-[32px] md:text-[44px] text-on-surface uppercase leading-none mt-1">${ntEscapeHtml(p.name)}</h1>`}

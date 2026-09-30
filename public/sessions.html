@@ -12,9 +12,9 @@
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script src="assets/js/tailwind.config.js?v=3"></script>
 <link href="assets/css/site.css?v=9" rel="stylesheet"/>
+<!-- Tailwind compilado (npm run build:css). Va el último, como hacía el CDN. -->
+<link href="assets/css/tailwind.css?v=1" rel="stylesheet"/>
 </head>
 <body class="antialiased min-h-screen pb-28 md:pb-0">
 
@@ -74,7 +74,7 @@
                     <span class="font-label-mono text-[11px] text-secondary-container uppercase tracking-[0.18em]">Reproduciendo ahora</span>
                     <h2 class="font-headline-xl text-[32px] md:text-[44px] text-on-surface uppercase leading-none mt-2">${ntEscapeHtml(session.title)}</h2>
                     <p class="font-label-mono text-label-mono text-on-surface-variant uppercase mt-2">
-                        <a href="artists.html" class="text-secondary-container hover:text-on-surface transition-colors">${ntEscapeHtml(session.artist.stageName)}</a> — ${date}
+                        <a href="/artista/${encodeURIComponent(session.artist.slug)}" class="text-secondary-container hover:text-on-surface transition-colors">${ntEscapeHtml(session.artist.stageName)}</a> — ${date}
                     </p>
                     ${session.description ? `<p class="font-body-md text-body-md text-on-surface-variant mt-3 max-w-xl">${ntEscapeHtml(session.description)}</p>` : ""}
                 </div>
@@ -95,7 +95,7 @@
         <button data-session="${session.id}" id="${session.id}"
             class="group flex gap-stack-md p-stack-md text-left w-full items-center border-b border-outline-variant/20 border-l-2 transition-colors hover:bg-[#161615] ${isActive ? "!bg-[#161615] border-secondary-container" : "border-transparent"}">
             <div class="w-[60px] h-11 flex-shrink-0 relative overflow-hidden bg-gradient-to-br from-surface-container-high to-primary-container flex items-center justify-center">
-                <img class="absolute inset-0 w-full h-full object-cover ${isActive ? "" : "grayscale group-hover:grayscale-0"} transition-all duration-300" src="${thumb}" alt=""/>
+                <img class="absolute inset-0 w-full h-full object-cover ${isActive ? "" : "grayscale group-hover:grayscale-0"} transition-all duration-300" src="${thumb}" alt="${ntEscapeHtml(session.title)}"/>
                 <span class="material-symbols-outlined relative z-10 text-[16px] ${isActive ? "text-secondary-container" : "text-on-surface"}" style="font-variation-settings: 'FILL' 1;">${isActive ? "equalizer" : "play_arrow"}</span>
             </div>
             <div class="flex flex-col justify-center min-w-0">

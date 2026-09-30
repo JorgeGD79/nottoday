@@ -64,7 +64,8 @@ export async function invalidateCatalogCache(): Promise<void> {
  * sin esperar a que expire el TTL.
  */
 export async function invalidateEventsCache(): Promise<void> {
-  await redis.del(CACHE_KEYS.events);
+  // El sitemap lista las páginas de evento (/evento/<slug>).
+  await redis.del(CACHE_KEYS.events, CACHE_KEYS.sitemap);
 }
 
 /**
@@ -73,7 +74,8 @@ export async function invalidateEventsCache(): Promise<void> {
  * se invalidan juntas desde los paneles de admin de artistas y sesiones.
  */
 export async function invalidateArtistsCache(): Promise<void> {
-  await redis.del(CACHE_KEYS.artists, CACHE_KEYS.sessions);
+  // El sitemap lista las páginas de artista (/artista/<slug>).
+  await redis.del(CACHE_KEYS.artists, CACHE_KEYS.sessions, CACHE_KEYS.sitemap);
 }
 
 /** Invalida la lista pública de métodos de envío (se llama desde el admin). */

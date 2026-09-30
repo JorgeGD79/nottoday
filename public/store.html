@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<!-- También se sirve en /tienda/:categoria: todas las rutas relativas cuelgan de la raíz. -->
+<base href="/"/>
 <title>NOT TODAY - Store</title>
 <link href="favicon.jpg" rel="icon" type="image/jpeg"/>
 <link href="favicon.jpg" rel="apple-touch-icon"/>
@@ -12,10 +14,7 @@
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script src="assets/js/tailwind.config.js?v=3"></script>
 <link href="assets/css/site.css?v=9" rel="stylesheet"/>
-<meta name="description" content="Tienda oficial de NOT TODAY: ropa, joyas, drops exclusivos y merch del colectivo."/>
 <style>
     .nt-filter { background: transparent; border: 1px solid rgb(68 71 72); color: inherit; font-family: "JetBrains Mono", monospace; font-size: 12px; text-transform: uppercase; padding: 0.45rem 2rem 0.45rem 0.6rem; cursor: pointer; }
     .nt-filter:focus { outline: none; border-color: #ff8a00; box-shadow: none; }
@@ -28,6 +27,8 @@
     .nt-tab-count { font-size: 10px; color: #8e9192; }
     .nt-tab.active .nt-tab-count { color: #ff8a00; }
 </style>
+<!-- Tailwind compilado (npm run build:css). Va el último, como hacía el CDN. -->
+<link href="assets/css/tailwind.css?v=1" rel="stylesheet"/>
 </head>
 <body class="min-h-screen flex flex-col font-body-md antialiased selection:bg-secondary-container selection:text-on-secondary pb-28 md:pb-0">
 
@@ -52,7 +53,7 @@
     </section>
 
     <!-- 2. Catálogo: pestañas por categoría, búsqueda y filtros, y la rejilla.
-         El estado va en la URL: ?categoria=&q=&talla=&color=&stock=1&orden= -->
+         El estado va en la URL: /tienda/<categoria>?q=&talla=&color=&stock=1&orden= -->
     <section id="catalog" class="scroll-mt-[64px] md:scroll-mt-[67px]">
         <div class="px-margin-mobile md:px-margin-desktop pt-stack-lg">
             <div class="flex flex-wrap items-end justify-between gap-x-4 gap-y-1 border-b border-on-surface pb-stack-sm">
@@ -128,15 +129,18 @@
         stock: document.getElementById("f-stock"),
         sort: document.getElementById("sort-select"),
     };
-    const URL_KEYS = { category: "categoria", q: "q", size: "talla", color: "color", sort: "orden" };
+    const URL_KEYS = { q: "q", size: "talla", color: "color", sort: "orden" };
+    // Cada categoría tiene URL propia (/tienda/<slug>, indexable); "Todo" es /store.html.
+    const categoryPath = (slug) => (slug ? `/tienda/${encodeURIComponent(slug)}` : "/store.html");
     let activeCategory = "";   // slug; "" = todo el catálogo
     let categories = [];       // [{ slug, name, description, count }]
 
     function filtersFromUrl() {
         const params = new URLSearchParams(window.location.search);
         return {
-            // Enlace antiguo del menú (store.html#joyas) = pestaña Joyas.
-            category: params.get("categoria") || (window.location.hash === "#joyas" ? "joyas" : ""),
+            // /tienda/<slug>; o enlaces antiguos: ?categoria=<slug> y store.html#joyas.
+            category: decodeURIComponent((window.location.pathname.match(/^\/tienda\/([^/]+)/) || [])[1] || "")
+                || params.get("categoria") || (window.location.hash === "#joyas" ? "joyas" : ""),
             q: params.get("q") || "",
             size: params.get("talla") || "",
             color: params.get("color") || "",
@@ -163,9 +167,10 @@
             if (f[k] && !(k === "sort" && f[k] === "latest")) params.set(key, f[k]); else params.delete(key);
         }
         if (f.stock) params.set("stock", "1"); else params.delete("stock");
+        params.delete("categoria");
         const qs = params.toString();
         const hash = window.location.hash === "#joyas" ? "" : window.location.hash;
-        history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}${hash}`);
+        history.replaceState(null, "", `${categoryPath(f.category)}${qs ? `?${qs}` : ""}${hash}`);
         document.getElementById("f-clear").classList.toggle("hidden", !hasFilters(f));
         // Botón "Filtros" (móvil): cuántos filtros hay puestos, sin contar la búsqueda.
         const active = [f.size, f.color, f.stock, f.sort !== "latest"].filter(Boolean).length;
@@ -181,14 +186,18 @@
     // Pestañas: "Todo" + una por categoría con productos (con su recuento).
     function renderTabs() {
         const tab = (slug, label, count) => `
-            <button type="button" data-category="${ntEscapeHtml(slug)}" aria-current="${slug === activeCategory ? "page" : "false"}"
+            <a href="${categoryPath(slug)}" data-category="${ntEscapeHtml(slug)}" aria-current="${slug === activeCategory ? "page" : "false"}"
                 class="nt-tab ${slug === activeCategory ? "active" : ""}">
                 ${ntEscapeHtml(label)}${count != null ? `<span class="nt-tab-count">${count}</span>` : ""}
-            </button>`;
+            </a>`;
         const nav = document.getElementById("category-tabs");
         nav.innerHTML = tab("", "Todo", null) + categories.map((c) => tab(c.slug, c.name, c.count)).join("");
         nav.querySelectorAll("[data-category]").forEach((btn) =>
-            btn.addEventListener("click", () => setCategory(btn.dataset.category)));
+            btn.addEventListener("click", (e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+                e.preventDefault();
+                setCategory(btn.dataset.category);
+            }));
         nav.querySelector(".active")?.scrollIntoView({ block: "nearest", inline: "nearest" });
     }
 

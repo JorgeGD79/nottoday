@@ -6,8 +6,10 @@ COPY package*.json ./
 RUN npm ci
 COPY prisma ./prisma
 RUN npx prisma generate
-COPY tsconfig.json ./
+COPY tsconfig.json tailwind.config.js ./
 COPY src ./src
+# public/ entra en el build: Tailwind lo escanea para generar assets/css/tailwind.css.
+COPY public ./public
 RUN npm run build
 
 # ---- Runtime ----
@@ -21,7 +23,7 @@ COPY package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY prisma ./prisma
-COPY public ./public
+COPY --from=builder /app/public ./public
 COPY docker-entrypoint.sh ./
 # Render inyecta la variable PORT; el server escucha en env.PORT y host 0.0.0.0.
 EXPOSE 4123

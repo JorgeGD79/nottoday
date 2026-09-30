@@ -1803,7 +1803,7 @@ const Sections = {
         const fmt = (iso) => new Date(iso).toLocaleDateString("es-ES", { weekday: "short", day: "2-digit", month: "short" }).toUpperCase();
         const lines = events.slice(0, 6).map((e) => {
           const names = e.lineup.map((l) => l.artist.stageName).join(", ");
-          const link = e.tickets ? ` — [Entradas](${location.origin}/events.html#evento-${e.id})` : "";
+          const link = e.tickets ? ` — [Entradas](${location.origin}/evento/${e.slug})` : "";
           return `- **${e.title}** · ${fmt(e.date)} · ${e.venue}${names ? ` · ${names}` : ""}${link}`;
         });
         const block = `## Próximas fechas\n\n${lines.join("\n")}`;

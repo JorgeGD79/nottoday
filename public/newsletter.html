@@ -12,8 +12,6 @@
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script src="assets/js/tailwind.config.js?v=3"></script>
 <link href="assets/css/site.css?v=9" rel="stylesheet"/>
 <style>
     /* Cuerpo de una newsletter en la web (HTML semántico que devuelve la API). */
@@ -27,6 +25,8 @@
     .nt-prose a { color: #ff8a00; text-decoration: underline; text-underline-offset: 3px; }
     .nt-prose a:hover { color: #e5e2e1; }
 </style>
+<!-- Tailwind compilado (npm run build:css). Va el último, como hacía el CDN. -->
+<link href="assets/css/tailwind.css?v=1" rel="stylesheet"/>
 </head>
 <body class="antialiased min-h-screen pb-28 md:pb-0">
 
@@ -200,9 +200,9 @@
                 <div class="font-label-mono text-[11px] tracking-[0.18em] text-secondary-container uppercase mt-8">
                     Newsletter · ${issueNo(issue.number)} · ${fmtIssueDate(issue.publishedAt)}
                 </div>
-                <h1 class="font-display-lg font-extrabold uppercase leading-[1.02] tracking-tighter text-on-surface mt-3 mb-4" style="font-size:clamp(34px,5vw,60px);">${ntEscapeHtml(issue.heading)}</h1>
+                <h2 class="font-display-lg font-extrabold uppercase leading-[1.02] tracking-tighter text-on-surface mt-3 mb-4" style="font-size:clamp(34px,5vw,60px);">${ntEscapeHtml(issue.heading)}</h2>
                 ${issue.preheader ? `<p class="font-body-lg text-[18px] text-on-surface-variant leading-[1.6] mb-8">${ntEscapeHtml(issue.preheader)}</p>` : ""}
-                ${issue.imageUrl ? `<img src="${ntEscapeHtml(issue.imageUrl)}" alt="" class="w-full border border-outline-variant/30 mb-8"/>` : ""}
+                ${issue.imageUrl ? `<img src="${ntEscapeHtml(issue.imageUrl)}" alt="${ntEscapeHtml(issue.heading)}" class="w-full border border-outline-variant/30 mb-8"/>` : ""}
                 <div class="nt-prose">${issue.bodyHtml}</div>
                 ${issue.ctaLabel && issue.ctaUrl ? `
                 <a href="${ntEscapeHtml(issue.ctaUrl)}" class="inline-block mt-4 bg-secondary-container text-on-secondary font-label-mono text-[12px] tracking-[0.1em] font-bold px-6 py-4 uppercase hover:bg-on-surface hover:text-primary-container transition-colors">

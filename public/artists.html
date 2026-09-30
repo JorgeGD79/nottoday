@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<!-- También se sirve en /artista/:slug: todas las rutas relativas cuelgan de la raíz. -->
+<base href="/"/>
 <title>NOT TODAY - Artists</title>
 <link href="favicon.jpg" rel="icon" type="image/jpeg"/>
 <link href="favicon.jpg" rel="apple-touch-icon"/>
@@ -12,9 +14,9 @@
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script src="assets/js/tailwind.config.js?v=3"></script>
 <link href="assets/css/site.css?v=9" rel="stylesheet"/>
+<!-- Tailwind compilado (npm run build:css). Va el último, como hacía el CDN. -->
+<link href="assets/css/tailwind.css?v=1" rel="stylesheet"/>
 </head>
 <body class="bg-background text-on-background font-body-md antialiased pb-28 md:pb-0">
 
@@ -29,10 +31,11 @@
         </p>
     </header>
 
-    <!-- Roster (datos reales de /api/artists) -->
+    <!-- Roster (datos reales de /api/artists). En /artista/<slug> el servidor deja
+         aquí la ficha del artista en HTML para buscadores; el JS la sustituye. -->
     <section class="nt-grid-lines grid-cols-1 md:grid-cols-2" id="artists-grid">
-        <div class="nt-skeleton h-[480px]"></div>
-        <div class="nt-skeleton h-[480px]"></div>
+        <!--SSR--><div class="nt-skeleton h-[480px]"></div>
+        <div class="nt-skeleton h-[480px]"></div><!--/SSR-->
     </section>
 
     <!-- La contratación de cada artista la lleva su propio management -->
@@ -46,6 +49,7 @@
     </section>
 </main>
 
+<!--DATA-->
 <script src="assets/js/api.js"></script>
 <script src="assets/js/chrome.js"></script>
 <script>NTChrome.mount({ active: "artists" });</script>
@@ -102,15 +106,17 @@
         </div>`;
     }
 
+    const artistPath = (artist) => `/artista/${encodeURIComponent(artist.slug)}`;
+
     function artistCard(artist) {
         const photo = (artist.images && artist.images[0]) || ntPlaceholderImage(artist.stageName);
         return `
         <article class="group relative flex flex-col p-stack-md gap-stack-md">
-            <div data-artist="${artist.id}" class="relative w-full aspect-[4/3] bg-surface-container overflow-hidden cursor-pointer">
+            <a href="${artistPath(artist)}" data-artist="${artist.id}" class="relative block w-full aspect-[4/3] bg-surface-container overflow-hidden cursor-pointer">
                 <img class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 group-hover:scale-[1.03]"
                      src="${photo}" alt="${ntEscapeHtml(artist.stageName)}"/>
                 <span class="absolute top-2 right-2 font-label-mono text-[10px] uppercase tracking-widest text-on-surface bg-primary-container/80 border border-outline-variant px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">Ver perfil</span>
-            </div>
+            </a>
             <div class="flex flex-col flex-grow gap-stack-sm">
                 <h2 class="font-headline-xl text-[32px] text-on-surface uppercase leading-none tracking-tighter">
                     ${ntEscapeHtml(artist.stageName)}
@@ -135,11 +141,19 @@
             }
             allArtists = artists;
             grid.innerHTML = artists.map(artistCard).join("");
+            // Enlaces reales a /artista/<slug>; con JS se abre la ficha en modal sin recargar.
             grid.querySelectorAll("[data-artist]").forEach((el) =>
-                el.addEventListener("click", () => {
+                el.addEventListener("click", (e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey) return;
                     const a = allArtists.find((x) => x.id === el.dataset.artist);
-                    if (a) openArtistModal(a);
+                    if (!a) return;
+                    e.preventDefault();
+                    openArtistModal(a);
                 }));
+            // /artista/<slug>: el servidor embebe el artista (null si no existe).
+            const pre = window.__ARTIST__;
+            if (pre) openArtistModal(allArtists.find((x) => x.id === pre.id) || pre);
+            else if (pre === null) ntToast("Ese artista no existe o ya no está en el roster", true);
         } catch (err) {
             grid.innerHTML = `<div class="md:col-span-2 p-stack-lg text-center">
                 <p class="font-label-mono text-label-mono text-error uppercase">${ntEscapeHtml(err.message)}</p>
@@ -168,6 +182,7 @@
     function openArtistModal(artist) {
         amArtist = artist;
         amImgIndex = 0;
+        history.replaceState(null, "", artistPath(artist));
         document.getElementById("am-root").classList.remove("hidden");
         document.body.style.overflow = "hidden";
         renderArtistModal();
@@ -175,7 +190,9 @@
 
     function closeArtistModal() {
         const root = document.getElementById("am-root");
-        if (root) root.classList.add("hidden");
+        if (!root || root.classList.contains("hidden")) return;
+        root.classList.add("hidden");
+        history.replaceState(null, "", "/artists.html");
         document.body.style.overflow = "";
     }
 
@@ -185,7 +202,7 @@
         const thumbs = images.length > 1
             ? `<div class="flex gap-px bg-outline-variant/40">${images.map((img, i) => `
                 <button data-thumb="${i}" class="flex-1 h-16 bg-surface-container-lowest overflow-hidden border-b-2 ${i === amImgIndex ? "border-secondary-container" : "border-transparent"}">
-                    <img src="${ntEscapeHtml(img)}" class="w-full h-full object-cover" alt=""/>
+                    <img src="${ntEscapeHtml(img)}" class="w-full h-full object-cover" alt="${ntEscapeHtml(a.stageName)} — foto ${i + 1}"/>
                 </button>`).join("")}</div>`
             : "";
         document.getElementById("am-panel").innerHTML = `
