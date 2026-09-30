@@ -108,7 +108,7 @@ function itemsTable(order: OrderEmailData) {
     ${rows}
     <tr><td style="padding:8px 0 4px;">Subtotal</td><td style="padding:8px 0 4px;text-align:right;">${money(order.subtotal)}</td></tr>
     ${discount}
-    <tr><td style="padding:4px 0;">Envío${order.shippingMethodName ? ` · ${escapeHtml(order.shippingMethodName)}` : ""}</td><td style="padding:4px 0;text-align:right;">${Number(order.shippingCost) === 0 ? "Gratis" : money(order.shippingCost)}</td></tr>
+    ${order.items.some((i) => i.product.productType !== "TICKET_EVENTO") ? `<tr><td style="padding:4px 0;">Envío${order.shippingMethodName ? ` · ${escapeHtml(order.shippingMethodName)}` : ""}</td><td style="padding:4px 0;text-align:right;">${Number(order.shippingCost) === 0 ? "Gratis" : money(order.shippingCost)}</td></tr>` : ""}
     <tr><td style="padding:8px 0;border-top:1px solid #353535;color:#e5e2e1;font-weight:bold;">Total</td><td style="padding:8px 0;border-top:1px solid #353535;text-align:right;color:#e5e2e1;font-weight:bold;">${money(order.total)}</td></tr>
     <tr><td colspan="2" style="padding:0;font-size:12px;color:#8e9192;">${order.taxExempt ? "Productos sin IVA (exportación)" : `IVA incluido: ${money(order.taxAmount)}`}</td></tr>
   </table>`;

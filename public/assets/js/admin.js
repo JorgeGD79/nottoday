@@ -1008,10 +1008,12 @@ const Sections = {
             </details>
           </td>
           <td class="whitespace-nowrap">
+            ${(o.items || []).some((i) => i.product.productType !== "TICKET_EVENTO") ? `
             <select class="nt-input !w-auto font-label-mono text-[12px] uppercase" data-order-fulfillment="${o.id}">
               ${FULFILL_OPTS.map((s) => `<option value="${s}" ${o.fulfillmentStatus === s ? "selected" : ""}>${s}</option>`).join("")}
             </select>
-            <input type="text" class="nt-input !w-32 font-label-mono text-[11px] mt-1" placeholder="Tracking" value="${ntEscapeHtml(o.trackingCode || "")}" data-order-tracking="${o.id}"/>
+            <input type="text" class="nt-input !w-32 font-label-mono text-[11px] mt-1" placeholder="Tracking" value="${ntEscapeHtml(o.trackingCode || "")}" data-order-tracking="${o.id}"/>`
+            : `<span class="font-label-mono text-[11px] text-on-surface-variant uppercase" title="Las entradas se envían por email al confirmarse el pago">Sin envío<br/>entradas por email</span>`}
           </td>
           <td class="whitespace-nowrap text-right">
             ${isAdminUser() && o.status === "PAGADO" ? `<button class="adm-icon-btn danger" data-order-refund="${o.id}" title="Reembolsar"><span class="material-symbols-outlined text-[20px]">currency_exchange</span></button>` : ""}

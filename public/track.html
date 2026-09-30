@@ -64,6 +64,10 @@
         const refunded = order.status === "REEMBOLSADO";
         const paid = order.status === "PAGADO" || refunded;
         const shipped = order.fulfillmentStatus === "ENVIADO" || order.fulfillmentStatus === "ENTREGADO";
+        // Las entradas no se envían por mensajería: van por email al confirmarse el
+        // pago. Los pasos de envío solo aparecen si el pedido lleva algo físico.
+        const hasTickets = order.items.some((i) => i.product.productType === "TICKET_EVENTO");
+        const physical = order.items.some((i) => i.product.productType !== "TICKET_EVENTO");
         const delivered = order.fulfillmentStatus === "ENTREGADO";
 
         return [
@@ -79,19 +83,26 @@
                     : paid ? "Pago confirmado" : "Esperando confirmación del pago",
                 state: payFailed ? "failed" : paid ? "done" : "current",
             },
-            {
+            ...(hasTickets ? [{
+                title: "Entradas",
+                detail: refunded
+                    ? "Anuladas por el reembolso"
+                    : paid ? "Enviadas a tu email. También las tienes aquí abajo, con su QR."
+                    : payFailed ? "" : "Te llegarán por email en cuanto se confirme el pago",
+                state: refunded ? "failed" : paid ? "done" : "pending",
+            }] : []),
+            ...(physical ? [{
                 title: "Enviado",
                 detail: shipped
                     ? `${order.shippingMethodName || "Envío"} — en camino a ${[order.shippingCity, ntCountryName(order.shippingCountry)].filter(Boolean).join(", ")}`
                     : "Preparando tu pedido",
                 tracking: shipped ? order.trackingCode : null,
                 state: shipped ? "done" : paid ? "current" : "pending",
-            },
-            {
+            }, {
                 title: "Entregado",
                 detail: delivered ? `Entregado — ${fmtLong(order.updatedAt)}` : "",
                 state: delivered ? "done" : shipped ? "current" : "pending",
-            },
+            }] : []),
             ...(refunded ? [{
                 title: "Reembolsado",
                 detail: "Te hemos devuelto el importe. Puede tardar entre 5 y 10 días en aparecer en tu cuenta.",
@@ -178,6 +189,7 @@
     let currentEmail = "";
     function renderOrder(order) {
         const steps = buildSteps(order);
+        const physical = order.items.some((i) => i.product.productType !== "TICKET_EVENTO");
         const result = document.getElementById("track-result");
         result.classList.remove("hidden");
         result.classList.add("grid");
@@ -203,7 +215,7 @@
             <div class="mt-stack-md space-y-2 font-label-mono text-[13px]">
                 <div class="flex justify-between text-on-surface-variant"><span class="uppercase">Subtotal</span><span>${ntFormatMoney(order.subtotal)}</span></div>
                 ${Number(order.discountAmount) > 0 ? `<div class="flex justify-between text-secondary-container"><span class="uppercase">Descuento</span><span>-${ntFormatMoney(order.discountAmount)}</span></div>` : ""}
-                <div class="flex justify-between text-on-surface-variant"><span class="uppercase">Envío${order.shippingMethodName ? ` · ${ntEscapeHtml(order.shippingMethodName)}` : ""}</span><span>${Number(order.shippingCost) === 0 ? "Gratis" : ntFormatMoney(order.shippingCost)}</span></div>
+                ${physical ? `<div class="flex justify-between text-on-surface-variant"><span class="uppercase">Envío${order.shippingMethodName ? ` · ${ntEscapeHtml(order.shippingMethodName)}` : ""}</span><span>${Number(order.shippingCost) === 0 ? "Gratis" : ntFormatMoney(order.shippingCost)}</span></div>` : ""}
                 <div class="flex justify-between text-on-surface border-t border-outline-variant/30 pt-2"><span class="uppercase font-bold">Total</span><span class="font-bold">${ntFormatMoney(order.total)}</span></div>
                 <p class="text-[11px] text-on-surface-variant uppercase text-right">${order.taxExempt ? "Productos sin IVA (exportación)" : `IVA incluido: ${ntFormatMoney(order.taxAmount)}`}</p>
             </div>

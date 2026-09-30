@@ -2,7 +2,7 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { AppError } from "@/utils/AppError";
-import { FulfillmentStatus, OrderStatus } from "@prisma/client";
+import { FulfillmentStatus, OrderStatus, Prisma, ProductType } from "@prisma/client";
 import { recordAuditLog } from "@/services/audit-log.service";
 import { notifyOrder } from "@/services/order-notifications.service";
 import { cancelPendingOrder, refundOrder } from "@/services/order-lifecycle.service";
@@ -16,15 +16,20 @@ const listQuerySchema = z.object({
   pageSize: z.coerce.number().int().positive().max(100).default(25),
 });
 
+// Línea de pedido de un producto físico (todo lo que no es una entrada).
+const physicalItem: Prisma.OrderItemWhereInput = { product: { productType: { not: ProductType.TICKET_EVENTO } } };
+
 /**
  * GET /api/admin/orders — pedidos del checkout, con líneas, envío y dirección.
  * Es la bandeja logística: de aquí sale qué hay que empaquetar y a dónde.
  */
 export async function listOrdersHandler(request: FastifyRequest, reply: FastifyReply) {
   const { status, fulfillment, page, pageSize } = listQuerySchema.parse(request.query);
-  const where = {
+  const where: Prisma.OrderWhereInput = {
     ...(status ? { status } : {}),
-    ...(fulfillment ? { fulfillmentStatus: fulfillment } : {}),
+    // El estado de envío solo tiene sentido en pedidos con algo físico: los de
+    // solo entradas (se entregan por email) no aparecen como "pendientes de envío".
+    ...(fulfillment ? { fulfillmentStatus: fulfillment, items: { some: physicalItem } } : {}),
   };
 
   const [orders, total] = await Promise.all([
@@ -63,6 +68,7 @@ const orderIdParamsSchema = z.object({ id: z.string().cuid() });
  * PUT /api/admin/orders/:id/fulfillment
  *
  * Mueve el pedido por el flujo logístico (PENDIENTE -> ENVIADO -> ENTREGADO).
+ * No aplica a pedidos de solo entradas, que no tienen envío físico.
  * Solo se puede marcar como enviado/entregado un pedido ya PAGADO: enviar
  * un pedido sin cobrar es un error operativo, no un estado válido.
  */
@@ -72,6 +78,10 @@ export async function updateFulfillmentHandler(request: FastifyRequest, reply: F
 
   const existing = await prisma.order.findUnique({ where: { id } });
   if (!existing) throw AppError.notFound("Pedido");
+
+  if (!(await prisma.orderItem.count({ where: { orderId: id, ...physicalItem } }))) {
+    throw new AppError("Este pedido solo tiene entradas: se entregan por email y no tiene envío", 422);
+  }
 
   if (input.fulfillmentStatus !== FulfillmentStatus.PENDIENTE && existing.status !== OrderStatus.PAGADO) {
     throw new AppError("Solo se pueden enviar pedidos con el pago confirmado", 422);
