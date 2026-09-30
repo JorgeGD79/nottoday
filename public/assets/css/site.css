@@ -267,14 +267,14 @@ select.nt-input {
     border-color: #ff8a00;
 }
 
-/* Selector de talla en las cards de producto */
+/* Selector de color y talla (tarjetas de la tienda y ficha de producto) */
 .size-btn {
     font-family: "JetBrains Mono", monospace;
     font-size: 12px;
     text-transform: uppercase;
     border: 1px solid rgba(229, 226, 225, 0.3);
     color: #c4c7c7;
-    padding: 6px 0;
+    padding: 6px 10px;
     min-width: 40px;
     text-align: center;
     cursor: pointer;
@@ -285,7 +285,9 @@ select.nt-input {
     border-color: #ff8a00;
     color: #ff8a00;
 }
-.size-btn.selected {
+/* También con el ratón encima: si no, el hover (texto naranja) lo deja invisible. */
+.size-btn.selected,
+.size-btn.selected:hover:not(:disabled) {
     background: #ff8a00;
     border-color: #ff8a00;
     color: #050505;

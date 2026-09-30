@@ -34,23 +34,98 @@ const NTProductUI = {
       </form>`;
   },
 
+  // ---------- Selector de variante: color y talla por separado ----------
+  // Lo usan la ficha (mount) y las tarjetas de la tienda. `pick` es el estado
+  // de la elección: { color, size }; la variante es la combinación de ambos.
+
+  variantOptions(p) {
+    return {
+      colors: [...new Set(p.variants.map((v) => v.color).filter(Boolean))],
+      sizes: [...new Set(p.variants.map((v) => v.size))],
+    };
+  },
+
+  findVariant(p, color, size) {
+    return p.variants.find((v) => (v.color || "") === (color || "") && v.size === size) || null;
+  },
+
+  // Elección inicial: el primer color con stock y, si solo hay una talla, esa.
+  initialPick(p) {
+    const { colors, sizes } = this.variantOptions(p);
+    const color = colors.find((c) => p.variants.some((v) => v.color === c && v.stockAvailable > 0)) || colors[0] || "";
+    return { color, size: sizes.length === 1 ? sizes[0] : "" };
+  },
+
+  pickedVariant(p, pick) {
+    return pick.size ? this.findVariant(p, pick.color, pick.size) : null;
+  },
+
+  /**
+   * Filas de color y talla. Las tallas dependen del color elegido: las que no
+   * existen en ese color se deshabilitan y las agotadas se tachan (en la ficha
+   * se pueden elegir para pedir el aviso: opts.allowSoldOut).
+   */
+  pickerHtml(p, pick, { allowSoldOut = false, compact = false } = {}) {
+    const { colors, sizes } = this.variantOptions(p);
+    const label = (text, value) => `
+      <span class="font-label-mono text-[11px] text-on-surface-variant uppercase tracking-widest block ${compact ? "mb-1" : "mb-2"}">
+        ${text}${value ? ` · <span class="text-on-surface">${ntEscapeHtml(value)}</span>` : ""}
+      </span>`;
+    const rows = [];
+
+    if (colors.length > 1) {
+      rows.push(`<div>${label("Color", pick.color)}<div class="flex gap-2 flex-wrap">${colors.map((c) => {
+        const out = !p.variants.some((v) => v.color === c && v.stockAvailable > 0);
+        return `<button type="button" data-pick-color="${ntEscapeHtml(c)}"
+          class="size-btn ${pick.color === c ? "selected" : ""} ${out ? "line-through opacity-50" : ""}"
+          title="${out ? "Agotado en este color" : ""}">${ntEscapeHtml(c)}</button>`;
+      }).join("")}</div></div>`);
+    } else if (colors.length === 1) {
+      rows.push(`<div>${label("Color", colors[0])}</div>`);
+    }
+
+    if (sizes.length > 1) {
+      rows.push(`<div>${label("Talla", pick.size)}<div class="flex gap-2 flex-wrap">${sizes.map((s) => {
+        const v = this.findVariant(p, pick.color, s);
+        const out = !v || v.stockAvailable <= 0;
+        const disabled = !v || (out && !allowSoldOut);
+        return `<button type="button" data-pick-size="${ntEscapeHtml(s)}" ${disabled ? "disabled" : ""}
+          class="size-btn ${pick.size === s ? "selected" : ""} ${out ? "line-through opacity-50" : ""}"
+          title="${!v ? "No existe en este color" : out ? "Agotada — puedes pedir que te avisemos" : `${v.stockAvailable} disponibles`}">${ntEscapeHtml(s)}</button>`;
+      }).join("")}</div></div>`);
+    }
+
+    return rows.join("");
+  },
+
+  // Conecta los botones del selector; onChange se llama tras cada cambio.
+  bindPicker(root, p, pick, onChange) {
+    const { sizes } = this.variantOptions(p);
+    root.querySelectorAll("[data-pick-color]").forEach((b) =>
+      b.addEventListener("click", () => {
+        pick.color = b.dataset.pickColor;
+        // La talla elegida se mantiene si existe en el nuevo color.
+        if (pick.size && !this.findVariant(p, pick.color, pick.size)) pick.size = sizes.length === 1 ? sizes[0] : "";
+        onChange();
+      }));
+    root.querySelectorAll("[data-pick-size]:not(:disabled)").forEach((b) =>
+      b.addEventListener("click", () => { pick.size = b.dataset.pickSize; onChange(); }));
+  },
+
   /**
    * Pinta la ficha dentro de `root` y gestiona su estado.
    * opts.modal: muestra botón de cerrar (opts.onClose) y enlace a la ficha completa.
    */
   mount(root, product, opts = {}) {
-    const state = { img: 0, variantId: null };
-    // Si solo hay una variante (talla única), queda elegida de entrada.
-    if (product.variants.length === 1) state.variantId = product.variants[0].id;
+    const state = { img: 0, pick: this.initialPick(product) };
 
     const render = () => {
       const p = product;
       const images = p.images && p.images.length ? p.images : [ntPlaceholderImage(p.name)];
       const dropLocked = this.isDropLocked(p);
       const soldOut = this.isSoldOut(p);
-      const selected = p.variants.find((v) => v.id === state.variantId) || null;
+      const selected = this.pickedVariant(p, state.pick);
       const selectedSoldOut = selected && selected.stockAvailable <= 0;
-      const singleVariant = p.variants.length === 1;
 
       const thumbs = images.length > 1
         ? `<div class="flex gap-px bg-outline-variant/40">${images.map((img, i) => `
@@ -59,12 +134,7 @@ const NTProductUI = {
             </button>`).join("")}</div>`
         : "";
 
-      const variantBtns = p.variants.map((v) => {
-        const out = v.stockAvailable <= 0;
-        return `<button type="button" data-variant="${v.id}"
-            class="size-btn ${state.variantId === v.id ? "selected" : ""} ${out ? "line-through opacity-50" : ""}"
-            title="${out ? "Agotado — puedes pedir que te avisemos" : `${v.stockAvailable} disponibles`}">${ntEscapeHtml(ntVariantLabel(v))}</button>`;
-      }).join("");
+      const picker = this.pickerHtml(p, state.pick, { allowSoldOut: true });
 
       // Acción principal: comprar, o "avísame" (drop cerrado / variante agotada).
       let action;
@@ -97,11 +167,7 @@ const NTProductUI = {
               <p class="font-label-mono text-label-mono text-secondary-container mt-2">${ntFormatMoney(p.price)} <span class="text-on-surface-variant text-[11px]">IVA incl.</span></p>
             </div>
             ${p.description ? `<p class="font-body-md text-body-md text-on-surface-variant whitespace-pre-line">${ntEscapeHtml(p.description)}</p>` : ""}
-            ${singleVariant ? "" : `
-            <div>
-              <span class="font-label-mono text-[11px] text-on-surface-variant uppercase tracking-widest block mb-2">Talla${p.variants.some((v) => v.color) ? " / color" : ""}</span>
-              <div class="flex gap-2 flex-wrap">${variantBtns}</div>
-            </div>`}
+            ${picker ? `<div class="space-y-stack-sm">${picker}</div>` : ""}
             <div class="mt-auto space-y-3">
               ${action}
               ${opts.modal ? `<a href="${this.productUrl(p)}" class="block text-center font-label-mono text-[11px] text-on-surface-variant uppercase tracking-widest hover:text-secondary-container">Ver ficha completa →</a>` : ""}
@@ -111,18 +177,17 @@ const NTProductUI = {
 
       root.querySelectorAll("[data-thumb]").forEach((b) =>
         b.addEventListener("click", () => { state.img = Number(b.dataset.thumb); render(); }));
-      root.querySelectorAll("[data-variant]").forEach((b) =>
-        b.addEventListener("click", () => { state.variantId = b.dataset.variant; render(); }));
+      this.bindPicker(root, p, state.pick, render);
       const close = root.querySelector("[data-close]");
       if (close && opts.onClose) close.addEventListener("click", opts.onClose);
 
       const add = root.querySelector("[data-add]");
       if (add) {
         add.addEventListener("click", async () => {
-          if (!state.variantId) { ntToast("Elige una talla primero", true); return; }
+          if (!selected) { ntToast(state.pick.color || !this.variantOptions(p).colors.length ? "Elige una talla" : "Elige color y talla", true); return; }
           add.disabled = true;
           try {
-            await NTCart.add({ productId: p.id, productVariantId: state.variantId, quantity: 1 });
+            await NTCart.add({ productId: p.id, productVariantId: selected.id, quantity: 1 });
             ntToast("Añadido al carrito");
             if (opts.onAdded) opts.onAdded();
           } catch (err) {
@@ -142,7 +207,7 @@ const NTProductUI = {
           if (!form.querySelector("[data-notify-consent]").checked) { ntToast("Acepta que te escribamos para el aviso", true); return; }
           // En un drop cerrado el aviso es de apertura (sin variante).
           const body = { productId: p.id, email, consent: true };
-          if (!dropLocked && state.variantId) body.productVariantId = state.variantId;
+          if (!dropLocked && selected) body.productVariantId = selected.id;
           const btn = form.querySelector("button[type=submit]");
           btn.disabled = true;
           try {

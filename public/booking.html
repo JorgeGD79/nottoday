@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
-<title>Booking - NOT TODAY</title>
+<title>Colaboraciones - NOT TODAY</title>
 <link href="favicon.jpg" rel="icon" type="image/jpeg"/>
 <link href="favicon.jpg" rel="apple-touch-icon"/>
 <link href="manifest.webmanifest" rel="manifest"/>
@@ -14,7 +14,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <script src="assets/js/tailwind.config.js?v=3"></script>
-<link href="assets/css/site.css?v=8" rel="stylesheet"/>
+<link href="assets/css/site.css?v=9" rel="stylesheet"/>
+<meta name="description" content="Colabora con NOT TODAY: patrocinio de eventos, cápsulas de ropa, producción de contenido y experiencias con el colectivo."/>
 </head>
 <body class="antialiased min-h-screen flex flex-col">
 
@@ -24,71 +25,29 @@
         <span class="font-label-mono text-[11px] tracking-[0.24em] text-secondary-container">CONTACTO</span>
         <h1 class="font-display-lg text-display-lg uppercase mb-4 mt-2">Make It<br/><span class="text-secondary-container">Happen</span></h1>
         <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
-            Línea directa para contratar artistas, curar eventos y colaborar con la marca. Construimos con quien comparte la visión. Elige el tipo de solicitud.
+            Línea directa para colaborar con la marca: patrocinio de eventos, cápsulas de ropa, producción de contenido y experiencias con el colectivo. Construimos con quien comparte la visión.
+        </p>
+        <!-- La contratación de artistas la lleva el management de cada uno: no pasa por aquí. -->
+        <p class="font-label-mono text-[11px] text-on-surface-variant uppercase tracking-wide mt-4 max-w-2xl border-l-2 border-secondary-container pl-3">
+            ¿Quieres contratar a uno de nuestros artistas? Cada uno trabaja con su propio management.
         </p>
     </div>
 
     <div class="md:col-span-8 md:col-start-3 lg:col-span-6 lg:col-start-4">
-        <!-- Tabs -->
-        <div class="flex gap-4 mb-8">
-            <button class="tab-btn active w-full" id="tab-booking" type="button">Artist Booking</button>
-            <button class="tab-btn w-full" id="tab-collab" type="button">Collab / Brand</button>
-        </div>
-
-        <!-- Formulario: contratación de artistas (type = CONTRATACION) -->
-        <div class="nt-card" id="form-booking">
-            <h2 class="font-headline-lg text-headline-lg uppercase mb-8">Booking Request</h2>
-            <form class="space-y-6" data-booking-type="CONTRATACION" novalidate>
-                <div>
-                    <label class="nt-label" for="bk-name">Nombre completo</label>
-                    <input class="nt-input" id="bk-name" name="requesterName" placeholder="Quién hace la solicitud" required minlength="2" maxlength="150" type="text"/>
+        <!-- Formulario de colaboración (Booking type = COLABORACION) -->
+        <div class="nt-card" id="form-collab">
+            <h2 class="font-headline-lg text-headline-lg uppercase mb-8">Propuesta de colaboración</h2>
+            <form class="space-y-6" novalidate>
+                <!-- Servicio de interés cuando se llega desde una tarjeta de Servicios (?service=...) -->
+                <div id="cl-service-box" class="hidden border border-secondary-container/50 px-4 py-3 flex items-center justify-between gap-3">
+                    <span class="font-label-mono text-[12px] uppercase tracking-wide">
+                        <span class="text-on-surface-variant">Servicio:</span> <span id="cl-service-label" class="text-secondary-container"></span>
+                    </span>
+                    <button type="button" id="cl-service-clear" class="text-on-surface-variant hover:text-secondary-container" aria-label="Quitar servicio">
+                        <span class="material-symbols-outlined text-[18px]">close</span>
+                    </button>
+                    <input type="hidden" id="cl-service" name="service"/>
                 </div>
-                <div>
-                    <label class="nt-label" for="bk-email">Email</label>
-                    <input class="nt-input" id="bk-email" name="email" placeholder="tu@email.com" required type="email"/>
-                </div>
-
-                <!-- Selector visual de artista (sustituye al antiguo input de texto libre;
-                     envía un artistId real al backend además del nombre en texto). -->
-                <div id="bk-artist">
-                    <label class="nt-label">Artista objetivo</label>
-                    <div id="bk-artist-grid" class="nt-grid-lines grid-cols-2 sm:grid-cols-3">
-                        <div class="nt-skeleton h-16"></div>
-                        <div class="nt-skeleton h-16"></div>
-                        <div class="nt-skeleton h-16"></div>
-                    </div>
-                    <p class="font-label-mono text-[10px] text-on-surface-variant uppercase tracking-wide mt-2" id="bk-artist-status">Selecciona un artista (opcional)</p>
-                    <input type="hidden" id="bk-artist-name" name="targetArtist"/>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="nt-label" for="bk-date">Fecha del evento</label>
-                        <input class="nt-input text-on-surface-variant" id="bk-date" name="eventDate" type="date"/>
-                    </div>
-                    <div>
-                        <label class="nt-label">Presupuesto estimado (EUR)</label>
-                        <div class="flex flex-wrap gap-2" id="bk-budget-pills" data-target="bk-budget">
-                            <button type="button" class="tab-btn active" style="font-size:12px;padding:10px 16px;" data-value="5k - 10k €">5k - 10k €</button>
-                            <button type="button" class="tab-btn" style="font-size:12px;padding:10px 16px;" data-value="10k - 25k €">10k - 25k €</button>
-                            <button type="button" class="tab-btn" style="font-size:12px;padding:10px 16px;" data-value="25k - 50k €">25k - 50k €</button>
-                            <button type="button" class="tab-btn" style="font-size:12px;padding:10px 16px;" data-value="50k+ €">50k+ €</button>
-                        </div>
-                        <input type="hidden" id="bk-budget" name="budget" value="5k - 10k €"/>
-                    </div>
-                </div>
-                <div>
-                    <label class="nt-label" for="bk-details">Detalles del evento</label>
-                    <textarea class="nt-input" id="bk-details" name="details" placeholder="Sala, aforo previsto, otros artistas del cartel..." rows="3" required minlength="10" maxlength="2000"></textarea>
-                </div>
-                <button class="btn-primary mt-8" type="submit">Submit Request <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">arrow_forward</span></button>
-            </form>
-        </div>
-
-        <!-- Formulario: colaboración / marca (type = COLABORACION) -->
-        <div class="nt-card hidden" id="form-collab">
-            <h2 class="font-headline-lg text-headline-lg uppercase mb-8">Partnership Inquiry</h2>
-            <form class="space-y-6" data-booking-type="COLABORACION" novalidate>
                 <div>
                     <label class="nt-label" for="cl-brand">Empresa / Marca</label>
                     <input class="nt-input" id="cl-brand" name="brandName" placeholder="Nombre de la marca" required type="text"/>
@@ -124,10 +83,10 @@
             <span class="material-symbols-outlined text-6xl text-secondary-container">check_circle</span>
             <h2 class="font-headline-lg text-headline-lg uppercase mt-4">Recibido.</h2>
             <p class="font-body-lg text-body-lg text-on-surface-variant mt-4">
-                Tu solicitud <span class="font-label-mono text-secondary" id="success-ref"></span> está en revisión.
+                Tu propuesta <span class="font-label-mono text-secondary" id="success-ref"></span> está en revisión.
                 Te contactaremos por email. Respondemos rápido.
             </p>
-            <button class="btn-primary mt-8" id="success-again" type="button">Enviar otra solicitud</button>
+            <button class="btn-primary mt-8" id="success-again" type="button">Enviar otra propuesta</button>
         </div>
     </div>
 </main>
@@ -137,25 +96,10 @@
 <script>NTChrome.mount({ active: "booking" });</script>
 <script src="assets/js/cart.js"></script>
 <script>
-    // ------- Tabs -------
-    function switchTab(tabId) {
-        document.querySelectorAll(".tab-btn").forEach((btn) => {
-            if (btn.id === "tab-booking" || btn.id === "tab-collab") btn.classList.remove("active");
-        });
-        document.getElementById("tab-" + tabId).classList.add("active");
-        document.getElementById("form-booking").classList.add("hidden");
-        document.getElementById("form-collab").classList.add("hidden");
-        document.getElementById("form-success").classList.add("hidden");
-        document.getElementById("form-" + tabId).classList.remove("hidden");
-    }
-    document.getElementById("tab-booking").addEventListener("click", () => switchTab("booking"));
-    document.getElementById("tab-collab").addEventListener("click", () => switchTab("collab"));
-    document.getElementById("success-again").addEventListener("click", () => switchTab("booking"));
+    const form = document.querySelector("#form-collab form");
 
-    // ------- Grupos de pills (presupuesto / tipo de colaboración) -------
-    // Botones simples con data-value; el valor "real" del campo vive en el
-    // input[type=hidden] señalado por data-target, así composeDetails() sigue
-    // leyendo form.elements[name] exactamente igual que con los <select> antiguos.
+    // ------- Pills de tipo de colaboración -------
+    // Botones con data-value; el valor real vive en el input[type=hidden] de data-target.
     function wirePillGroup(container) {
         const hidden = document.getElementById(container.dataset.target);
         const buttons = Array.from(container.querySelectorAll("[data-value]"));
@@ -178,136 +122,63 @@
         });
     }
 
-    // ------- Selector visual de artista -------
-    // Sustituye al antiguo <input> de texto libre. Se alimenta de datos reales
-    // de /api/artists y mantiene el id (cuid) seleccionado en bkSelectedArtistId
-    // para enviarlo como campo `artistId` real en POST /bookings (el schema del
-    // backend ya lo acepta, pero antes nunca se enviaba).
-    let bkArtists = [];
-    let bkSelectedArtistId = null;
-
-    function artistPickCard(artist) {
-        const selected = artist.id === bkSelectedArtistId;
-        const photo = (artist.images && artist.images[0]) || ntPlaceholderImage(artist.stageName);
-        const sub = artist.bio ? artist.bio.slice(0, 42) : "NOT TODAY ARTIST";
-        return `
-        <button type="button" data-artist-pick="${artist.id}"
-            class="flex items-center gap-3 p-3 text-left transition-colors ${selected ? "bg-secondary-container/10" : "hover:bg-[#151515]"}">
-            <span class="w-11 h-11 flex-shrink-0 overflow-hidden border ${selected ? "border-secondary" : "border-outline-variant/30"}">
-                <img src="${photo}" class="w-full h-full object-cover ${selected ? "" : "grayscale"}" alt="${ntEscapeHtml(artist.stageName)}"/>
-            </span>
-            <span class="min-w-0">
-                <span class="block font-headline-lg text-[15px] uppercase leading-tight truncate ${selected ? "text-secondary" : "text-on-surface"}">${ntEscapeHtml(artist.stageName)}</span>
-                <span class="block font-label-mono text-[9px] text-on-surface-variant uppercase tracking-widest truncate">${ntEscapeHtml(sub)}</span>
-            </span>
-        </button>`;
+    // ------- Servicio de interés (?service=... desde services.html) -------
+    function setService(name) {
+        document.getElementById("cl-service").value = name;
+        document.getElementById("cl-service-label").textContent = name;
+        document.getElementById("cl-service-box").classList.toggle("hidden", !name);
     }
-
-    function renderArtistPicker() {
-        const grid = document.getElementById("bk-artist-grid");
-        if (!bkArtists.length) {
-            grid.innerHTML = `<div class="col-span-full p-stack-md text-center">
-                <p class="font-label-mono text-[11px] text-on-surface-variant uppercase">Roster en construcción.</p>
-            </div>`;
-        } else {
-            grid.innerHTML = bkArtists.map(artistPickCard).join("");
-            grid.querySelectorAll("[data-artist-pick]").forEach((btn) =>
-                btn.addEventListener("click", () => selectArtist(btn.dataset.artistPick)));
-        }
-        const status = document.getElementById("bk-artist-status");
-        const chosen = bkArtists.find((a) => a.id === bkSelectedArtistId);
-        status.textContent = chosen ? `Seleccionado: ${chosen.stageName}` : "Selecciona un artista (opcional)";
-    }
-
-    function selectArtist(id) {
-        bkSelectedArtistId = bkSelectedArtistId === id ? null : id; // click de nuevo = deseleccionar
-        const chosen = bkArtists.find((a) => a.id === bkSelectedArtistId);
-        document.getElementById("bk-artist-name").value = chosen ? chosen.stageName : "";
-        renderArtistPicker();
-    }
-
-    async function loadBookingArtists() {
-        const grid = document.getElementById("bk-artist-grid");
-        try {
-            const { artists } = await ntApi("/artists");
-            bkArtists = artists;
-
-            // Preselección vía ?artist=<id> (enlazado desde el modal de artists.html).
-            const params = new URLSearchParams(location.search);
-            const preselect = params.get("artist");
-            if (preselect && artists.some((a) => a.id === preselect)) {
-                bkSelectedArtistId = preselect;
-                document.getElementById("bk-artist-name").value =
-                    artists.find((a) => a.id === preselect).stageName;
-            }
-            renderArtistPicker();
-        } catch (err) {
-            grid.innerHTML = `<div class="col-span-full p-stack-md text-center">
-                <p class="font-label-mono text-[11px] text-error uppercase">${ntEscapeHtml(err.message)}</p>
-            </div>`;
-        }
-    }
-    loadBookingArtists();
+    setService(new URLSearchParams(location.search).get("service") || "");
+    document.getElementById("cl-service-clear").addEventListener("click", () => setService(""));
 
     // ------- Envío a POST /api/bookings -------
-    // El schema del backend acepta { type, requesterName, email, details, artistId? }.
-    // Los campos auxiliares (fecha, presupuesto, marca...) se pliegan dentro de
-    // `details` para no perder contexto; el artista objetivo, además de plegarse
-    // en el texto, ahora también viaja como artistId real cuando hay selección.
-    function composeDetails(form) {
-        const get = (name) => {
-            const el = form.elements[name];
-            return el ? el.value.trim() : "";
-        };
+    // El backend acepta { type, requesterName, email, details }. Marca, tipo y
+    // servicio se pliegan dentro de `details` para no perder contexto.
+    function composeDetails() {
+        const get = (name) => (form.elements[name] ? form.elements[name].value.trim() : "");
         const lines = [get("details")];
-        if (get("targetArtist")) lines.push(`Artista(s) objetivo: ${get("targetArtist")}`);
-        if (get("eventDate")) lines.push(`Fecha del evento: ${get("eventDate")}`);
-        if (get("budget")) lines.push(`Presupuesto: ${get("budget")}`);
+        if (get("service")) lines.push(`Servicio: ${get("service")}`);
         if (get("brandName")) lines.push(`Marca: ${get("brandName")}`);
         if (get("partnershipType")) lines.push(`Tipo de colaboración: ${get("partnershipType")}`);
         return lines.filter(Boolean).join("\n");
     }
 
-    document.querySelectorAll("form[data-booking-type]").forEach((form) => {
-        form.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            if (!form.reportValidity()) return;
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!form.reportValidity()) return;
 
-            const button = form.querySelector("button[type=submit]");
-            const originalHtml = button.innerHTML;
-            button.disabled = true;
-            button.textContent = "Enviando...";
+        const button = form.querySelector("button[type=submit]");
+        const originalHtml = button.innerHTML;
+        button.disabled = true;
+        button.textContent = "Enviando...";
 
-            const payload = {
-                type: form.dataset.bookingType,
-                requesterName: form.elements.requesterName.value.trim(),
-                email: form.elements.email.value.trim(),
-                details: composeDetails(form),
-            };
-            if (form.dataset.bookingType === "CONTRATACION" && bkSelectedArtistId) {
-                payload.artistId = bkSelectedArtistId;
-            }
+        try {
+            const { booking } = await ntApi("/bookings", {
+                method: "POST",
+                body: JSON.stringify({
+                    type: "COLABORACION",
+                    requesterName: form.elements.requesterName.value.trim(),
+                    email: form.elements.email.value.trim(),
+                    details: composeDetails(),
+                }),
+            });
+            form.reset();
+            resetPillGroups();
+            setService("");
+            document.getElementById("form-collab").classList.add("hidden");
+            document.getElementById("success-ref").textContent = booking ? booking.id : "";
+            document.getElementById("form-success").classList.remove("hidden");
+        } catch (err) {
+            ntToast(err.message, true);
+        } finally {
+            button.disabled = false;
+            button.innerHTML = originalHtml;
+        }
+    });
 
-            try {
-                const { booking } = await ntApi("/bookings", {
-                    method: "POST",
-                    body: JSON.stringify(payload),
-                });
-                form.reset();
-                resetPillGroups();
-                bkSelectedArtistId = null;
-                renderArtistPicker();
-                document.getElementById("form-booking").classList.add("hidden");
-                document.getElementById("form-collab").classList.add("hidden");
-                document.getElementById("success-ref").textContent = booking ? booking.id : "";
-                document.getElementById("form-success").classList.remove("hidden");
-            } catch (err) {
-                ntToast(err.message, true);
-            } finally {
-                button.disabled = false;
-                button.innerHTML = originalHtml;
-            }
-        });
+    document.getElementById("success-again").addEventListener("click", () => {
+        document.getElementById("form-success").classList.add("hidden");
+        document.getElementById("form-collab").classList.remove("hidden");
     });
 </script>
 </body>

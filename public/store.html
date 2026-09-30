@@ -14,7 +14,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <script src="assets/js/tailwind.config.js?v=3"></script>
-<link href="assets/css/site.css?v=8" rel="stylesheet"/>
+<link href="assets/css/site.css?v=9" rel="stylesheet"/>
 <meta name="description" content="Tienda oficial de NOT TODAY: ropa, joyas, drops exclusivos y merch del colectivo."/>
 <style>
     .nt-filter { background: transparent; border: 1px solid rgb(68 71 72); color: inherit; font-family: "JetBrains Mono", monospace; font-size: 12px; text-transform: uppercase; padding: 0.45rem 2rem 0.45rem 0.6rem; cursor: pointer; }
@@ -244,14 +244,8 @@
         const badgeClasses = soldOut
             ? "border-outline text-outline"
             : "border-secondary-container text-secondary-container";
-        const single = product.variants.length === 1;
-        const variantBtns = single ? "" : product.variants.map((v) => `
-            <button class="size-btn" data-product="${product.id}" data-variant="${v.id}"
-                ${v.stockAvailable <= 0 ? "disabled" : ""}
-                title="${v.stockAvailable <= 0 ? "Agotado" : `${v.stockAvailable} disponibles`}">
-                ${ntEscapeHtml(ntVariantLabel(v))}
-            </button>`).join("");
-        if (single && !soldOut) selectedVariant.set(product.id, product.variants[0].id);
+        // Color y talla por separado (sin selector si el producto no se puede comprar ahora).
+        const picker = isBlocked ? "" : NTProductUI.pickerHtml(product, pickFor(product), { compact: true });
         return `
         <article class="group relative flex flex-col p-stack-md border border-transparent hover:border-secondary-container transition-colors" data-product-card="${product.id}">
             <div data-view="${product.id}" class="relative w-full aspect-[4/5] bg-surface-container overflow-hidden cursor-pointer">
@@ -270,7 +264,7 @@
                 </div>
                 <span class="font-label-mono text-label-mono text-secondary-container">${ntFormatMoney(product.price)}</span>
                 ${product.description ? `<p class="font-body-md text-[14px] text-on-surface-variant line-clamp-2">${ntEscapeHtml(product.description)}</p>` : ""}
-                ${variantBtns ? `<div class="flex gap-2 flex-wrap" data-sizes>${variantBtns}</div>` : ""}
+                ${picker ? `<div class="space-y-3" data-picker="${product.id}">${picker}</div>` : ""}
                 <div class="mt-auto pt-stack-md">
                     ${isBlocked
                         ? `<button data-view-btn="${product.id}"
@@ -286,8 +280,21 @@
         </article>`;
     }
 
-    // Variante seleccionada por producto
-    const selectedVariant = new Map();
+    // Elección de color y talla de cada tarjeta ({ color, size } por producto).
+    const picks = new Map();
+    function pickFor(product) {
+        if (!picks.has(product.id)) picks.set(product.id, NTProductUI.initialPick(product));
+        return picks.get(product.id);
+    }
+
+    // Conecta el selector de una tarjeta; al cambiar se vuelve a pintar solo el selector.
+    function wirePicker(box) {
+        const product = productIndex.get(box.dataset.picker);
+        NTProductUI.bindPicker(box, product, pickFor(product), () => {
+            box.innerHTML = NTProductUI.pickerHtml(product, pickFor(product), { compact: true });
+            wirePicker(box);
+        });
+    }
 
     function wireCards(container) {
         // Clic en la imagen (o en "Avísame") → abre el detalle del producto.
@@ -298,23 +305,23 @@
             });
         });
 
-        container.querySelectorAll(".size-btn:not(:disabled)").forEach((btn) => {
-            btn.addEventListener("click", () => {
-                const productId = btn.dataset.product;
-                btn.closest("[data-sizes]").querySelectorAll(".size-btn").forEach((b) => b.classList.remove("selected"));
-                btn.classList.add("selected");
-                selectedVariant.set(productId, btn.dataset.variant);
-            });
-        });
+        container.querySelectorAll("[data-picker]").forEach(wirePicker);
 
         container.querySelectorAll("[data-add-to-cart]:not(:disabled)").forEach((btn) => {
             btn.addEventListener("click", async () => {
                 const productId = btn.dataset.addToCart;
-                const productVariantId = selectedVariant.get(productId);
-                if (!productVariantId) {
-                    ntToast("Elige una talla primero", true);
+                const product = productIndex.get(productId);
+                const pick = pickFor(product);
+                const variant = NTProductUI.pickedVariant(product, pick);
+                if (!variant) {
+                    ntToast(pick.color || !NTProductUI.variantOptions(product).colors.length ? "Elige una talla" : "Elige color y talla", true);
                     return;
                 }
+                if (variant.stockAvailable <= 0) {
+                    ntToast("Esa talla está agotada en este color", true);
+                    return;
+                }
+                const productVariantId = variant.id;
                 btn.disabled = true;
                 try {
                     await NTCart.add({ productId, productVariantId, quantity: 1 });
