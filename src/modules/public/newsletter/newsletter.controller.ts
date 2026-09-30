@@ -5,6 +5,9 @@ import { NewsletterStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/services/email.service";
 import { newsletterWelcomeEmail } from "@/services/email-templates";
+import { renderNewsletterBodyWeb } from "@/services/newsletter-content";
+import { CACHE_KEYS, CACHE_TTL_SECONDS, getCached, setCached } from "@/services/cache.service";
+import { AppError } from "@/utils/AppError";
 
 const subscribeSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(254),
@@ -89,4 +92,47 @@ function unsubscribeByToken(token: string) {
     where: { unsubscribeToken: token, status: NewsletterStatus.ACTIVO },
     data: { status: NewsletterStatus.BAJA, unsubscribedAt: new Date() },
   });
+}
+
+// ----------------------------------------------------------------------------
+// Archivo público: las newsletters publicadas se leen también en la web.
+// ----------------------------------------------------------------------------
+
+/**
+ * GET /api/newsletter/issues — números publicados, del más reciente al más
+ * antiguo, con su número correlativo (Nº 1 = el primero que se publicó).
+ */
+export async function listIssuesHandler(_request: FastifyRequest, reply: FastifyReply) {
+  const cached = await getCached(CACHE_KEYS.newsletterIssues);
+  if (cached) return reply.header("X-Cache", "HIT").send(cached);
+
+  const published = await prisma.newsletterCampaign.findMany({
+    where: { publishedAt: { not: null } },
+    select: { id: true, subject: true, preheader: true, heading: true, imageUrl: true, publishedAt: true },
+    orderBy: { publishedAt: "asc" },
+  });
+  const issues = published.map((issue, index) => ({ ...issue, number: index + 1 })).reverse();
+  const payload = { issues };
+  await setCached(CACHE_KEYS.newsletterIssues, payload, CACHE_TTL_SECONDS.newsletterIssues);
+  return reply.header("X-Cache", "MISS").send(payload);
+}
+
+const issueParamsSchema = z.object({ id: z.string().cuid() });
+
+/** GET /api/newsletter/issues/:id — un número publicado, con el cuerpo ya en HTML para la web. */
+export async function issueDetailHandler(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = issueParamsSchema.parse(request.params);
+  const issue = await prisma.newsletterCampaign.findFirst({
+    where: { id, publishedAt: { not: null } },
+    select: {
+      id: true, subject: true, preheader: true, heading: true, body: true,
+      imageUrl: true, ctaLabel: true, ctaUrl: true, publishedAt: true,
+    },
+  });
+  if (!issue) throw AppError.notFound("Newsletter");
+  const number = await prisma.newsletterCampaign.count({
+    where: { publishedAt: { not: null, lte: issue.publishedAt! } },
+  });
+  const { body, ...rest } = issue;
+  return reply.send({ issue: { ...rest, number, bodyHtml: renderNewsletterBodyWeb(body) } });
 }

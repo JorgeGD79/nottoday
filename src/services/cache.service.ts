@@ -17,6 +17,8 @@ export const CACHE_KEYS = {
   sessions: "cache:sessions:list",
   shipping: "cache:shipping:list",
   radioSchedule: "cache:radio:schedule",
+  // Archivo público de newsletters (lista de números publicados).
+  newsletterIssues: "cache:newsletter:issues",
 };
 
 export const CACHE_TTL_SECONDS = {
@@ -28,6 +30,7 @@ export const CACHE_TTL_SECONDS = {
   sessions: 120,
   shipping: 120,
   radioSchedule: 120,
+  newsletterIssues: 300,
 };
 
 export async function getCached<T>(key: string): Promise<T | null> {

@@ -615,6 +615,7 @@ async function createDemo() {
       recipientCount: subscriberIds.length,
       startedAt: day(-14, 10),
       sentAt: day(-14, 10, 5),
+      publishedAt: day(-14, 10, 5),
       testSentAt: day(-15, 18),
       createdAt: day(-16),
     },

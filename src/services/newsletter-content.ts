@@ -25,11 +25,16 @@ function escapeHtml(value: string): string {
 const LINK = /\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g;
 const BOLD = /\*\*([^*\n]+)\*\*/g;
 
-function inlineHtml(line: string): string {
+// email: estilos inline (los clientes de correo ignoran las hojas de estilo).
+// web: HTML semántico sin estilos; lo viste la página que lo muestra.
+type Target = "email" | "web";
+
+function inlineHtml(line: string, target: Target = "email"): string {
+  const linkAttrs = target === "email" ? ` style="color:${ACCENT};text-decoration:underline;"` : ' rel="noopener"';
+  const strongAttrs = target === "email" ? ' style="color:#e5e2e1;"' : "";
   return escapeHtml(line)
-    .replace(LINK, (_m, label: string, url: string) =>
-      `<a href="${url}" style="color:${ACCENT};text-decoration:underline;">${label}</a>`)
-    .replace(BOLD, (_m, text: string) => `<strong style="color:#e5e2e1;">${text}</strong>`);
+    .replace(LINK, (_m, label: string, url: string) => `<a href="${url}"${linkAttrs}>${label}</a>`)
+    .replace(BOLD, (_m, text: string) => `<strong${strongAttrs}>${text}</strong>`);
 }
 
 function inlineText(line: string): string {
@@ -70,7 +75,18 @@ export function renderNewsletterBodyHtml(body: string): string {
           .map((item) => `<li style="margin:0 0 6px;">${inlineHtml(item)}</li>`)
           .join("")}</ul>`;
       }
-      return `<p style="margin:0 0 16px;">${block.lines.map(inlineHtml).join("<br>")}</p>`;
+      return `<p style="margin:0 0 16px;">${block.lines.map((l) => inlineHtml(l)).join("<br>")}</p>`;
+    })
+    .join("\n");
+}
+
+/** Cuerpo de la newsletter en HTML semántico para el archivo de la web. */
+export function renderNewsletterBodyWeb(body: string): string {
+  return parseBlocks(body)
+    .map((block) => {
+      if (block.kind === "heading") return `<h2>${inlineHtml(block.text, "web")}</h2>`;
+      if (block.kind === "list") return `<ul>${block.items.map((item) => `<li>${inlineHtml(item, "web")}</li>`).join("")}</ul>`;
+      return `<p>${block.lines.map((l) => inlineHtml(l, "web")).join("<br>")}</p>`;
     })
     .join("\n");
 }

@@ -8,9 +8,11 @@ import {
   duplicateCampaignHandler,
   listCampaignsHandler,
   previewCampaignHandler,
+  publishCampaignHandler,
   resumeCampaignHandler,
   sendCampaignHandler,
   testCampaignHandler,
+  unpublishCampaignHandler,
   updateCampaignHandler,
 } from "./campaigns.controller";
 
@@ -32,4 +34,7 @@ export async function adminNewsletterRoutes(fastify: FastifyInstance) {
   fastify.post("/campaigns/:id/test", { config: { rateLimit: { max: 5, timeWindow: "1 minute" } } }, testCampaignHandler);
   fastify.post("/campaigns/:id/send", sendCampaignHandler);
   fastify.post("/campaigns/:id/resume", resumeCampaignHandler);
+  // Archivo público de la web (independiente del envío por correo).
+  fastify.post("/campaigns/:id/publish", publishCampaignHandler);
+  fastify.post("/campaigns/:id/unpublish", unpublishCampaignHandler);
 }

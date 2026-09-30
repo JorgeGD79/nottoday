@@ -693,6 +693,9 @@ model NewsletterCampaign {
   testSentAt     DateTime?
   startedAt      DateTime?
   sentAt         DateTime?
+  // Publicada en el archivo de newsletter.html (null = no visible en la web).
+  // Se pone al lanzar el envío; el panel también la publica o retira a mano.
+  publishedAt    DateTime?
   createdAt      DateTime                 @default(now())
   updatedAt      DateTime                 @updatedAt
 

@@ -1649,7 +1649,7 @@ const Sections = {
             <span class="font-bold">${ntEscapeHtml(c.subject)}</span>
             <span class="font-label-mono text-[11px] text-on-surface-variant block">${ntEscapeHtml(c.heading)}${c.createdBy ? ` · ${ntEscapeHtml(c.createdBy.name)}` : ""}</span>
           </td>
-          <td>${badge(c.status, STATUS_KIND[c.status])}</td>
+          <td>${badge(c.status, STATUS_KIND[c.status])}${c.publishedAt ? `<span class="block mt-1">${badge("En la web", "ok")}</span>` : ""}</td>
           <td class="font-label-mono text-[12px] whitespace-nowrap">${fmtShortDate(c.sentAt || c.startedAt || c.createdAt)}</td>
           <td class="font-label-mono text-[12px]">${results(c)}</td>
           <td class="whitespace-nowrap text-right">
@@ -1659,6 +1659,9 @@ const Sections = {
               <button class="adm-icon-btn" data-nl-test="${c.id}" ${sendDisabled || 'title="Enviarme una prueba"'}><span class="material-symbols-outlined text-[20px]">outgoing_mail</span></button>
               <button class="adm-icon-btn" data-nl-send="${c.id}" ${sendDisabled || 'title="Enviar a todos los suscriptores"'}><span class="material-symbols-outlined text-[20px]">send</span></button>` : ""}
             ${c.status === "ENVIANDO" ? `<button class="adm-icon-btn" data-nl-resume="${c.id}" ${sendDisabled || 'title="Reanudar envío"'}><span class="material-symbols-outlined text-[20px]">play_arrow</span></button>` : ""}
+            ${c.publishedAt
+              ? iconBtn("data-nl-unpublish", c.id, "public_off", "Retirar de la web")
+              : iconBtn("data-nl-publish", c.id, "public", "Publicar en la web (sin enviar correo)")}
             ${iconBtn("data-nl-duplicate", c.id, "content_copy", "Duplicar como borrador nuevo")}
             ${c.status === "BORRADOR" ? iconBtn("data-nl-delete", c.id, "delete", "Eliminar borrador", "danger") : ""}
           </td>
@@ -1669,7 +1672,7 @@ const Sections = {
           <span class="material-symbols-outlined text-secondary">mail_lock</span>
           <div class="font-label-mono text-[12px] uppercase">
             <p class="text-secondary">Envío desactivado</p>
-            <p class="text-on-surface-variant mt-1">${ntEscapeHtml(this.blocked)}. Puedes redactar, guardar y ver la vista previa; enviar (y las pruebas) quedará disponible al activarlo.</p>
+            <p class="text-on-surface-variant mt-1">${ntEscapeHtml(this.blocked)}. Puedes redactar, ver la vista previa y publicarla en la web (botón del globo); enviarla por correo (y las pruebas) quedará disponible al activarlo.</p>
           </div>
         </div>` : "") + renderTable(["Campaña", "Estado", "Fecha", "Resultado", ""], rows,
         "Sin campañas. Crea la primera con “+ Nueva campaña”.");
@@ -1683,6 +1686,14 @@ const Sections = {
       on("data-nl-send", (c) => this.send(c));
       on("data-nl-resume", (c) => this.campaignAction(c, "resume", "Envío reanudado"));
       on("data-nl-duplicate", (c) => this.campaignAction(c, "duplicate", "Borrador duplicado"));
+      on("data-nl-publish", (c) => {
+        if (confirm(`¿Publicar "${c.subject}" en la página de la newsletter? Cualquiera podrá leerla (no se envía ningún correo).`)) {
+          this.campaignAction(c, "publish", "Publicada en la web");
+        }
+      });
+      on("data-nl-unpublish", (c) => {
+        if (confirm(`¿Retirar "${c.subject}" de la página de la newsletter?`)) this.campaignAction(c, "unpublish", "Retirada de la web");
+      });
       on("data-nl-delete", (c) => {
         if (confirm(`¿Eliminar el borrador "${c.subject}"?`)) {
           adminApi(`/admin/newsletter/campaigns/${c.id}`, { method: "DELETE" })

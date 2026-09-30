@@ -5,6 +5,13 @@ import { prisma } from "@/lib/prisma";
 import { AppError } from "@/utils/AppError";
 import { sendEmail } from "@/services/email.service";
 import { NewsletterCampaignContent, newsletterCampaignEmail } from "@/services/email-templates";
+import { CACHE_KEYS } from "@/services/cache.service";
+import { redis } from "@/lib/redis";
+
+/** Invalida el archivo público de newsletters (tras publicar, retirar o editar). */
+export async function invalidateNewsletterIssuesCache() {
+  await redis.del(CACHE_KEYS.newsletterIssues);
+}
 
 // ============================================================================
 // Envío de campañas de newsletter.
@@ -73,10 +80,16 @@ export async function startCampaign(campaignId: string) {
       data: subscribers.map((s) => ({ campaignId, subscriberId: s.id })),
       skipDuplicates: true,
     });
-    await tx.newsletterCampaign.update({ where: { id: campaignId }, data: { recipientCount: subscribers.length } });
+    // Lo que se envía por correo queda también en el archivo de la web.
+    const current = await tx.newsletterCampaign.findUniqueOrThrow({ where: { id: campaignId }, select: { publishedAt: true } });
+    await tx.newsletterCampaign.update({
+      where: { id: campaignId },
+      data: { recipientCount: subscribers.length, publishedAt: current.publishedAt ?? new Date() },
+    });
     return subscribers.length;
   });
 
+  await invalidateNewsletterIssuesCache();
   void runCampaign(campaignId);
   return recipients;
 }

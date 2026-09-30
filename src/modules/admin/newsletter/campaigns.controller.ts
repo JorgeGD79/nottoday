@@ -7,6 +7,7 @@ import { recordAuditLog } from "@/services/audit-log.service";
 import { newsletterCampaignEmail } from "@/services/email-templates";
 import {
   deliveryStats,
+  invalidateNewsletterIssuesCache,
   newsletterSendingBlockedReason,
   resumeNewsletterCampaigns,
   sendCampaignTest,
@@ -16,15 +17,26 @@ import {
 const optionalText = (max: number) =>
   z.string().trim().max(max).optional().transform((v) => v || null);
 
+// Solo enlaces http(s): "javascript:..." también pasa por URL válida, y estos
+// enlaces acaban en los correos y en el archivo público de la web.
+const webUrl = z
+  .string()
+  .trim()
+  .url()
+  .refine((v) => /^https?:\/\//i.test(v), { message: "El enlace debe empezar por http:// o https://" })
+  .optional()
+  .or(z.literal(""))
+  .transform((v) => v || null);
+
 const campaignSchema = z
   .object({
     subject: z.string().trim().min(3).max(150),
     preheader: optionalText(150),
     heading: z.string().trim().min(2).max(150),
     body: z.string().trim().min(1).max(20_000),
-    imageUrl: z.string().trim().url().optional().or(z.literal("")).transform((v) => v || null),
+    imageUrl: webUrl,
     ctaLabel: optionalText(40),
-    ctaUrl: z.string().trim().url().optional().or(z.literal("")).transform((v) => v || null),
+    ctaUrl: webUrl,
   })
   .refine((c) => !c.ctaLabel === !c.ctaUrl, {
     message: "El botón necesita texto y enlace (o ninguno de los dos)",
@@ -81,6 +93,8 @@ export async function updateCampaignHandler(request: FastifyRequest, reply: Fast
   const input = campaignSchema.parse(request.body);
   assertDraft(await findCampaign(id));
   const campaign = await prisma.newsletterCampaign.update({ where: { id }, data: input });
+  // Un borrador publicado en la web se ve con los cambios al momento.
+  if (campaign.publishedAt) await invalidateNewsletterIssuesCache();
   return reply.send({ campaign });
 }
 
@@ -90,6 +104,7 @@ export async function deleteCampaignHandler(request: FastifyRequest, reply: Fast
   // Las enviadas se conservan: son el registro de qué se mandó y a cuántos.
   assertDraft(campaign);
   await prisma.newsletterCampaign.delete({ where: { id } });
+  if (campaign.publishedAt) await invalidateNewsletterIssuesCache();
   await recordAuditLog({
     userId: request.user.id,
     action: `Eliminó el borrador de newsletter "${campaign.subject}"`,
@@ -140,6 +155,42 @@ export async function sendCampaignHandler(request: FastifyRequest, reply: Fastif
     metadata: { campaignId: id, recipients },
   });
   return reply.code(202).send({ ok: true, recipients });
+}
+
+/**
+ * POST /api/admin/newsletter/campaigns/:id/publish — la muestra en el archivo de
+ * newsletter.html (sin enviar ningún correo). Sirve también con el envío desactivado.
+ */
+export async function publishCampaignHandler(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = idParams.parse(request.params);
+  const existing = await findCampaign(id);
+  const campaign = await prisma.newsletterCampaign.update({
+    where: { id },
+    data: { publishedAt: existing.publishedAt ?? new Date() },
+  });
+  await invalidateNewsletterIssuesCache();
+  await recordAuditLog({
+    userId: request.user.id,
+    action: `Publicó en la web la newsletter "${campaign.subject}"`,
+    request,
+    metadata: { campaignId: id },
+  });
+  return reply.send({ campaign });
+}
+
+/** POST /api/admin/newsletter/campaigns/:id/unpublish — la retira del archivo de la web. */
+export async function unpublishCampaignHandler(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = idParams.parse(request.params);
+  await findCampaign(id);
+  const campaign = await prisma.newsletterCampaign.update({ where: { id }, data: { publishedAt: null } });
+  await invalidateNewsletterIssuesCache();
+  await recordAuditLog({
+    userId: request.user.id,
+    action: `Retiró de la web la newsletter "${campaign.subject}"`,
+    request,
+    metadata: { campaignId: id },
+  });
+  return reply.send({ campaign });
 }
 
 /** POST /api/admin/newsletter/campaigns/:id/resume — continúa un envío interrumpido. */
