@@ -1535,7 +1535,7 @@ const Sections = {
 
   // ---------------- BOOKINGS ----------------
   bookings: {
-    title: "Bookings",
+    title: "Colaboraciones",
     icon: "mail",
     filter: "",
     items: [],
@@ -1555,7 +1555,7 @@ const Sections = {
       this.items = bookings;
       const rows = bookings.map((b) => `
         <tr>
-          <td>${badge(b.type === "CONTRATACION" ? "Booking" : "Collab", b.type === "CONTRATACION" ? "ok" : "muted")}</td>
+          <td>${b.type === "CONTRATACION" ? badge("Contratación (antigua)", "muted") : badge("Colaboración", "ok")}</td>
           <td class="font-bold">${ntEscapeHtml(b.requesterName)}</td>
           <td class="font-label-mono text-[12px]">${ntEscapeHtml(b.email)}</td>
           <td class="font-label-mono text-[12px] whitespace-nowrap">${fmtShortDate(b.createdAt)}</td>
@@ -1579,7 +1579,7 @@ const Sections = {
               method: "PUT",
               body: JSON.stringify({ status: sel.value }),
             });
-            ntToast(`Booking -> ${sel.value}`);
+            ntToast(`Propuesta -> ${sel.value}`);
           } catch (err) {
             ntToast(err.message, true);
             this.load();

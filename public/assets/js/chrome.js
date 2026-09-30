@@ -20,7 +20,7 @@ const NTChrome = (() => {
     { label: "TICKETS", href: "tickets.html" },
   ];
   const CONTACT_ITEMS = [
-    { label: "BOOK AN ARTIST", href: "booking.html" },
+    { label: "COLABORACIONES", href: "booking.html" },
     { label: "SOBRE NOSOTROS", href: "about.html" },
     { label: "SERVICIOS", href: "services.html" },
   ];

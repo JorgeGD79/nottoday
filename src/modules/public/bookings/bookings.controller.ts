@@ -6,8 +6,8 @@ import { bookingReceivedEmail } from "@/services/email-templates";
 import { createBookingSchema } from "./bookings.schema";
 
 /**
- * POST /api/bookings — formulario público de contratación/colaboración.
- * Sin autenticación (lo rellena cualquier promotor/artista externo);
+ * POST /api/bookings — formulario público de propuestas de colaboración.
+ * Sin autenticación (lo rellena cualquier marca o promotor externo);
  * aparece luego en GET /api/admin/bookings para que el staff lo gestione.
  * Si hay buzón configurado (EMAIL_REPLY_TO), se avisa al equipo por email.
  */

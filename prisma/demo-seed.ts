@@ -646,9 +646,9 @@ async function createDemo() {
   // --- Bookings ---
   await prisma.booking.create({
     data: {
-      id: `${DEMO_PREFIX}bkg01`, type: BookingType.CONTRATACION, requesterName: "Festival Ruido Blanco", email: "booking@example.com",
-      details: "Hola, nos gustaría contar con LUMEN ROTO para el cierre de nuestro festival el sábado 14. Escenario principal, 90 minutos. ¿Disponibilidad y caché?",
-      artistId: artistId.get("lumen"), status: BookingStatus.NUEVA, createdAt: day(-1, 11),
+      id: `${DEMO_PREFIX}bkg01`, type: BookingType.COLABORACION, requesterName: "Festival Ruido Blanco", email: "booking@example.com",
+      details: "Queremos que NOT TODAY cure un escenario de nuestro festival el sábado 14: line-up, visuales y una N-TY Session grabada en directo.\nServicio: SHOWCASE / LINE-UP\nMarca: Festival Ruido Blanco\nTipo de colaboración: Event Sponsorship",
+      status: BookingStatus.NUEVA, createdAt: day(-1, 11),
     },
   });
   await prisma.booking.create({

@@ -35,13 +35,13 @@
         <div class="nt-skeleton h-[480px]"></div>
     </section>
 
-    <!-- CTA -->
-    <section class="w-full flex flex-col items-center justify-center text-center gap-stack-md py-margin-desktop border-t border-outline-variant/20">
-        <h2 class="font-headline-xl text-[40px] md:text-[64px] text-on-surface uppercase leading-none tracking-tighter">
-            ¿Los quieres en tu cartel?
-        </h2>
-        <a href="booking.html" class="bg-transparent border-2 border-secondary-container text-secondary-container font-headline-lg text-[24px] uppercase px-8 py-4 hover:bg-secondary-container hover:text-on-secondary transition-colors mt-stack-md">
-            Book an Artist
+    <!-- La contratación de cada artista la lleva su propio management -->
+    <section class="w-full flex flex-col items-center justify-center text-center gap-stack-sm py-margin-desktop border-t border-outline-variant/20">
+        <p class="font-label-mono text-label-mono text-on-surface-variant uppercase tracking-wide max-w-xl">
+            Cada artista trabaja con su propio management para contrataciones.
+        </p>
+        <a href="booking.html" class="font-label-mono text-label-mono text-secondary-container uppercase tracking-wide hover:text-on-surface transition-colors">
+            ¿Una marca o proyecto con el colectivo? Colabora con nosotros →
         </a>
     </section>
 </main>
@@ -118,11 +118,6 @@
                 <p class="font-body-md text-body-md text-on-surface-variant line-clamp-3">${ntEscapeHtml(artist.bio || "Bio coming soon.")}</p>
                 <div class="flex flex-wrap gap-2">${socialLinks(artist)}</div>
                 ${artistSessions(artist)}
-                <div class="mt-auto pt-stack-md">
-                    <a href="booking.html" class="inline-flex items-center gap-2 font-headline-lg text-[20px] uppercase text-secondary-container hover:text-on-surface transition-colors">
-                        Book ${ntEscapeHtml(artist.stageName)} <span class="material-symbols-outlined">arrow_forward</span>
-                    </a>
-                </div>
             </div>
         </article>`;
     }
@@ -209,9 +204,6 @@
                     ${a.bio ? `<p class="font-body-md text-body-md text-on-surface-variant whitespace-pre-line">${ntEscapeHtml(a.bio)}</p>` : ""}
                     <div class="flex flex-wrap gap-2">${socialLinks(a)}</div>
                     ${artistSessions(a)}
-                    <a href="booking.html" class="inline-flex items-center gap-2 font-headline-lg text-[20px] uppercase text-secondary-container hover:text-on-surface transition-colors mt-auto pt-stack-md">
-                        Book ${ntEscapeHtml(a.stageName)} <span class="material-symbols-outlined">arrow_forward</span>
-                    </a>
                 </div>
             </div>`;
         const panel = document.getElementById("am-panel");

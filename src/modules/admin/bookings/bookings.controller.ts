@@ -9,7 +9,8 @@ const listQuerySchema = z.object({
   status: z.nativeEnum(BookingStatus).optional(),
 });
 
-// GET /api/admin/bookings — solicitudes de contratación/colaboración entrantes
+// GET /api/admin/bookings — propuestas de colaboración entrantes (y las
+// solicitudes de contratación antiguas, de cuando la web las aceptaba)
 export async function listBookingsHandler(request: FastifyRequest, reply: FastifyReply) {
   const { status } = listQuerySchema.parse(request.query);
 
