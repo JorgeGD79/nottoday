@@ -1068,8 +1068,8 @@ const Sections = {
 
   // ---------------- PUERTA (check-in de entradas) ----------------
   // Funciona con un lector de códigos USB/Bluetooth (teclea el código + Enter
-  // en el campo) o con la cámara del móvil vía BarcodeDetector (Chrome/Android;
-  // requiere https). Si nada de eso está disponible, se teclea el código.
+  // en el campo) o con la cámara del móvil: BarcodeDetector donde exista y jsQR
+  // en el resto (Safari/iOS, Firefox); requiere https. Si no, se teclea el código.
   checkin: {
     title: "Puerta",
     icon: "qr_code_scanner",
@@ -1203,13 +1203,50 @@ const Sections = {
         this.loadList().catch(() => {});
       }
     },
+    // Lector de QR: BarcodeDetector nativo si existe (Chrome/Android) o jsQR
+    // sobre un canvas (Safari/iOS y Firefox no tienen BarcodeDetector).
+    async createDetector() {
+      if ("BarcodeDetector" in window) {
+        try {
+          const formats = await BarcodeDetector.getSupportedFormats();
+          if (formats.includes("qr_code")) return new BarcodeDetector({ formats: ["qr_code"] });
+        } catch {
+          /* API presente pero inservible: usamos jsQR */
+        }
+      }
+      if (!window.jsQR) {
+        await new Promise((resolve, reject) => {
+          const s = document.createElement("script");
+          s.src = "assets/js/vendor/jsQR.js";
+          s.onload = resolve;
+          s.onerror = () => reject(new Error("no se pudo cargar el lector de QR"));
+          document.head.appendChild(s);
+        });
+      }
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      return {
+        async detect(video) {
+          // Reducido a 640px de lado mayor: suficiente para un QR y rápido en móvil.
+          const scale = Math.min(1, 640 / Math.max(video.videoWidth, video.videoHeight));
+          canvas.width = Math.round(video.videoWidth * scale);
+          canvas.height = Math.round(video.videoHeight * scale);
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const { data, width, height } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const hit = window.jsQR(data, width, height, { inversionAttempts: "dontInvert" });
+          return hit ? [{ rawValue: hit.data }] : [];
+        },
+      };
+    },
     async startCamera() {
-      if (!("BarcodeDetector" in window) || !navigator.mediaDevices) {
-        ntToast("Este navegador no puede leer QR con la cámara. Usa Chrome en Android o un lector USB.", true);
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        ntToast(window.isSecureContext
+          ? "Este navegador no da acceso a la cámara. Usa un lector USB o teclea el código."
+          : "La cámara solo funciona con https.", true);
         return;
       }
       try {
-        const detector = new BarcodeDetector({ formats: ["qr_code"] });
+        const detector = await this.createDetector();
         this.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
         const video = document.getElementById("checkin-video");
         video.srcObject = this.stream;
