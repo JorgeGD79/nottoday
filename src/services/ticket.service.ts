@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { OrderStatus, Prisma, ProductType, TicketStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { AppError } from "@/utils/AppError";
-import { checkIdDocument } from "@/utils/id-document";
+import { checkIdDocument, maskIdDocument } from "@/utils/id-document";
 
 /**
  * Código de entrada: 16 bytes aleatorios en base64url (22 caracteres). Es lo que
@@ -129,6 +129,43 @@ export async function issueTicketsForOrder(tx: Prisma.TransactionClient, orderId
 
   if (data.length) await tx.ticket.createMany({ data });
   return data.length;
+}
+
+/**
+ * Entradas nominativas: un DNI solo puede tener una entrada por evento. Cuenta
+ * las entradas emitidas (válidas o ya usadas; las anuladas por reembolso liberan
+ * el DNI) y las de pedidos aún PENDIENTE. Llamar dentro de la transacción del
+ * checkout con la variante bloqueada: dos compras simultáneas con el mismo DNI
+ * se validan en serie y solo entra la primera.
+ */
+export async function assertDocumentsFreeForEvent(tx: Prisma.TransactionClient, event: TicketRules, documents: string[]) {
+  if (!event.nominativeTickets || !documents.length) return;
+  const [issued, pending] = await Promise.all([
+    tx.ticket.findFirst({
+      where: {
+        eventId: event.id,
+        holderDocument: { in: documents },
+        status: { in: [TicketStatus.VALIDA, TicketStatus.USADA] },
+      },
+      select: { holderDocument: true },
+    }),
+    tx.orderItem.findFirst({
+      where: {
+        product: { eventId: event.id },
+        order: { status: OrderStatus.PENDIENTE },
+        attendeeDocuments: { hasSome: documents },
+      },
+      select: { attendeeDocuments: true },
+    }),
+  ]);
+  const taken = issued?.holderDocument ?? pending?.attendeeDocuments.find((d) => documents.includes(d));
+  if (taken) {
+    // Enmascarado: el mensaje no confirma a un desconocido de quién es el documento.
+    throw AppError.conflict(
+      `El documento ${maskIdDocument(taken)} ya tiene entrada para ${event.title}` +
+        (issued ? "" : " (en un pago sin completar; se libera si no se paga)")
+    );
+  }
 }
 
 // Días que se conserva el DNI de las entradas nominativas tras el evento

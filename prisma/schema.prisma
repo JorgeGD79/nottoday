@@ -605,6 +605,8 @@ model Ticket {
 
   @@index([orderId])
   @@index([eventId, status])
+  // Un DNI por evento en entradas nominativas (assertDocumentsFreeForEvent).
+  @@index([eventId, holderDocument])
 }
 
 // ----------------------------------------------------------------------------

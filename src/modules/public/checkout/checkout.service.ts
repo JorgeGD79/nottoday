@@ -10,6 +10,7 @@ import { assertDropPurchasable } from "@/services/drop.service";
 import { createPaymentIntent, toStripeAmount } from "@/services/stripe.service";
 import { invalidateCatalogCache } from "@/services/cache.service";
 import {
+  assertDocumentsFreeForEvent,
   assertTicketLimitForEmail,
   assertTicketQuantity,
   attendeesFor,
@@ -107,9 +108,12 @@ export async function checkout(input: CheckoutInput) {
       }
     }
 
-    // --- 2b. Límite de entradas por email (con la variante ya bloqueada) ---
+    // --- 2b. Límite de entradas por email y, en nominativas, un DNI por evento
+    //         (con la variante ya bloqueada: compras simultáneas van en serie) ---
     for (const item of cart.items) {
-      if (item.product.event) await assertTicketLimitForEmail(tx, item.product.event, input.email, item.quantity);
+      if (!item.product.event) continue;
+      await assertTicketLimitForEmail(tx, item.product.event, input.email, item.quantity);
+      await assertDocumentsFreeForEvent(tx, item.product.event, attendees.get(item.productVariantId)?.documents ?? []);
     }
 
     // --- 3. Precio definitivo: IVA, cupón (revalidado en caliente) y envío por país/peso ---

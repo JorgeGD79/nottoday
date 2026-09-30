@@ -1154,7 +1154,7 @@ const Sections = {
           </div>
           <div class="lg:col-span-7 space-y-4">
             <div class="grid grid-cols-3 gap-3" id="checkin-stats"></div>
-            <input id="checkin-search" class="nt-input" placeholder="Buscar por email o código" value="${ntEscapeHtml(this.query)}"/>
+            <input id="checkin-search" class="nt-input" placeholder="Buscar por nombre, DNI, email o código" value="${ntEscapeHtml(this.query)}"/>
             <div id="checkin-list" class="overflow-x-auto"><div class="nt-skeleton h-40"></div></div>
           </div>
         </div>`;
