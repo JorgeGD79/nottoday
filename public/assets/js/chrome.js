@@ -15,7 +15,7 @@ const NTChrome = (() => {
   ];
   const SHOP_ITEMS = [
     { label: "N-TY CLOTHES", href: "store.html" },
-    { label: "N-TY JEWELRY", href: "store.html#joyas" },
+    { label: "N-TY JEWELRY", href: "store.html?categoria=joyas" },
     { label: "EVENTOS", href: "events.html" },
     { label: "TICKETS", href: "tickets.html" },
   ];

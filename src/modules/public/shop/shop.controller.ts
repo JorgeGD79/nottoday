@@ -97,40 +97,67 @@ export async function listShopProductsHandler(request: FastifyRequest, reply: Fa
   return reply.header("X-Cache", "MISS").send(payload);
 }
 
+// Orden de tallas del filtro: primero "Única", luego las de ropa (XXS…XXXL),
+// luego las numéricas de menor a mayor (calzado, anillos) y al final el resto
+// en el orden en que las puso el admin.
+const LETTER_SIZES = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL"];
+function sizeRank(size: string): [number, number] {
+  const upper = size.trim().toUpperCase();
+  if (upper === "ÚNICA" || upper === "UNICA") return [0, 0];
+  const letter = LETTER_SIZES.indexOf(upper);
+  if (letter >= 0) return [1, letter];
+  const number = parseFloat(upper.replace(",", "."));
+  if (!Number.isNaN(number)) return [2, number];
+  return [3, 0];
+}
+function compareSizes([a, orderA]: [string, number], [b, orderB]: [string, number]) {
+  const [groupA, valueA] = sizeRank(a);
+  const [groupB, valueB] = sizeRank(b);
+  return groupA - groupB || valueA - valueB || orderA - orderB || a.localeCompare(b);
+}
+
+const facetsQuerySchema = z.object({ category: z.string().trim().max(80).optional() });
+
 /**
  * GET /api/shop/facets — opciones de los filtros de la tienda: categorías con
- * productos, tallas y colores en venta, y rango de precios.
+ * productos (siempre todas, con su recuento) y, dentro de `category` si se
+ * indica, las tallas y colores en venta y el rango de precios. Así en "Joyas"
+ * solo salen tallas de anillo y no las de ropa.
  */
-export async function shopFacetsHandler(_request: FastifyRequest, reply: FastifyReply) {
-  const cached = await getCached(CACHE_KEYS.shopFacets);
+export async function shopFacetsHandler(request: FastifyRequest, reply: FastifyReply) {
+  const { category } = facetsQuerySchema.parse(request.query);
+  const cacheKey = category ? `${CACHE_KEYS.shopFacets}:${category}` : CACHE_KEYS.shopFacets;
+  const cached = await getCached(cacheKey);
   if (cached) return reply.header("X-Cache", "HIT").send(cached);
 
   const baseWhere = { productType: ProductType.TIENDA_GENERAL, status: ProductStatus.ACTIVO };
+  const scopedWhere = category ? { ...baseWhere, category: { slug: category } } : baseWhere;
   const [categories, variants, price] = await Promise.all([
     prisma.category.findMany({
       where: { products: { some: baseWhere } },
-      select: { name: true, slug: true, _count: { select: { products: { where: baseWhere } } } },
+      select: { name: true, slug: true, description: true, _count: { select: { products: { where: baseWhere } } } },
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     }),
     prisma.productVariant.findMany({
-      where: { active: true, product: baseWhere },
+      where: { active: true, product: scopedWhere },
       select: { size: true, color: true, sortOrder: true },
     }),
-    prisma.product.aggregate({ where: baseWhere, _min: { price: true }, _max: { price: true } }),
+    prisma.product.aggregate({ where: scopedWhere, _min: { price: true }, _max: { price: true } }),
   ]);
 
-  // Tallas en su orden natural (el menor sortOrder con el que aparecen).
+  // Tallas en su orden natural (el menor sortOrder con el que aparecen), que
+  // se afina con compareSizes cuando varios productos mezclan escalas.
   const sizeOrder = new Map<string, number>();
   for (const v of variants) {
     sizeOrder.set(v.size, Math.min(sizeOrder.get(v.size) ?? Infinity, v.sortOrder));
   }
   const payload = {
-    categories: categories.map((c) => ({ name: c.name, slug: c.slug, count: c._count.products })),
-    sizes: [...sizeOrder.entries()].sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0])).map(([s]) => s),
+    categories: categories.map((c) => ({ name: c.name, slug: c.slug, description: c.description, count: c._count.products })),
+    sizes: [...sizeOrder.entries()].sort((a, b) => compareSizes(a, b)).map(([s]) => s),
     colors: [...new Set(variants.map((v) => v.color).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es")),
     price: { min: Number(price._min.price ?? 0), max: Number(price._max.price ?? 0) },
   };
-  await setCached(CACHE_KEYS.shopFacets, payload, CACHE_TTL_SECONDS.shop);
+  await setCached(cacheKey, payload, CACHE_TTL_SECONDS.shop);
   return reply.header("X-Cache", "MISS").send(payload);
 }
 

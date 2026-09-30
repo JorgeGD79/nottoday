@@ -20,6 +20,13 @@
     .nt-filter { background: transparent; border: 1px solid rgb(68 71 72); color: inherit; font-family: "JetBrains Mono", monospace; font-size: 12px; text-transform: uppercase; padding: 0.45rem 2rem 0.45rem 0.6rem; cursor: pointer; }
     .nt-filter:focus { outline: none; border-color: #ff8a00; box-shadow: none; }
     .nt-filter option { background: #131313; }
+    .nt-tabs { scrollbar-width: none; }
+    .nt-tabs::-webkit-scrollbar { display: none; }
+    .nt-tab { flex: none; display: flex; align-items: baseline; gap: 6px; padding: 14px 16px 12px; border-bottom: 2px solid transparent; font-family: "JetBrains Mono", monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #c4c7c8; white-space: nowrap; transition: color .2s, border-color .2s; }
+    .nt-tab:hover { color: #e5e2e1; }
+    .nt-tab.active { color: #e5e2e1; border-bottom-color: #ff8a00; }
+    .nt-tab-count { font-size: 10px; color: #8e9192; }
+    .nt-tab.active .nt-tab-count { color: #ff8a00; }
 </style>
 </head>
 <body class="min-h-screen flex flex-col font-body-md antialiased selection:bg-secondary-container selection:text-on-secondary pb-28 md:pb-0">
@@ -35,62 +42,69 @@
         </p>
     </header>
 
-    <!-- Drops exclusivos -->
+    <!-- 1. Drops: ediciones limitadas, aparte del catálogo (oculto si no hay ninguno) -->
     <section id="drops" class="hidden px-margin-mobile md:px-margin-desktop py-stack-lg border-b border-outline-variant/20">
-        <div class="flex items-end justify-between border-b border-on-surface pb-stack-sm mb-stack-lg">
+        <div class="flex flex-wrap items-end justify-between gap-x-4 gap-y-1 border-b border-on-surface pb-stack-sm mb-stack-lg">
             <h2 class="font-headline-xl text-headline-xl text-on-surface uppercase tracking-tighter">Drops</h2>
-            <span class="font-label-mono text-label-mono text-secondary-container uppercase">Limited — no restock</span>
+            <span class="font-label-mono text-label-mono text-secondary-container uppercase">Edición limitada — no se reponen</span>
         </div>
         <div class="nt-grid-lines grid-cols-1 md:grid-cols-2 lg:grid-cols-3" id="drops-grid"></div>
     </section>
 
-    <!-- Joyas (productos de la categoría "joyas"; oculta si no hay ninguno) -->
-    <section id="joyas" class="hidden scroll-mt-[120px] px-margin-mobile md:px-margin-desktop py-stack-lg border-b border-outline-variant/20">
-        <div class="flex items-end justify-between border-b border-on-surface pb-stack-sm mb-stack-lg">
-            <h2 class="font-headline-xl text-headline-xl text-on-surface uppercase tracking-tighter">Joyas</h2>
-            <button id="joyas-all" class="hidden font-label-mono text-label-mono text-secondary-container uppercase hover:text-on-surface">Ver todas →</button>
+    <!-- 2. Catálogo: pestañas por categoría, búsqueda y filtros, y la rejilla.
+         El estado va en la URL: ?categoria=&q=&talla=&color=&stock=1&orden= -->
+    <section id="catalog" class="scroll-mt-[64px] md:scroll-mt-[67px]">
+        <div class="px-margin-mobile md:px-margin-desktop pt-stack-lg">
+            <div class="flex flex-wrap items-end justify-between gap-x-4 gap-y-1 border-b border-on-surface pb-stack-sm">
+                <h2 id="catalog-title" class="font-headline-xl text-headline-xl text-on-surface uppercase tracking-tighter">Catálogo</h2>
+                <span id="catalog-count" class="font-label-mono text-label-mono text-on-surface-variant uppercase whitespace-nowrap">Cargando…</span>
+            </div>
+            <p id="catalog-description" class="hidden font-body-md text-on-surface-variant max-w-2xl mt-stack-sm"></p>
         </div>
-        <div class="nt-grid-lines grid-cols-1 md:grid-cols-2 lg:grid-cols-3" id="joyas-grid"></div>
+
+        <!-- Barra fija bajo el menú (64 px en móvil, 67 px en escritorio): categorías,
+             búsqueda y filtros. En móvil los filtros se despliegan con el botón "Filtros". -->
+        <div class="sticky top-[64px] md:top-[67px] z-40 bg-background/95 backdrop-blur-md border-b border-outline-variant/20 px-margin-mobile md:px-margin-desktop mt-stack-sm">
+            <nav id="category-tabs" aria-label="Categorías" class="nt-tabs flex overflow-x-auto"></nav>
+            <div class="flex flex-col md:flex-row gap-3 md:items-center py-stack-sm border-t border-outline-variant/20">
+                <div class="flex-1 min-w-0 flex gap-2">
+                    <div class="flex-1 min-w-0 flex items-center border border-outline-variant bg-surface-container-lowest">
+                        <span class="material-symbols-outlined text-on-surface-variant px-3">search</span>
+                        <input id="f-q" type="search" placeholder="BUSCAR" aria-label="Buscar productos"
+                            class="flex-1 min-w-0 bg-transparent border-none outline-none focus:ring-0 text-on-surface font-label-mono text-label-mono uppercase py-2 pr-3"/>
+                    </div>
+                    <button type="button" id="f-toggle" aria-expanded="false" aria-controls="f-panel"
+                        class="md:hidden flex items-center gap-1 border border-outline-variant px-3 font-label-mono text-[12px] uppercase text-on-surface">
+                        <span class="material-symbols-outlined text-[18px]">tune</span>Filtros<span id="f-toggle-count" class="text-secondary-container"></span>
+                    </button>
+                </div>
+                <div id="f-panel" class="hidden md:flex flex-wrap gap-2 items-center">
+                    <select id="f-size" aria-label="Talla" class="nt-filter"><option value="">Talla: todas</option></select>
+                    <select id="f-color" aria-label="Color" class="nt-filter hidden"><option value="">Color: todos</option></select>
+                    <label class="flex items-center gap-2 font-label-mono text-label-mono text-on-surface-variant uppercase cursor-pointer">
+                        <input id="f-stock" type="checkbox" class="bg-transparent border-outline-variant text-secondary-container focus:ring-0"/> En stock
+                    </label>
+                    <select id="sort-select" aria-label="Ordenar" class="nt-filter">
+                        <option value="latest">Novedades</option>
+                        <option value="price-asc">Precio: menor a mayor</option>
+                        <option value="price-desc">Precio: mayor a menor</option>
+                        <option value="name">Nombre</option>
+                    </select>
+                    <button id="f-clear" class="hidden font-label-mono text-[11px] text-secondary-container uppercase tracking-widest hover:text-on-surface">Quitar filtros ×</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rejilla de productos -->
+        <div class="nt-grid-lines grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mt-px" id="products-grid">
+            <div class="p-stack-md"><div class="nt-skeleton aspect-[4/5]"></div></div>
+            <div class="p-stack-md hidden md:block"><div class="nt-skeleton aspect-[4/5]"></div></div>
+            <div class="p-stack-md hidden lg:block"><div class="nt-skeleton aspect-[4/5]"></div></div>
+        </div>
+        <div class="flex justify-center py-stack-lg">
+            <button id="load-more" class="hidden border-2 border-on-surface text-on-surface font-headline-lg text-headline-lg-mobile uppercase px-8 py-2 hover:bg-on-surface hover:text-primary-container transition-colors">Cargar más</button>
+        </div>
     </section>
-
-    <!-- Búsqueda y filtros (se reflejan en la URL: ?q=&categoria=&talla=&color=&stock=1&orden=) -->
-    <div class="sticky top-[104px] z-40 bg-background/95 backdrop-blur-md border-b border-outline-variant/20 px-margin-mobile md:px-margin-desktop py-stack-sm flex flex-col gap-3">
-        <div class="flex flex-col md:flex-row gap-3 md:items-center">
-            <div class="flex-1 flex items-center border border-outline-variant bg-surface-container-lowest">
-                <span class="material-symbols-outlined text-on-surface-variant px-3">search</span>
-                <input id="f-q" type="search" placeholder="BUSCAR" aria-label="Buscar productos"
-                    class="flex-1 bg-transparent border-none outline-none focus:ring-0 text-on-surface font-label-mono text-label-mono uppercase py-2 pr-3"/>
-            </div>
-            <div class="flex flex-wrap gap-2 items-center">
-                <select id="f-category" aria-label="Categoría" class="nt-filter"><option value="">Categoría: todas</option></select>
-                <select id="f-size" aria-label="Talla" class="nt-filter"><option value="">Talla: todas</option></select>
-                <select id="f-color" aria-label="Color" class="nt-filter hidden"><option value="">Color: todos</option></select>
-                <label class="flex items-center gap-2 font-label-mono text-label-mono text-on-surface-variant uppercase cursor-pointer">
-                    <input id="f-stock" type="checkbox" class="bg-transparent border-outline-variant text-secondary-container focus:ring-0"/> En stock
-                </label>
-                <select id="sort-select" aria-label="Ordenar" class="nt-filter">
-                    <option value="latest">Novedades</option>
-                    <option value="price-asc">Precio: menor a mayor</option>
-                    <option value="price-desc">Precio: mayor a menor</option>
-                    <option value="name">Nombre</option>
-                </select>
-            </div>
-        </div>
-        <div class="flex items-center justify-between gap-3">
-            <span class="font-label-mono text-label-mono text-on-surface-variant uppercase" id="catalog-count">Cargando catálogo...</span>
-            <button id="f-clear" class="hidden font-label-mono text-[11px] text-secondary-container uppercase tracking-widest hover:text-on-surface">Quitar filtros ×</button>
-        </div>
-    </div>
-
-    <!-- Grid de productos -->
-    <div class="nt-grid-lines grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mt-px" id="products-grid">
-        <div class="p-stack-md"><div class="nt-skeleton aspect-[4/5]"></div></div>
-        <div class="p-stack-md hidden md:block"><div class="nt-skeleton aspect-[4/5]"></div></div>
-        <div class="p-stack-md hidden lg:block"><div class="nt-skeleton aspect-[4/5]"></div></div>
-    </div>
-    <div class="flex justify-center py-stack-lg">
-        <button id="load-more" class="hidden border-2 border-on-surface text-on-surface font-headline-lg text-headline-lg-mobile uppercase px-8 py-2 hover:bg-on-surface hover:text-primary-container transition-colors">Cargar más</button>
-    </div>
 </main>
 
 <script src="assets/js/api.js"></script>
@@ -106,22 +120,24 @@
     let totalPages = 1;
     const PAGE_SIZE = 24;
 
-    // ------- Filtros <-> URL -------
+    // ------- Categoría activa, filtros y URL -------
     const F = {
         q: document.getElementById("f-q"),
-        category: document.getElementById("f-category"),
         size: document.getElementById("f-size"),
         color: document.getElementById("f-color"),
         stock: document.getElementById("f-stock"),
         sort: document.getElementById("sort-select"),
     };
-    const URL_KEYS = { q: "q", category: "categoria", size: "talla", color: "color", sort: "orden" };
+    const URL_KEYS = { category: "categoria", q: "q", size: "talla", color: "color", sort: "orden" };
+    let activeCategory = "";   // slug; "" = todo el catálogo
+    let categories = [];       // [{ slug, name, description, count }]
 
     function filtersFromUrl() {
         const params = new URLSearchParams(window.location.search);
         return {
+            // Enlace antiguo del menú (store.html#joyas) = pestaña Joyas.
+            category: params.get("categoria") || (window.location.hash === "#joyas" ? "joyas" : ""),
             q: params.get("q") || "",
-            category: params.get("categoria") || "",
             size: params.get("talla") || "",
             color: params.get("color") || "",
             stock: params.get("stock") === "1",
@@ -131,14 +147,15 @@
 
     function currentFilters() {
         return {
+            category: activeCategory,
             q: F.q.value.trim(),
-            category: F.category.value,
             size: F.size.value,
             color: F.color.value,
             stock: F.stock.checked,
             sort: F.sort.value,
         };
     }
+    const hasFilters = (f) => !!(f.q || f.size || f.color || f.stock);
 
     function syncUrl(f) {
         const params = new URLSearchParams(window.location.search);
@@ -147,8 +164,12 @@
         }
         if (f.stock) params.set("stock", "1"); else params.delete("stock");
         const qs = params.toString();
-        history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash}`);
-        document.getElementById("f-clear").classList.toggle("hidden", !(f.q || f.category || f.size || f.color || f.stock));
+        const hash = window.location.hash === "#joyas" ? "" : window.location.hash;
+        history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}${hash}`);
+        document.getElementById("f-clear").classList.toggle("hidden", !hasFilters(f));
+        // Botón "Filtros" (móvil): cuántos filtros hay puestos, sin contar la búsqueda.
+        const active = [f.size, f.color, f.stock, f.sort !== "latest"].filter(Boolean).length;
+        document.getElementById("f-toggle-count").textContent = active ? ` · ${active}` : "";
     }
 
     function fillSelect(el, placeholder, options, selected) {
@@ -157,17 +178,62 @@
             .join("");
     }
 
-    async function loadFacets(initial) {
+    // Pestañas: "Todo" + una por categoría con productos (con su recuento).
+    function renderTabs() {
+        const tab = (slug, label, count) => `
+            <button type="button" data-category="${ntEscapeHtml(slug)}" aria-current="${slug === activeCategory ? "page" : "false"}"
+                class="nt-tab ${slug === activeCategory ? "active" : ""}">
+                ${ntEscapeHtml(label)}${count != null ? `<span class="nt-tab-count">${count}</span>` : ""}
+            </button>`;
+        const nav = document.getElementById("category-tabs");
+        nav.innerHTML = tab("", "Todo", null) + categories.map((c) => tab(c.slug, c.name, c.count)).join("");
+        nav.querySelectorAll("[data-category]").forEach((btn) =>
+            btn.addEventListener("click", () => setCategory(btn.dataset.category)));
+        nav.querySelector(".active")?.scrollIntoView({ block: "nearest", inline: "nearest" });
+    }
+
+    // Título y descripción del bloque según la categoría activa.
+    function renderCatalogHeader() {
+        const cat = categories.find((c) => c.slug === activeCategory);
+        document.getElementById("catalog-title").textContent = cat ? cat.name : "Catálogo";
+        const desc = document.getElementById("catalog-description");
+        desc.textContent = cat && cat.description ? cat.description : "";
+        desc.classList.toggle("hidden", !(cat && cat.description));
+    }
+
+    // Facetas de la categoría activa: tallas y colores solo de sus productos.
+    async function loadFacets(selected = {}) {
         try {
-            const facets = await ntApi("/shop/facets");
-            fillSelect(F.category, "Categoría: todas", facets.categories.map((c) => [c.slug, `${c.name} (${c.count})`]), initial.category);
-            fillSelect(F.size, "Talla: todas", facets.sizes.map((s) => [s, s]), initial.size);
-            fillSelect(F.color, "Color: todos", facets.colors.map((c) => [c, c]), initial.color);
-            F.category.classList.toggle("hidden", !facets.categories.length);
-            F.color.classList.toggle("hidden", !facets.colors.length);
+            const qs = activeCategory ? `?category=${encodeURIComponent(activeCategory)}` : "";
+            const facets = await ntApi(`/shop/facets${qs}`);
+            categories = facets.categories;
+            // Una categoría de la URL que ya no tiene productos: se vuelve a "Todo".
+            if (activeCategory && !categories.some((c) => c.slug === activeCategory)) {
+                activeCategory = "";
+                return loadFacets(selected);
+            }
+            const keep = (value, list) => (list.includes(value) ? value : "");
+            fillSelect(F.size, "Talla: todas", facets.sizes.map((s) => [s, s]), keep(selected.size, facets.sizes));
+            fillSelect(F.color, "Color: todos", facets.colors.map((c) => [c, c]), keep(selected.color, facets.colors));
+            F.size.classList.toggle("hidden", facets.sizes.length < 2);
+            F.color.classList.toggle("hidden", facets.colors.length < 2);
         } catch {
-            /* sin facetas los filtros quedan en "todas" */
+            /* sin facetas: pestaña "Todo" y filtros en "todas" */
         }
+        renderTabs();
+        renderCatalogHeader();
+    }
+
+    async function setCategory(slug) {
+        if (slug === activeCategory) return;
+        activeCategory = slug;
+        // Si la barra ya está pegada arriba, se sube al principio del catálogo.
+        const catalogTop = document.getElementById("catalog").getBoundingClientRect().top;
+        if (catalogTop < 0) document.getElementById("catalog").scrollIntoView({ behavior: "smooth" });
+        renderTabs();
+        renderCatalogHeader();
+        await loadFacets({ size: F.size.value, color: F.color.value });
+        loadCatalog();
     }
 
     // ------- Tarjetas -------
@@ -289,7 +355,7 @@
 
             if (!catalog.length) {
                 grid.innerHTML = `<div class="md:col-span-2 lg:col-span-3 p-stack-lg text-center">
-                    <p class="font-label-mono text-label-mono text-on-surface-variant uppercase">${f.q || f.category || f.size || f.color || f.stock ? "Nada coincide con esos filtros." : "El catálogo está vacío por ahora."}</p>
+                    <p class="font-label-mono text-label-mono text-on-surface-variant uppercase">${hasFilters(f) ? "Nada coincide con esos filtros." : f.category ? "Aún no hay productos en esta categoría." : "El catálogo está vacío por ahora."}</p>
                 </div>`;
                 return;
             }
@@ -363,36 +429,6 @@
         }
     }
 
-    // ------- Joyas -------
-    const JEWELRY_CATEGORY = "joyas";
-    const JEWELRY_PREVIEW = 6;
-    async function loadJewelry() {
-        try {
-            const params = new URLSearchParams({ category: JEWELRY_CATEGORY, pageSize: JEWELRY_PREVIEW, sort: "latest" });
-            const { products, pagination } = await ntApi(`/shop?${params}`);
-            if (!products.length) return;
-            products.forEach((p) => productIndex.set(p.id, p));
-            const grid = document.getElementById("joyas-grid");
-            grid.innerHTML = products.map((p) => productCard(p)).join("");
-            wireCards(grid);
-            document.getElementById("joyas").classList.remove("hidden");
-            if (pagination.total > products.length) {
-                const all = document.getElementById("joyas-all");
-                all.textContent = `Ver todas (${pagination.total}) →`;
-                all.classList.remove("hidden");
-            }
-            // El enlace del menú (store.html#joyas) llega con la sección aún oculta.
-            if (window.location.hash === "#joyas") document.getElementById("joyas").scrollIntoView();
-        } catch {
-            /* la sección de joyas permanece oculta si la API falla */
-        }
-    }
-    document.getElementById("joyas-all").addEventListener("click", () => {
-        F.category.value = JEWELRY_CATEGORY;
-        loadCatalog();
-        document.getElementById("catalog-count").scrollIntoView({ behavior: "smooth", block: "center" });
-    });
-
     // ===================== Modal de detalle de producto =====================
     function mountProductModal() {
         const root = document.createElement("div");
@@ -428,24 +464,32 @@
     mountProductModal();
 
     const initial = filtersFromUrl();
+    activeCategory = initial.category;
     F.q.value = initial.q;
     F.stock.checked = initial.stock;
     F.sort.value = initial.sort;
+    renderTabs();
     loadFacets(initial).then(() => loadCatalog());
     loadDrops();
-    loadJewelry();
 
     let searchTimer = null;
     F.q.addEventListener("input", () => {
         clearTimeout(searchTimer);
         searchTimer = setTimeout(() => loadCatalog(), 300);
     });
-    [F.category, F.size, F.color, F.stock, F.sort].forEach((el) => el.addEventListener("change", () => loadCatalog()));
+    [F.size, F.color, F.stock, F.sort].forEach((el) => el.addEventListener("change", () => loadCatalog()));
+    // Quita búsqueda y filtros, pero se queda en la categoría elegida.
     document.getElementById("f-clear").addEventListener("click", () => {
-        F.q.value = ""; F.category.value = ""; F.size.value = ""; F.color.value = ""; F.stock.checked = false;
+        F.q.value = ""; F.size.value = ""; F.color.value = ""; F.stock.checked = false;
         loadCatalog();
     });
     document.getElementById("load-more").addEventListener("click", () => loadCatalog({ append: true }));
+    document.getElementById("f-toggle").addEventListener("click", (e) => {
+        const panel = document.getElementById("f-panel");
+        const open = panel.classList.toggle("hidden") === false;
+        panel.classList.toggle("flex", open);
+        e.currentTarget.setAttribute("aria-expanded", String(open));
+    });
 
     // Vuelta de Stripe (return_url): confirmación del pago
     const params = new URLSearchParams(window.location.search);
