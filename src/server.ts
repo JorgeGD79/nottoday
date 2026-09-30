@@ -2,6 +2,7 @@ import { buildApp } from "@/app";
 import { env } from "@/config/env";
 import { prisma } from "@/lib/prisma";
 import { redis } from "@/lib/redis";
+import { resumeNewsletterCampaigns } from "@/services/newsletter.service";
 
 async function main() {
   const app = await buildApp();
@@ -32,6 +33,8 @@ async function main() {
 
   try {
     await app.listen({ port: env.PORT, host: "0.0.0.0" });
+    // Una newsletter a medio enviar (reinicio, despliegue) continúa donde se quedó.
+    resumeNewsletterCampaigns().catch((err) => app.log.error({ err }, "No se pudieron reanudar las newsletters"));
   } catch (err) {
     app.log.error(err);
     process.exit(1);

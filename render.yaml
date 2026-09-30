@@ -53,6 +53,9 @@ services:
         value: "NOT TODAY <no-reply@nottoday.com>"
       - key: EMAIL_REPLY_TO
         sync: false
+      # Newsletters desde el panel: DESACTIVADAS (se redactan y previsualizan, no se envían).
+      - key: NEWSLETTER_SENDING_ENABLED
+        value: "false"
       # Datos fiscales del emisor para las facturas PDF (a mano en el dashboard).
       - key: COMPANY_NAME
         value: "NOT TODAY COLLECTIVE"

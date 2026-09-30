@@ -1,4 +1,5 @@
 import { env } from "@/config/env";
+import { renderNewsletterBodyHtml, renderNewsletterBodyText } from "@/services/newsletter-content";
 
 // ============================================================================
 // Plantillas de email transaccional. HTML con estilos inline (los clientes de
@@ -35,10 +36,12 @@ function button(href: string, label: string) {
   return `<a href="${escapeHtml(href)}" style="display:inline-block;background:${ACCENT};color:#050505;text-decoration:none;font-weight:bold;text-transform:uppercase;letter-spacing:1px;padding:14px 24px;font-family:Arial,sans-serif;font-size:13px;">${escapeHtml(label)}</a>`;
 }
 
-function layout(title: string, bodyHtml: string, footerHtml = "") {
+// preheader: texto que el cliente de correo enseña junto al asunto (oculto en el cuerpo).
+function layout(title: string, bodyHtml: string, footerHtml = "", preheader = "") {
   return `<!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title></head>
 <body style="margin:0;padding:0;background:#050505;">
+  ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;">${escapeHtml(preheader)}</div>` : ""}
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#050505;">
     <tr><td align="center" style="padding:32px 16px;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#131313;border:1px solid #353535;">
@@ -218,6 +221,11 @@ export function unsubscribeUrl(token: string) {
   return `${env.APP_URL}/newsletter.html?baja=${encodeURIComponent(token)}`;
 }
 
+/** Baja en un clic (RFC 8058) para la cabecera List-Unsubscribe-Post de Gmail/Yahoo. */
+export function oneClickUnsubscribeUrl(token: string) {
+  return `${env.APP_URL}/api/newsletter/one-click/${encodeURIComponent(token)}`;
+}
+
 export function newsletterWelcomeEmail(token: string) {
   const unsub = unsubscribeUrl(token);
   const html = layout(
@@ -309,5 +317,57 @@ export function abandonedCartEmail(cart: {
     subject: `Tu carrito te espera · ${BRAND}`,
     html,
     text: `Tu carrito sigue esperándote: ${url}`,
+  };
+}
+
+// --------------------------------------------------------------------------
+// Newsletter (campañas del panel)
+// --------------------------------------------------------------------------
+
+export interface NewsletterCampaignContent {
+  subject: string;
+  preheader?: string | null;
+  heading: string;
+  body: string;
+  imageUrl?: string | null;
+  ctaLabel?: string | null;
+  ctaUrl?: string | null;
+}
+
+/**
+ * Email de una campaña. `unsubscribeToken` es el del suscriptor destinatario;
+ * sin él (vista previa o correo de prueba) el enlace de baja lleva a la página
+ * de la newsletter y no se añaden las cabeceras List-Unsubscribe.
+ */
+export function newsletterCampaignEmail(campaign: NewsletterCampaignContent, unsubscribeToken: string | null) {
+  const unsub = unsubscribeToken ? unsubscribeUrl(unsubscribeToken) : `${env.APP_URL}/newsletter.html`;
+  const image = campaign.imageUrl
+    ? `<img src="${escapeHtml(campaign.imageUrl)}" alt="" width="504" style="display:block;width:100%;max-width:504px;height:auto;margin:0 0 20px;border:0;">`
+    : "";
+  const cta = campaign.ctaLabel && campaign.ctaUrl
+    ? `<p style="margin:24px 0 0;">${button(campaign.ctaUrl, campaign.ctaLabel)}</p>`
+    : "";
+  const html = layout(
+    campaign.heading,
+    `${image}${renderNewsletterBodyHtml(campaign.body)}${cta}`,
+    `Recibes este correo porque te suscribiste a la newsletter de ${BRAND} en ${escapeHtml(env.APP_URL.replace(/^https?:\/\//, ""))}. <a href="${escapeHtml(unsub)}" style="color:#8e9192;">Darme de baja</a>.`,
+    campaign.preheader ?? ""
+  );
+  const text = [
+    campaign.heading.toUpperCase(),
+    renderNewsletterBodyText(campaign.body),
+    campaign.ctaLabel && campaign.ctaUrl ? `${campaign.ctaLabel}: ${campaign.ctaUrl}` : "",
+    `Para darte de baja: ${unsub}`,
+  ].filter(Boolean).join("\n\n");
+  return {
+    subject: campaign.subject,
+    html,
+    text,
+    headers: unsubscribeToken
+      ? {
+          "List-Unsubscribe": `<${oneClickUnsubscribeUrl(unsubscribeToken)}>`,
+          "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+        }
+      : undefined,
   };
 }

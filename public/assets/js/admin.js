@@ -1593,10 +1593,255 @@ const Sections = {
     title: "Newsletter",
     icon: "alternate_email",
     adminOnly: true,
+    tab: "campaigns",
     page: 1,
     statusFilter: "ACTIVO",
+    items: [],
+    refreshTimer: null,
     async load() {
+      clearTimeout(this.refreshTimer);
       host().innerHTML = `<div class="nt-skeleton h-40"></div>`;
+      if (this.tab === "subscribers") await this.loadSubscribers();
+      else await this.loadCampaigns();
+      // Pestañas delante de las acciones de cada vista.
+      actionsHost().insertAdjacentHTML("afterbegin", `
+        <div class="flex border border-outline-variant/30 mr-2">
+          ${[["campaigns", "Campañas"], ["subscribers", "Suscriptores"]].map(([id, label]) => `
+            <button data-nl-tab="${id}" class="font-label-mono text-[12px] uppercase px-3 py-2 ${this.tab === id ? "bg-secondary-container text-primary-container" : "text-on-surface-variant hover:text-secondary"}">${label}</button>`).join("")}
+        </div>`);
+      actionsHost().querySelectorAll("[data-nl-tab]").forEach((btn) =>
+        btn.addEventListener("click", () => { this.tab = btn.dataset.nlTab; this.load(); }));
+    },
+    unload() {
+      clearTimeout(this.refreshTimer);
+    },
+
+    // ---------- Campañas ----------
+    async loadCampaigns() {
+      const { campaigns, activeSubscribers, sendingBlockedReason } = await adminApi("/admin/newsletter/campaigns");
+      this.items = campaigns;
+      this.blocked = sendingBlockedReason;
+      this.activeSubscribers = activeSubscribers;
+
+      actionsHost().innerHTML = `
+        <span class="font-label-mono text-[12px] text-secondary uppercase">${activeSubscribers} suscriptores activos</span>
+        ${newButton("+ Nueva campaña")}`;
+      document.getElementById("btn-new").addEventListener("click", () => this.campaignForm());
+
+      const STATUS_KIND = { BORRADOR: "muted", ENVIANDO: "warn", ENVIADA: "ok" };
+      const results = (c) => {
+        const d = c.deliveries;
+        if (c.status === "BORRADOR") return c.testSentAt ? `Prueba enviada ${fmtShortDate(c.testSentAt)}` : "—";
+        const done = d.ENVIADO + d.FALLIDO + d.OMITIDO;
+        return [
+          c.status === "ENVIANDO" ? `${done} / ${c.recipientCount} procesados` : `${d.ENVIADO} enviados`,
+          d.FALLIDO ? `<span class="text-error">${d.FALLIDO} fallidos</span>` : "",
+          d.OMITIDO ? `${d.OMITIDO} de baja` : "",
+        ].filter(Boolean).join(" · ");
+      };
+      const iconBtn = (attr, id, icon, title, extra = "") =>
+        `<button class="adm-icon-btn ${extra}" ${attr}="${id}" title="${title}"><span class="material-symbols-outlined text-[20px]">${icon}</span></button>`;
+      const sendDisabled = this.blocked ? `disabled title="${ntEscapeHtml(this.blocked)}"` : "";
+
+      const rows = campaigns.map((c) => `
+        <tr>
+          <td>
+            <span class="font-bold">${ntEscapeHtml(c.subject)}</span>
+            <span class="font-label-mono text-[11px] text-on-surface-variant block">${ntEscapeHtml(c.heading)}${c.createdBy ? ` · ${ntEscapeHtml(c.createdBy.name)}` : ""}</span>
+          </td>
+          <td>${badge(c.status, STATUS_KIND[c.status])}</td>
+          <td class="font-label-mono text-[12px] whitespace-nowrap">${fmtShortDate(c.sentAt || c.startedAt || c.createdAt)}</td>
+          <td class="font-label-mono text-[12px]">${results(c)}</td>
+          <td class="whitespace-nowrap text-right">
+            ${iconBtn("data-nl-preview", c.id, "visibility", "Vista previa")}
+            ${c.status === "BORRADOR" ? `
+              ${iconBtn("data-nl-edit", c.id, "edit", "Editar")}
+              <button class="adm-icon-btn" data-nl-test="${c.id}" ${sendDisabled || 'title="Enviarme una prueba"'}><span class="material-symbols-outlined text-[20px]">outgoing_mail</span></button>
+              <button class="adm-icon-btn" data-nl-send="${c.id}" ${sendDisabled || 'title="Enviar a todos los suscriptores"'}><span class="material-symbols-outlined text-[20px]">send</span></button>` : ""}
+            ${c.status === "ENVIANDO" ? `<button class="adm-icon-btn" data-nl-resume="${c.id}" ${sendDisabled || 'title="Reanudar envío"'}><span class="material-symbols-outlined text-[20px]">play_arrow</span></button>` : ""}
+            ${iconBtn("data-nl-duplicate", c.id, "content_copy", "Duplicar como borrador nuevo")}
+            ${c.status === "BORRADOR" ? iconBtn("data-nl-delete", c.id, "delete", "Eliminar borrador", "danger") : ""}
+          </td>
+        </tr>`);
+
+      host().innerHTML = (this.blocked ? `
+        <div class="border border-secondary/50 bg-secondary/5 p-4 mb-4 flex gap-3 items-start">
+          <span class="material-symbols-outlined text-secondary">mail_lock</span>
+          <div class="font-label-mono text-[12px] uppercase">
+            <p class="text-secondary">Envío desactivado</p>
+            <p class="text-on-surface-variant mt-1">${ntEscapeHtml(this.blocked)}. Puedes redactar, guardar y ver la vista previa; enviar (y las pruebas) quedará disponible al activarlo.</p>
+          </div>
+        </div>` : "") + renderTable(["Campaña", "Estado", "Fecha", "Resultado", ""], rows,
+        "Sin campañas. Crea la primera con “+ Nueva campaña”.");
+
+      const find = (id) => this.items.find((c) => c.id === id);
+      const on = (attr, fn) => host().querySelectorAll(`[${attr}]`).forEach((btn) =>
+        btn.addEventListener("click", () => fn(find(btn.getAttribute(attr)))));
+      on("data-nl-preview", (c) => this.preview(c));
+      on("data-nl-edit", (c) => this.campaignForm(c));
+      on("data-nl-test", (c) => this.sendTest(c));
+      on("data-nl-send", (c) => this.send(c));
+      on("data-nl-resume", (c) => this.campaignAction(c, "resume", "Envío reanudado"));
+      on("data-nl-duplicate", (c) => this.campaignAction(c, "duplicate", "Borrador duplicado"));
+      on("data-nl-delete", (c) => {
+        if (confirm(`¿Eliminar el borrador "${c.subject}"?`)) {
+          adminApi(`/admin/newsletter/campaigns/${c.id}`, { method: "DELETE" })
+            .then(() => { ntToast("Borrador eliminado"); this.load(); })
+            .catch((err) => ntToast(err.message, true));
+        }
+      });
+
+      // Mientras hay un envío en curso, se refresca el progreso.
+      if (campaigns.some((c) => c.status === "ENVIANDO") && !this.blocked) {
+        this.refreshTimer = setTimeout(() => { if (currentSection === "newsletter" && this.tab === "campaigns") this.load(); }, 5000);
+      }
+    },
+
+    async campaignAction(c, action, okMessage) {
+      try {
+        await adminApi(`/admin/newsletter/campaigns/${c.id}/${action}`, { method: "POST", body: "{}" });
+        ntToast(okMessage);
+      } catch (err) {
+        ntToast(err.message, true);
+      }
+      this.load();
+    },
+
+    async sendTest(c) {
+      try {
+        const { to } = await adminApi(`/admin/newsletter/campaigns/${c.id}/test`, { method: "POST", body: "{}" });
+        ntToast(`Prueba enviada a ${to}`);
+        this.load();
+      } catch (err) {
+        ntToast(err.message, true);
+      }
+    },
+
+    async send(c) {
+      const warning = c.testSentAt ? "" : "\n\nAún no has enviado ninguna prueba de esta campaña.";
+      if (!confirm(`¿Enviar "${c.subject}" a ${this.activeSubscribers} suscriptores?\n\nNo se puede deshacer ni editar después.${warning}`)) return;
+      try {
+        const { recipients } = await adminApi(`/admin/newsletter/campaigns/${c.id}/send`, { method: "POST", body: "{}" });
+        ntToast(`Enviando a ${recipients} suscriptores…`);
+      } catch (err) {
+        ntToast(err.message, true);
+      }
+      this.load();
+    },
+
+    // Contenido del editor (o de una campaña guardada) en el formato de la API.
+    payloadFrom(v, imageUrl) {
+      return {
+        subject: v.subject || "",
+        preheader: v.preheader || "",
+        heading: v.heading || "",
+        body: v.body || "",
+        imageUrl: imageUrl || "",
+        ctaLabel: v.ctaLabel || "",
+        ctaUrl: v.ctaUrl || "",
+      };
+    },
+
+    async preview(payload) {
+      try {
+        const { subject, html } = await adminApi("/admin/newsletter/campaigns/preview", {
+          method: "POST",
+          body: JSON.stringify(this.payloadFrom(payload, payload.imageUrl)),
+        });
+        let root = document.getElementById("nl-preview");
+        if (!root) {
+          root = document.createElement("div");
+          root.id = "nl-preview";
+          root.className = "fixed inset-0 z-[800] bg-primary-container/90 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto";
+          root.innerHTML = `
+            <div class="w-full max-w-[640px] my-8">
+              <div class="flex items-center justify-between gap-3 mb-3">
+                <p class="font-label-mono text-[12px] uppercase text-on-surface-variant truncate">Asunto: <span id="nl-preview-subject" class="text-on-surface"></span></p>
+                <button type="button" id="nl-preview-close" class="adm-icon-btn" title="Cerrar"><span class="material-symbols-outlined">close</span></button>
+              </div>
+              <div id="nl-preview-host"></div>
+            </div>`;
+          document.body.appendChild(root);
+          // Shadow DOM: el HTML del email se ve con sus estilos, aislado del panel.
+          root.querySelector("#nl-preview-host").attachShadow({ mode: "open" });
+          const close = () => root.classList.add("hidden");
+          root.querySelector("#nl-preview-close").addEventListener("click", close);
+          root.addEventListener("click", (e) => { if (e.target === root) close(); });
+          document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+        }
+        root.querySelector("#nl-preview-subject").textContent = subject;
+        root.querySelector("#nl-preview-host").shadowRoot.innerHTML = html;
+        root.classList.remove("hidden");
+      } catch (err) {
+        ntToast(err.message, true);
+      }
+    },
+
+    async insertUpcomingEvents(textarea) {
+      try {
+        const { events } = await ntApi("/events");
+        if (!events.length) { ntToast("No hay eventos próximos publicados", true); return; }
+        const fmt = (iso) => new Date(iso).toLocaleDateString("es-ES", { weekday: "short", day: "2-digit", month: "short" }).toUpperCase();
+        const lines = events.slice(0, 6).map((e) => {
+          const names = e.lineup.map((l) => l.artist.stageName).join(", ");
+          const link = e.tickets ? ` — [Entradas](${location.origin}/events.html#evento-${e.id})` : "";
+          return `- **${e.title}** · ${fmt(e.date)} · ${e.venue}${names ? ` · ${names}` : ""}${link}`;
+        });
+        const block = `## Próximas fechas\n\n${lines.join("\n")}`;
+        textarea.value = textarea.value.trim() ? `${textarea.value.trim()}\n\n${block}` : block;
+      } catch (err) {
+        ntToast(err.message, true);
+      }
+    },
+
+    campaignForm(c = null) {
+      const html = `
+        <fieldset class="border border-outline-variant/30 p-4 space-y-4">
+          <legend class="font-label-mono text-[12px] text-secondary uppercase px-2">Bandeja de entrada</legend>
+          ${fText("subject", "Asunto", c?.subject, { required: true, placeholder: "Lo que se ve en la bandeja de entrada" })}
+          ${fText("preheader", "Texto de vista previa (opcional)", c?.preheader, { placeholder: "Frase corta que acompaña al asunto" })}
+        </fieldset>
+        <fieldset class="border border-outline-variant/30 p-4 space-y-4">
+          <legend class="font-label-mono text-[12px] text-secondary uppercase px-2">Contenido</legend>
+          ${fText("heading", "Título", c?.heading, { required: true })}
+          ${ImageField.render("nl-image", "Imagen de cabecera (opcional)", c?.imageUrl ? [c.imageUrl] : [], false)}
+          <div>
+            <div class="flex items-center justify-between gap-2">
+              <label class="nt-label">Texto</label>
+              <button type="button" id="nl-insert-events" class="font-label-mono text-[11px] uppercase border border-outline-variant/30 px-2 py-1 text-on-surface-variant hover:border-secondary hover:text-secondary">+ Próximos eventos</button>
+            </div>
+            <textarea class="nt-input font-label-mono text-[13px]" name="body" rows="14" required>${ntEscapeHtml(c?.body ?? "")}</textarea>
+            <p class="font-label-mono text-[11px] text-on-surface-variant mt-1 leading-relaxed">
+              Línea en blanco = párrafo nuevo · <b>## Subtítulo</b> · <b>- elemento</b> de lista ·
+              <b>**negrita**</b> · <b>[texto](https://enlace)</b>
+            </p>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            ${fText("ctaLabel", "Botón: texto (opcional)", c?.ctaLabel, { placeholder: "Comprar entradas" })}
+            ${fText("ctaUrl", "Botón: enlace", c?.ctaUrl, { placeholder: "https://…" })}
+          </div>
+        </fieldset>
+        <button type="button" id="nl-preview-btn" class="w-full font-label-mono text-[12px] uppercase border border-secondary text-secondary px-3 py-2 hover:bg-secondary hover:text-primary-container transition-colors">
+          <span class="material-symbols-outlined text-[18px] align-middle mr-1">visibility</span>Vista previa
+        </button>`;
+
+      Drawer.open(c ? "Editar campaña" : "Nueva campaña", html, () => {
+        const payload = this.payloadFrom(drawerValues(), ImageField.get("nl-image")[0]);
+        return submitAndReload(
+          c ? adminApi(`/admin/newsletter/campaigns/${c.id}`, { method: "PUT", body: JSON.stringify(payload) })
+            : adminApi("/admin/newsletter/campaigns", { method: "POST", body: JSON.stringify(payload) }),
+          "newsletter", c ? "Campaña guardada" : "Borrador creado");
+      }, "Guardar borrador");
+
+      ImageField.wire("nl-image", false, "newsletter");
+      document.getElementById("nl-insert-events").addEventListener("click", () =>
+        this.insertUpcomingEvents(document.querySelector("#drawer-form [name=body]")));
+      document.getElementById("nl-preview-btn").addEventListener("click", () =>
+        this.preview({ ...drawerValues(), imageUrl: ImageField.get("nl-image")[0] }));
+    },
+
+    // ---------- Suscriptores ----------
+    async loadSubscribers() {
       const params = new URLSearchParams({ page: this.page, pageSize: 50 });
       if (this.statusFilter) params.set("status", this.statusFilter);
       const { subscribers, stats, pagination } = await adminApi(`/admin/newsletter?${params}`);

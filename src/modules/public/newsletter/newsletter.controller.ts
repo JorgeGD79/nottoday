@@ -70,9 +70,23 @@ const unsubscribeSchema = z.object({ token: z.string().trim().min(16).max(128) }
  */
 export async function unsubscribeHandler(request: FastifyRequest, reply: FastifyReply) {
   const { token } = unsubscribeSchema.parse(request.body);
-  await prisma.newsletterSubscriber.updateMany({
+  await unsubscribeByToken(token);
+  return reply.send({ ok: true });
+}
+
+/**
+ * POST /api/newsletter/one-click/:token — baja en un clic desde el propio
+ * cliente de correo (cabecera List-Unsubscribe-Post de las newsletters).
+ */
+export async function oneClickUnsubscribeHandler(request: FastifyRequest, reply: FastifyReply) {
+  const { token } = unsubscribeSchema.parse(request.params);
+  await unsubscribeByToken(token);
+  return reply.send({ ok: true });
+}
+
+function unsubscribeByToken(token: string) {
+  return prisma.newsletterSubscriber.updateMany({
     where: { unsubscribeToken: token, status: NewsletterStatus.ACTIVO },
     data: { status: NewsletterStatus.BAJA, unsubscribedAt: new Date() },
   });
-  return reply.send({ ok: true });
 }

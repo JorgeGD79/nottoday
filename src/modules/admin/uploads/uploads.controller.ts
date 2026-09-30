@@ -6,7 +6,7 @@ import { uploadAudio, uploadImage } from "@/services/upload.service";
 // Subcarpetas de Cloudinary por tipo de entidad, para que "nottoday" no quede
 // todo mezclado en un único folder. Si se pide un folder fuera de esta lista
 // (o no se pide ninguno), cae en "misc" en vez de fallar la subida.
-const IMAGE_FOLDERS = ["products", "artists", "events"] as const;
+const IMAGE_FOLDERS = ["products", "artists", "events", "newsletter"] as const;
 const uploadQuerySchema = z.object({
   folder: z.enum(IMAGE_FOLDERS).optional(),
 });

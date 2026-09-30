@@ -61,6 +61,14 @@ const envSchema = z
     // Buzón que recibe los avisos internos (bookings nuevos) y las respuestas.
     EMAIL_REPLY_TO: z.string().email().optional(),
 
+    // Envío de newsletters desde el panel (campañas y correos de prueba).
+    // Apagado por defecto e independiente de EMAILS_ENABLED: se pueden activar
+    // los emails de pedidos sin permitir envíos masivos. Con false, el panel deja
+    // redactar y previsualizar, pero no sale ningún correo de newsletter.
+    NEWSLETTER_SENDING_ENABLED: booleanFlag,
+    // Pausa entre correos de una campaña (Resend admite ~2 por segundo en el plan base).
+    NEWSLETTER_SEND_INTERVAL_MS: z.coerce.number().int().min(0).max(60_000).default(600),
+
     // Datos fiscales del emisor que aparecen en las facturas.
     COMPANY_NAME: z.string().default("NOT TODAY COLLECTIVE"),
     COMPANY_TAX_ID: z.string().default("[NIF PENDIENTE]"),
