@@ -15,7 +15,7 @@
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <script src="assets/js/tailwind.config.js?v=3"></script>
 <link href="assets/css/site.css?v=7" rel="stylesheet"/>
-<meta name="description" content="Tienda oficial de NOT TODAY: ropa, drops exclusivos y merch del colectivo."/>
+<meta name="description" content="Tienda oficial de NOT TODAY: ropa, joyas, drops exclusivos y merch del colectivo."/>
 <style>
     .nt-filter { background: transparent; border: 1px solid rgb(68 71 72); color: inherit; font-family: "JetBrains Mono", monospace; font-size: 12px; text-transform: uppercase; padding: 0.45rem 2rem 0.45rem 0.6rem; cursor: pointer; }
     .nt-filter:focus { outline: none; border-color: #ff8a00; box-shadow: none; }
@@ -42,6 +42,15 @@
             <span class="font-label-mono text-label-mono text-secondary-container uppercase">Limited — no restock</span>
         </div>
         <div class="nt-grid-lines grid-cols-1 md:grid-cols-2 lg:grid-cols-3" id="drops-grid"></div>
+    </section>
+
+    <!-- Joyas (productos de la categoría "joyas"; oculta si no hay ninguno) -->
+    <section id="joyas" class="hidden scroll-mt-[120px] px-margin-mobile md:px-margin-desktop py-stack-lg border-b border-outline-variant/20">
+        <div class="flex items-end justify-between border-b border-on-surface pb-stack-sm mb-stack-lg">
+            <h2 class="font-headline-xl text-headline-xl text-on-surface uppercase tracking-tighter">Joyas</h2>
+            <button id="joyas-all" class="hidden font-label-mono text-label-mono text-secondary-container uppercase hover:text-on-surface">Ver todas →</button>
+        </div>
+        <div class="nt-grid-lines grid-cols-1 md:grid-cols-2 lg:grid-cols-3" id="joyas-grid"></div>
     </section>
 
     <!-- Búsqueda y filtros (se reflejan en la URL: ?q=&categoria=&talla=&color=&stock=1&orden=) -->
@@ -354,6 +363,36 @@
         }
     }
 
+    // ------- Joyas -------
+    const JEWELRY_CATEGORY = "joyas";
+    const JEWELRY_PREVIEW = 6;
+    async function loadJewelry() {
+        try {
+            const params = new URLSearchParams({ category: JEWELRY_CATEGORY, pageSize: JEWELRY_PREVIEW, sort: "latest" });
+            const { products, pagination } = await ntApi(`/shop?${params}`);
+            if (!products.length) return;
+            products.forEach((p) => productIndex.set(p.id, p));
+            const grid = document.getElementById("joyas-grid");
+            grid.innerHTML = products.map((p) => productCard(p)).join("");
+            wireCards(grid);
+            document.getElementById("joyas").classList.remove("hidden");
+            if (pagination.total > products.length) {
+                const all = document.getElementById("joyas-all");
+                all.textContent = `Ver todas (${pagination.total}) →`;
+                all.classList.remove("hidden");
+            }
+            // El enlace del menú (store.html#joyas) llega con la sección aún oculta.
+            if (window.location.hash === "#joyas") document.getElementById("joyas").scrollIntoView();
+        } catch {
+            /* la sección de joyas permanece oculta si la API falla */
+        }
+    }
+    document.getElementById("joyas-all").addEventListener("click", () => {
+        F.category.value = JEWELRY_CATEGORY;
+        loadCatalog();
+        document.getElementById("catalog-count").scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+
     // ===================== Modal de detalle de producto =====================
     function mountProductModal() {
         const root = document.createElement("div");
@@ -394,6 +433,7 @@
     F.sort.value = initial.sort;
     loadFacets(initial).then(() => loadCatalog());
     loadDrops();
+    loadJewelry();
 
     let searchTimer = null;
     F.q.addEventListener("input", () => {
