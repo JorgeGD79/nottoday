@@ -12,24 +12,24 @@ const NTChrome = (() => {
   const LAB_ITEMS = [
     { label: "N-TY SESSION", href: "sessions.html" },
     { label: "N-TY RADIO", href: "radio.html" },
+    { label: "N-TY EVENTS", href: "events.html" },
   ];
   const SHOP_ITEMS = [
     { label: "N-TY CLOTHES", href: "store.html" },
     { label: "N-TY JEWELRY", href: "store.html?categoria=joyas" },
-    { label: "TICKETS", href: "tickets.html" },
+    { label: "N-TY TICKETS", href: "tickets.html" },
   ];
   const CONTACT_ITEMS = [
     { label: "COLABORACIONES", href: "booking.html" },
     { label: "SOBRE NOSOTROS", href: "about.html" },
     { label: "SERVICIOS", href: "services.html" },
   ];
-  const LAB_VIEWS = ["sessions", "radio"];
-  // Eventos va aparte de SHOP: en la tienda solo se compran los tickets.
+  // Eventos va en LAB, con Sessions y Radio; en SHOP solo se compra (tickets incluidos).
+  const LAB_VIEWS = ["sessions", "radio", "events"];
   const SHOP_VIEWS = ["store", "tickets"];
   const CONTACT_VIEWS = ["booking", "about", "services"];
 
   function activeGroup(active) {
-    if (active === "events") return "events";
     if (SHOP_VIEWS.includes(active)) return "shop";
     if (LAB_VIEWS.includes(active)) return "lab";
     if (CONTACT_VIEWS.includes(active)) return "contacto";
@@ -63,7 +63,6 @@ const NTChrome = (() => {
     const ag = activeGroup(active);
     const items = [
       navItemHtml("lab", "LAB", { activeGroup: ag, href: "sessions.html", children: LAB_ITEMS }),
-      navItemHtml("events", "EVENTOS", { activeGroup: ag, href: "events.html" }),
       navItemHtml("shop", "SHOP", { activeGroup: ag, href: "store.html", children: SHOP_ITEMS }),
       navItemHtml("news", "NEWSLETTER", { activeGroup: ag, href: "newsletter.html" }),
       navItemHtml("contacto", "CONTACTO", { activeGroup: ag, href: "booking.html", children: CONTACT_ITEMS }),
@@ -122,7 +121,6 @@ const NTChrome = (() => {
     const ag = activeGroup(active);
     const tabs = [
       { group: "lab", href: "sessions.html", icon: "science", label: "LAB" },
-      { group: "events", href: "events.html", icon: "event", label: "EVENTOS" },
       { group: "shop", href: "store.html", icon: "shopping_bag", label: "SHOP" },
       { group: "news", href: "newsletter.html", icon: "mail", label: "NEWSLETTER" },
       { group: "contacto", href: "booking.html", icon: "edit_calendar", label: "CONTACTO" },

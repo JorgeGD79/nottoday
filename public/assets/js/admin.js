@@ -422,8 +422,8 @@ const Sections = {
     variantRow(v = {}) {
       return `
         <div class="grid grid-cols-[1fr_1fr_80px_auto] gap-2 items-center" data-variant-row>
-          <input class="nt-input" data-v-size placeholder="Talla (M, 42, Única...)" value="${ntEscapeHtml(v.size || "")}"/>
-          <input class="nt-input" data-v-color placeholder="Color (opcional)" value="${ntEscapeHtml(v.color || "")}"/>
+          <input class="nt-input" data-v-size placeholder="Talla" title="Talla: M, 42, Única…" value="${ntEscapeHtml(v.size || "")}"/>
+          <input class="nt-input" data-v-color placeholder="Color" title="Color (opcional)" value="${ntEscapeHtml(v.color || "")}"/>
           <input class="nt-input text-center" data-v-stock type="number" min="0" placeholder="Stock" value="${v.stockAvailable ?? ""}"
             title="${v.stockReserved ? `${v.stockReserved} reservadas en pedidos pendientes` : ""}"/>
           <button type="button" class="adm-icon-btn danger" data-v-remove title="Quitar (se retira de la venta)"><span class="material-symbols-outlined text-[20px]">close</span></button>
@@ -1141,7 +1141,7 @@ const Sections = {
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div class="lg:col-span-5 space-y-4">
             <form id="checkin-form" class="flex gap-2" autocomplete="off">
-              <input id="checkin-code" class="nt-input font-label-mono" placeholder="Escanea o teclea el código" autofocus/>
+              <input id="checkin-code" class="nt-input font-label-mono" placeholder="Código de la entrada" title="Escanea el QR con un lector o teclea el código" autofocus/>
               <button class="bg-secondary-container text-primary-container font-headline-lg text-[16px] uppercase px-4 hover:bg-on-surface transition-colors" type="submit">Validar</button>
             </form>
             <button id="checkin-camera" type="button" class="w-full font-label-mono text-[12px] uppercase border border-outline-variant/30 px-3 py-2 text-on-surface-variant hover:border-secondary hover:text-secondary transition-colors">
@@ -1154,7 +1154,7 @@ const Sections = {
           </div>
           <div class="lg:col-span-7 space-y-4">
             <div class="grid grid-cols-3 gap-3" id="checkin-stats"></div>
-            <input id="checkin-search" class="nt-input" placeholder="Buscar por nombre, DNI, email o código" value="${ntEscapeHtml(this.query)}"/>
+            <input id="checkin-search" class="nt-input" placeholder="Nombre, DNI, email o código" value="${ntEscapeHtml(this.query)}"/>
             <div id="checkin-list" class="overflow-x-auto"><div class="nt-skeleton h-40"></div></div>
           </div>
         </div>`;
@@ -1398,7 +1398,7 @@ const Sections = {
       const zoneOpts = [["", "Cualquier país"], ...this.zones.map((z) => [z.id, z.name])];
       const html = `
         ${fText("name", "Nombre", m?.name, { required: true, placeholder: "Estándar 48/72h" })}
-        ${fText("description", "Descripción", m?.description, { placeholder: "Península. Entrega en 2-3 días laborables" })}
+        ${fText("description", "Descripción", m?.description, { placeholder: "Entrega en 2-3 días laborables" })}
         ${fSelect("zoneId", "Zona", zoneOpts, m?.zoneId || "")}
         <div class="grid grid-cols-2 gap-3">
           ${fText("price", "Precio base, 1er kg (EUR)", m?.price ?? "", { type: "number", step: "0.01", min: 0, required: true })}

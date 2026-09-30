@@ -127,11 +127,14 @@ const Checkout = {
       <fieldset class="space-y-3">
         <legend class="nt-label">${ntEscapeHtml(item.product.event.title)} · ${item.quantity} entrada${item.quantity === 1 ? "" : "s"}</legend>
         ${Array.from({ length: item.quantity }, (_, n) => `
-          <div class="grid grid-cols-1 sm:grid-cols-[1fr_180px] gap-2" data-attendee="${item.productVariantId}">
-            <input type="text" class="nt-input" data-attendee-name required minlength="2" maxlength="120"
-              placeholder="Asistente ${n + 1}: nombre y apellidos" aria-label="Asistente ${n + 1}: nombre y apellidos" autocomplete="${n === 0 ? "name" : "off"}"/>
-            <input type="text" class="nt-input font-label-mono uppercase" data-attendee-doc required maxlength="30"
-              placeholder="DNI / NIE / pasaporte" aria-label="Asistente ${n + 1}: DNI, NIE o pasaporte" autocomplete="off" autocapitalize="characters"/>
+          <div>
+            <span class="font-label-mono text-[10px] text-on-surface-variant uppercase tracking-widest">Asistente ${n + 1}</span>
+            <div class="grid grid-cols-1 sm:grid-cols-[1fr_230px] gap-2" data-attendee="${item.productVariantId}">
+              <input type="text" class="nt-input" data-attendee-name required minlength="2" maxlength="120"
+                placeholder="Nombre y apellidos" aria-label="Asistente ${n + 1}: nombre y apellidos" autocomplete="${n === 0 ? "name" : "off"}"/>
+              <input type="text" class="nt-input font-label-mono uppercase" data-attendee-doc required maxlength="30"
+                placeholder="DNI / NIE / pasaporte" aria-label="Asistente ${n + 1}: DNI, NIE o pasaporte" autocomplete="off" autocapitalize="characters"/>
+            </div>
           </div>`).join("")}
       </fieldset>`).join("");
     // Aviso del documento al salir del campo y al pagar (reportValidity).
