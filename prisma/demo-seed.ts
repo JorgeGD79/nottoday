@@ -150,8 +150,20 @@ const ARTISTS = [
   { key: "cianuro", name: "DÚO CIANURO", bio: "Industrial y EBM para bailar hasta el cierre. Vienen del circuito underground y editan en el sello del colectivo." },
   { key: "nebula", name: "NÉBULA SUR", bio: "Deep house y dub techno. Sets de apertura que construyen la noche desde abajo, sin prisa." },
   { key: "ozono", name: "OZONO FM", bio: "Selector de radio y coleccionista de vinilos. Conduce BLOQUE CERO en N-TY Radio cada semana." },
+  // Artistas reales de las N-TY Sessions publicadas en el canal de YouTube del
+  // colectivo: la bio solo recoge lo que dice el título del vídeo.
+  { key: "bigg3m", name: "BIGG3M", bio: "Protagonista de la N-TY Session Nº1: hip hop, R&B y reggaetón." },
+  { key: "undercarrot", name: "UNDERCARROT", bio: "Protagonista de la N-TY Session Nº2: funk, hip hop y R&B." },
+  { key: "mchardy", name: "MC HARDY", bio: "Protagonista de la N-TY Session Nº3: hip hop, R&B y underground." },
 ] as const;
 type ArtistKey = (typeof ARTISTS)[number]["key"];
+
+// N-TY Sessions reales del canal de YouTube de Not Today.
+const SESSIONS: { title: string; youtubeUrl: string; artist: ArtistKey; description: string; daysAgo: number }[] = [
+  { title: "N-TY Session Nº1", youtubeUrl: "https://www.youtube.com/watch?v=Zo2_ujkqSAU", artist: "bigg3m", description: "Hip hop, R&B y reggaetón.", daysAgo: 60 },
+  { title: "N-TY Session Nº2", youtubeUrl: "https://www.youtube.com/watch?v=QgkCGRQbe-U", artist: "undercarrot", description: "Funk, hip hop y R&B.", daysAgo: 35 },
+  { title: "N-TY Session Nº3", youtubeUrl: "https://www.youtube.com/watch?v=ITyjs9TqQHk", artist: "mchardy", description: "Hip hop, R&B y underground.", daysAgo: 10 },
+];
 
 const CATEGORIES = [
   { key: "camisetas", name: "Camisetas" },
@@ -280,6 +292,7 @@ async function resetDemo() {
   await prisma.discount.deleteMany({ where: { id: demo } });
   await prisma.product.deleteMany({ where: { id: demo } });
   await prisma.event.deleteMany({ where: { id: demo } });
+  await prisma.session.deleteMany({ where: { id: demo } });
   await prisma.artist.deleteMany({ where: { id: demo } });
   await prisma.shippingMethod.deleteMany({ where: { id: demo } });
   await prisma.shippingZone.deleteMany({ where: { id: demo } });
@@ -324,6 +337,20 @@ async function createDemo() {
     const id = `${DEMO_PREFIX}art${pad(i + 1)}`;
     await prisma.artist.create({ data: { id, stageName: a.name, bio: a.bio, images: image(`artist-${a.key}.svg`) } });
     artistId.set(a.key, id);
+  }
+
+  // --- N-TY Sessions ---
+  for (const [i, sess] of SESSIONS.entries()) {
+    await prisma.session.create({
+      data: {
+        id: `${DEMO_PREFIX}ses${pad(i + 1)}`,
+        title: sess.title,
+        youtubeUrl: sess.youtubeUrl,
+        description: sess.description,
+        artistId: artistId.get(sess.artist)!,
+        publishedAt: day(-sess.daysAgo, 19),
+      },
+    });
   }
 
   // --- Productos de tienda y drops ---
@@ -632,7 +659,7 @@ async function createDemo() {
     },
   });
 
-  console.log(`Demo creada: ${ARTISTS.length} artistas, ${PRODUCTS.length} productos, ${EVENTS.length} eventos, ${orderSeq} pedidos, ${ticketSeq} entradas, 28 suscriptores.`);
+  console.log(`Demo creada: ${ARTISTS.length} artistas, ${SESSIONS.length} sessions, ${PRODUCTS.length} productos, ${EVENTS.length} eventos, ${orderSeq} pedidos, ${ticketSeq} entradas, 28 suscriptores.`);
 }
 
 // ---------------------------------------------------------------------------
