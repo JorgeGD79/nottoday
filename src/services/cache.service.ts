@@ -49,6 +49,8 @@ export async function invalidateCatalogCache(): Promise<void> {
   await Promise.all([
     redis.del(CACHE_KEYS.drops),
     redis.del(CACHE_KEYS.tickets),
+    // La agenda lleva las entradas disponibles de cada evento.
+    redis.del(CACHE_KEYS.events),
     ...(keys.length ? [redis.del(...keys)] : []),
   ]);
 }

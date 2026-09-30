@@ -38,9 +38,13 @@ const baseFields = {
   seoDescription: z.string().trim().max(160),
   variants: z.array(variantSchema).max(100),
   dropMeta: dropMetaSchema,
-  // Solo aplica (y es obligatorio) para productType = TICKET_EVENTO: liga
-  // el ticket a su evento.
-  eventId: z.string().cuid(),
+};
+
+// Las entradas (TICKET_EVENTO) no se crean aquí: las genera el evento a partir
+// de su aforo (ver admin/events), para que aforo y stock no se desincronicen.
+const notTicket = {
+  message: "Las entradas se gestionan desde Eventos (precio y aforo del evento)",
+  path: ["productType"],
 };
 
 export const createProductSchema = z
@@ -58,20 +62,13 @@ export const createProductSchema = z
     seoDescription: baseFields.seoDescription.optional(),
     variants: baseFields.variants.min(1, "Debes indicar al menos una variante con su stock"),
     dropMeta: dropMetaSchema.optional(),
-    eventId: baseFields.eventId.optional(),
   })
+  .refine((data) => data.productType !== ProductType.TICKET_EVENTO, notTicket)
   .refine(
     (data) => data.productType !== ProductType.DROP_EXCLUSIVO || !!data.dropMeta,
     {
       message: "dropMeta (releaseAt) es obligatorio cuando productType es DROP_EXCLUSIVO",
       path: ["dropMeta"],
-    }
-  )
-  .refine(
-    (data) => data.productType !== ProductType.TICKET_EVENTO || !!data.eventId,
-    {
-      message: "eventId es obligatorio cuando productType es TICKET_EVENTO",
-      path: ["eventId"],
     }
   )
   .refine((data) => noDuplicateVariants(data.variants), {
@@ -87,6 +84,7 @@ export const updateProductSchema = z
     seoDescription: baseFields.seoDescription.optional(),
   })
   .partial()
+  .refine((data) => data.productType !== ProductType.TICKET_EVENTO, notTicket)
   .refine((data) => noDuplicateVariants(data.variants), {
     message: "No puede haber dos variantes con la misma talla y color",
     path: ["variants"],

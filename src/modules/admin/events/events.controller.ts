@@ -7,7 +7,7 @@ import {
   updateEventWithLineup,
 } from "./events.service";
 import { recordAuditLog } from "@/services/audit-log.service";
-import { invalidateEventsCache } from "@/services/cache.service";
+import { invalidateCatalogCache, invalidateEventsCache } from "@/services/cache.service";
 
 export async function listEventsHandler(_request: FastifyRequest, reply: FastifyReply) {
   const events = await listEventsAdmin();
@@ -17,16 +17,17 @@ export async function listEventsHandler(_request: FastifyRequest, reply: Fastify
 /**
  * POST /api/admin/events
  *
- * Programa una nueva fiesta y vincula de una sola vez a los artistas
- * invitados (line-up), validando que cada artista exista antes de crear
- * el evento. Registra la acción, incluyendo los nombres del cartel, en
- * la tabla de auditoría.
+ * Programa una nueva fiesta, vincula de una sola vez a los artistas
+ * invitados (line-up) y, si tiene aforo, pone sus entradas a la venta.
+ * Valida que cada artista exista antes de crear el evento. Registra la
+ * acción, incluyendo los nombres del cartel, en la tabla de auditoría.
  */
 export async function createEventHandler(request: FastifyRequest, reply: FastifyReply) {
   const input = createEventSchema.parse(request.body);
 
   const event = await createEventWithLineup(input);
-  await invalidateEventsCache();
+  // El evento arrastra su producto-entrada: se invalida también /api/tickets.
+  await Promise.all([invalidateEventsCache(), invalidateCatalogCache()]);
 
   const lineupNames = event.lineup.map((l) => l.artist.stageName).join(", ") || "sin line-up";
 
@@ -49,7 +50,8 @@ export async function updateEventHandler(request: FastifyRequest, reply: Fastify
   const input = updateEventSchema.parse(request.body);
 
   const event = await updateEventWithLineup(id, input);
-  await invalidateEventsCache();
+  // El evento arrastra su producto-entrada: se invalida también /api/tickets.
+  await Promise.all([invalidateEventsCache(), invalidateCatalogCache()]);
 
   await recordAuditLog({
     userId: request.user.id,
@@ -65,7 +67,8 @@ export async function deleteEventHandler(request: FastifyRequest, reply: Fastify
   const { id } = eventIdParamsSchema.parse(request.params);
 
   await deleteEvent(id);
-  await invalidateEventsCache();
+  // El evento arrastra su producto-entrada: se invalida también /api/tickets.
+  await Promise.all([invalidateEventsCache(), invalidateCatalogCache()]);
 
   await recordAuditLog({
     userId: request.user.id,

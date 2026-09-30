@@ -1,4 +1,4 @@
-import { Prisma, CartStatus, OrderStatus, ProductType } from "@prisma/client";
+import { Prisma, CartStatus, OrderStatus, ProductStatus, ProductType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { env } from "@/config/env";
 import { AppError } from "@/utils/AppError";
@@ -52,10 +52,14 @@ export async function checkout(input: CheckoutInput) {
   if (cart.items.length === 0) throw new AppError("El carrito está vacío", 422);
   if (cart.status === CartStatus.CONVERTIDO) throw AppError.conflict("Este carrito ya fue procesado");
 
-  // Gate autoritativo: ningún item puede ser un drop cerrado ni una variante
-  // retirada, aunque se haya saltado el frontend y el add-to-cart.
+  // Gate autoritativo: ningún item puede ser un drop cerrado, un producto en
+  // BORRADOR ni una variante retirada, aunque se haya saltado el frontend y el
+  // add-to-cart (o el producto se retirara después de añadirlo).
   for (const item of cart.items) {
     assertDropPurchasable(item.product);
+    if (item.product.status === ProductStatus.BORRADOR) {
+      throw new AppError(`"${item.product.name}" ya no está a la venta`, 422);
+    }
     if (!item.productVariant.active) {
       throw new AppError(`"${item.product.name}" (${variantLabel(item.productVariant)}) ya no está a la venta`, 422);
     }

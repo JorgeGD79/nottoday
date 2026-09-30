@@ -96,7 +96,7 @@ async function productPage(request: FastifyRequest<{ Params: { slug: string } }>
 
 const STATIC_PAGES = [
   "", "store.html", "tickets.html", "artists.html", "sessions.html", "radio.html",
-  "projects.html", "services.html", "about.html", "booking.html", "newsletter.html",
+  "events.html", "services.html", "about.html", "booking.html", "newsletter.html",
 ];
 
 async function sitemap(_request: FastifyRequest, reply: FastifyReply) {

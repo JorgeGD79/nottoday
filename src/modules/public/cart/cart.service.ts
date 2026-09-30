@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { AppError } from "@/utils/AppError";
-import { CartStatus } from "@prisma/client";
+import { CartStatus, ProductStatus } from "@prisma/client";
 import { validateAndPriceDiscount } from "@/services/discount.service";
 import { assertDropPurchasable } from "@/services/drop.service";
 import { quoteCart } from "@/services/pricing.service";
@@ -39,9 +39,11 @@ export async function addItemToCart(input: {
     throw AppError.notFound("Variante de producto");
   }
 
-  // No se puede añadir un drop que aún no está abierto (gate de servidor),
-  // ni una variante retirada del catálogo.
+  // No se puede añadir un drop que aún no está abierto (gate de servidor), un
+  // producto en BORRADOR (p. ej. entradas de un evento no publicado o sin
+  // aforo), ni una variante retirada del catálogo.
   assertDropPurchasable(variant.product);
+  if (variant.product.status === ProductStatus.BORRADOR) throw new AppError("Este producto no está a la venta", 422);
   if (!variant.active) throw new AppError("Esa variante ya no está a la venta", 422);
 
   // Comprobación "optimista" de stock a nivel de carrito. La verdad definitiva

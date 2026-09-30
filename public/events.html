@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html class="dark" lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>NOT TODAY - Eventos</title>
+<link href="favicon.jpg" rel="icon" type="image/jpeg"/>
+<link href="favicon.jpg" rel="apple-touch-icon"/>
+<link href="manifest.webmanifest" rel="manifest"/>
+<meta content="#131313" name="theme-color"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="assets/js/tailwind.config.js?v=3"></script>
+<link href="assets/css/site.css?v=7" rel="stylesheet"/>
+<meta name="description" content="Agenda de NOT TODAY: próximas fiestas, line-ups y entradas, y el archivo de eventos pasados."/>
+</head>
+<body class="antialiased min-h-screen pb-28 md:pb-0">
+
+<main class="w-full max-w-[1440px] mx-auto px-margin-mobile md:px-margin-desktop pt-[140px] pb-[100px] flex flex-col gap-margin-desktop">
+    <!-- Header -->
+    <header class="flex flex-col gap-stack-md border-b border-outline-variant/20 pb-stack-lg">
+        <span class="font-label-mono text-[11px] text-secondary-container uppercase tracking-[0.18em]">Live &amp; Archive</span>
+        <h1 class="font-display-lg text-display-lg uppercase text-on-surface max-w-4xl tracking-tighter leading-none mt-2">
+            Eventos
+        </h1>
+        <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mt-4">
+            Próximas fechas, line-ups y entradas. Aforo limitado en cada show: cuando se acaba, se acaba.
+        </p>
+    </header>
+
+    <!-- Evento destacado: el más próximo, o el elegido en la lista / #evento-<id> -->
+    <section id="featured" aria-live="polite">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+            <div class="nt-skeleton md:col-span-5 aspect-[4/5]"></div>
+            <div class="nt-skeleton md:col-span-7 h-[420px]"></div>
+        </div>
+    </section>
+
+    <!-- Resto de próximas fechas -->
+    <section id="upcoming" class="hidden flex flex-col gap-stack-lg">
+        <div class="flex items-end justify-between border-b border-on-surface pb-stack-sm">
+            <h2 class="font-headline-xl text-headline-xl text-on-surface uppercase tracking-tighter">Próximas fechas</h2>
+            <span class="font-label-mono text-label-mono text-on-surface-variant uppercase" id="upcoming-count"></span>
+        </div>
+        <ol class="flex flex-col border-t border-outline-variant/20" id="upcoming-list"></ol>
+    </section>
+
+    <!-- Archivo: eventos ya celebrados -->
+    <section id="archive" class="hidden flex flex-col gap-stack-lg">
+        <div class="flex items-end justify-between border-b border-on-surface pb-stack-sm">
+            <h2 class="font-headline-xl text-headline-xl text-on-surface uppercase tracking-tighter">Archivo</h2>
+            <span class="font-label-mono text-label-mono text-on-surface-variant uppercase">Lo que ya pasó</span>
+        </div>
+        <div class="nt-grid-lines grid-cols-2 md:grid-cols-3 lg:grid-cols-4" id="archive-grid"></div>
+    </section>
+
+    <!-- Marca -->
+    <section class="w-full flex justify-center py-margin-desktop border-t border-outline-variant/20">
+        <span class="font-display-lg text-[64px] md:text-[120px] text-surface-variant uppercase leading-none tracking-tighter mix-blend-lighten grayscale hover:grayscale-0 hover:text-secondary-container transition-all duration-500 select-none">
+            NOT TODAY
+        </span>
+    </section>
+</main>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/chrome.js"></script>
+<script>NTChrome.mount({ active: "events" });</script>
+<script src="assets/js/cart.js"></script>
+<script>
+    const MAX_TICKETS_PER_ADD = 10;
+    let upcoming = [];
+    let selectedId = null;
+    let qty = 1;
+
+    // ------- Formato -------
+    const dateParts = (iso) => {
+        const d = new Date(iso);
+        return {
+            day: d.toLocaleDateString("es-ES", { day: "2-digit" }),
+            month: d.toLocaleDateString("es-ES", { month: "short" }).replace(".", "").toUpperCase(),
+            weekday: d.toLocaleDateString("es-ES", { weekday: "long" }).toUpperCase(),
+            year: d.getFullYear(),
+            time: d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }),
+        };
+    };
+    const poster = (ev) => ev.posterUrl || ntPlaceholderImage(ev.title);
+    const lineupNames = (ev) => ev.lineup.map((l) => l.artist.stageName);
+
+    // Estado de venta de un evento próximo.
+    function ticketState(ev) {
+        if (ev.tickets) return ev.tickets.available > 0 ? "on-sale" : "sold-out";
+        return Number(ev.price) > 0 ? "no-online" : "free";
+    }
+    const STATE_LABEL = {
+        "on-sale": "Entradas a la venta",
+        "sold-out": "Agotado",
+        "no-online": "Entradas próximamente",
+        free: "Entrada libre",
+    };
+
+    // ------- Evento destacado -------
+    function lineupHtml(ev) {
+        if (!ev.lineup.length) {
+            return `<p class="font-label-mono text-label-mono text-on-surface-variant uppercase">Line-up por anunciar</p>`;
+        }
+        return `<ul class="flex flex-col gap-1">${ev.lineup.map((l, i) => `
+            <li class="flex items-baseline justify-between gap-4 border-b border-outline-variant/20 py-2">
+                <span class="${i === 0 ? "font-headline-lg text-[28px]" : "font-headline-lg text-[20px] text-on-surface-variant"} uppercase leading-none">${ntEscapeHtml(l.artist.stageName)}</span>
+                ${l.setTime ? `<span class="font-label-mono text-[12px] text-on-surface-variant">${dateParts(l.setTime).time}</span>` : ""}
+            </li>`).join("")}</ul>`;
+    }
+
+    function ticketBoxHtml(ev) {
+        const state = ticketState(ev);
+        if (state !== "on-sale") {
+            return `
+            <div class="border border-outline-variant/40 p-stack-md flex items-center justify-between gap-4">
+                <span class="font-headline-lg text-headline-lg-mobile uppercase ${state === "sold-out" ? "text-error" : "text-on-surface"}">${STATE_LABEL[state]}</span>
+                ${Number(ev.price) > 0 ? `<span class="font-label-mono text-label-mono text-secondary-container">${ntFormatMoney(ev.price)}</span>` : ""}
+            </div>`;
+        }
+        const max = Math.min(MAX_TICKETS_PER_ADD, ev.tickets.available);
+        return `
+        <div class="border border-secondary-container/60 p-stack-md flex flex-col gap-stack-sm">
+            <div class="flex items-baseline justify-between gap-4">
+                <span class="font-label-mono text-[11px] text-on-surface-variant uppercase tracking-widest">Entrada general</span>
+                <span class="font-headline-lg text-[28px] text-secondary-container leading-none">${ntFormatMoney(ev.tickets.price)}</span>
+            </div>
+            <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center border border-outline-variant/40">
+                    <button type="button" data-qty="-1" class="w-10 h-10 flex items-center justify-center hover:text-secondary-container" aria-label="Menos">
+                        <span class="material-symbols-outlined text-[18px]">remove</span>
+                    </button>
+                    <span class="w-10 text-center font-label-mono text-[14px]" id="qty-value">${Math.min(qty, max)}</span>
+                    <button type="button" data-qty="1" class="w-10 h-10 flex items-center justify-center hover:text-secondary-container" aria-label="Más">
+                        <span class="material-symbols-outlined text-[18px]">add</span>
+                    </button>
+                </div>
+                <span class="font-label-mono text-[11px] uppercase ${ev.tickets.available <= 20 ? "text-secondary-container" : "text-on-surface-variant"}">
+                    ${ev.tickets.available <= 20 ? `Últimas ${ev.tickets.available}` : `${ev.tickets.available} disponibles`}
+                </span>
+            </div>
+            <button type="button" id="buy-btn"
+                class="w-full bg-secondary-container text-on-secondary font-headline-lg text-headline-lg-mobile uppercase py-3 hover:bg-on-surface hover:text-primary-container transition-colors disabled:opacity-40">
+                Comprar entradas
+            </button>
+            <p class="font-label-mono text-[11px] text-on-surface-variant uppercase">Entrada nominal con QR, por email tras el pago. Sin reventa.</p>
+        </div>`;
+    }
+
+    function renderFeatured(ev) {
+        const d = dateParts(ev.date);
+        const section = document.getElementById("featured");
+        section.innerHTML = `
+        <article id="evento-${ev.id}" class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+            <div class="md:col-span-5 relative aspect-[4/5] bg-primary-container overflow-hidden border border-outline-variant/20">
+                <img src="${poster(ev)}" alt="Cartel de ${ntEscapeHtml(ev.title)}" class="w-full h-full object-cover"/>
+                <span class="absolute top-3 left-3 bg-secondary-container text-on-secondary px-2 py-1 font-label-mono text-[11px] uppercase font-bold">
+                    ${ev.id === upcoming[0].id ? "Próximo evento" : "Evento"}
+                </span>
+            </div>
+            <div class="md:col-span-7 flex flex-col gap-stack-md">
+                <div class="flex items-stretch gap-stack-md border-b border-outline-variant/20 pb-stack-md">
+                    <div class="flex flex-col items-center justify-center border border-on-surface px-4 py-2 min-w-[92px]">
+                        <span class="font-display-lg text-[48px] leading-none">${d.day}</span>
+                        <span class="font-label-mono text-[12px] uppercase tracking-widest">${d.month}</span>
+                    </div>
+                    <div class="flex flex-col justify-center gap-1">
+                        <span class="font-label-mono text-[12px] text-secondary-container uppercase tracking-widest">${d.weekday} · ${d.time} H</span>
+                        <span class="flex items-center gap-1 font-label-mono text-label-mono text-on-surface uppercase">
+                            <span class="material-symbols-outlined text-[18px]">location_on</span>${ntEscapeHtml(ev.venue)}
+                        </span>
+                    </div>
+                </div>
+                <h2 class="font-headline-xl text-[40px] md:text-[64px] text-on-surface uppercase tracking-tight leading-none">${ntEscapeHtml(ev.title)}</h2>
+                ${ev.description ? `<p class="font-body-md text-on-surface-variant whitespace-pre-line max-w-2xl">${ntEscapeHtml(ev.description)}</p>` : ""}
+                <div class="flex flex-col gap-stack-sm">
+                    <span class="font-label-mono text-[11px] text-on-surface-variant uppercase tracking-[0.18em]">Line-up</span>
+                    ${lineupHtml(ev)}
+                </div>
+                <div class="mt-auto">${ticketBoxHtml(ev)}</div>
+            </div>
+        </article>`;
+        wireTicketBox(ev);
+    }
+
+    function wireTicketBox(ev) {
+        const btn = document.getElementById("buy-btn");
+        if (!btn) return;
+        const max = Math.min(MAX_TICKETS_PER_ADD, ev.tickets.available);
+        qty = Math.max(1, Math.min(qty, max));
+        document.querySelectorAll("[data-qty]").forEach((b) => b.addEventListener("click", () => {
+            qty = Math.max(1, Math.min(max, qty + Number(b.dataset.qty)));
+            document.getElementById("qty-value").textContent = qty;
+        }));
+        btn.addEventListener("click", async () => {
+            btn.disabled = true;
+            try {
+                await NTCart.add({ productId: ev.tickets.productId, productVariantId: ev.tickets.variantId, quantity: qty });
+                ntToast(qty === 1 ? "Entrada añadida al carrito" : `${qty} entradas añadidas al carrito`);
+            } catch (err) {
+                ntToast(err.message, true);
+            } finally {
+                btn.disabled = false;
+            }
+        });
+    }
+
+    // ------- Próximas fechas (lista; al elegir una pasa a destacado) -------
+    function upcomingRow(ev) {
+        const d = dateParts(ev.date);
+        const state = ticketState(ev);
+        const names = lineupNames(ev);
+        return `
+        <li>
+            <button type="button" data-select="${ev.id}" class="w-full text-left grid grid-cols-[72px_1fr] md:grid-cols-[96px_1fr_auto] gap-stack-md items-center py-stack-md border-b border-outline-variant/20 group hover:bg-surface-container transition-colors ${ev.id === selectedId ? "bg-surface-container" : ""}">
+                <span class="flex flex-col items-center">
+                    <span class="font-display-lg text-[32px] md:text-[40px] leading-none">${d.day}</span>
+                    <span class="font-label-mono text-[11px] uppercase tracking-widest text-on-surface-variant">${d.month} ${d.year}</span>
+                </span>
+                <span class="flex flex-col gap-1 min-w-0">
+                    <span class="font-headline-lg text-[22px] md:text-[28px] uppercase leading-none group-hover:text-secondary-container transition-colors">${ntEscapeHtml(ev.title)}</span>
+                    <span class="font-label-mono text-[12px] text-on-surface-variant uppercase">${d.weekday} · ${d.time} H · ${ntEscapeHtml(ev.venue)}</span>
+                    <span class="font-label-mono text-[12px] text-on-surface-variant uppercase truncate">${names.length ? ntEscapeHtml(names.join(" · ")) : "Line-up por anunciar"}</span>
+                </span>
+                <span class="col-start-2 md:col-start-auto flex md:flex-col items-center md:items-end gap-2 md:gap-1">
+                    ${Number(ev.price) > 0 ? `<span class="font-label-mono text-label-mono text-secondary-container">${ntFormatMoney(ev.price)}</span>` : ""}
+                    <span class="font-label-mono text-[10px] tracking-widest px-2 py-1 border uppercase whitespace-nowrap ${state === "on-sale" ? "border-secondary-container text-secondary-container" : "border-outline text-outline"}">${STATE_LABEL[state]}</span>
+                </span>
+            </button>
+        </li>`;
+    }
+
+    function renderUpcoming() {
+        const others = upcoming.filter((ev) => ev.id !== selectedId);
+        document.getElementById("upcoming").classList.toggle("hidden", !others.length);
+        document.getElementById("upcoming-count").textContent = `${upcoming.length} fecha${upcoming.length === 1 ? "" : "s"}`;
+        const list = document.getElementById("upcoming-list");
+        list.innerHTML = others.map(upcomingRow).join("");
+        list.querySelectorAll("[data-select]").forEach((b) => b.addEventListener("click", () => {
+            select(b.dataset.select);
+            history.replaceState(null, "", `#evento-${b.dataset.select}`);
+            document.getElementById("featured").scrollIntoView({ behavior: "smooth", block: "start" });
+        }));
+    }
+
+    function select(id) {
+        const ev = upcoming.find((e) => e.id === id) || upcoming[0];
+        if (ev.id !== selectedId) qty = 1;
+        selectedId = ev.id;
+        renderFeatured(ev);
+        renderUpcoming();
+    }
+
+    // ------- Archivo -------
+    function archiveCard(ev) {
+        const d = dateParts(ev.date);
+        const names = lineupNames(ev);
+        return `
+        <article id="evento-${ev.id}" class="group relative aspect-square bg-primary-container overflow-hidden">
+            <img src="${poster(ev)}" alt="" loading="lazy" class="absolute inset-0 w-full h-full object-cover opacity-50 grayscale group-hover:grayscale-0 group-hover:opacity-90 transition-all duration-500"/>
+            <div class="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent"></div>
+            <div class="absolute bottom-0 left-0 right-0 p-stack-md flex flex-col gap-1">
+                <span class="font-label-mono text-[11px] text-secondary-container uppercase">${d.day} ${d.month} ${d.year}</span>
+                <h3 class="font-headline-lg text-[18px] md:text-[22px] leading-none text-on-surface uppercase tracking-tight">${ntEscapeHtml(ev.title)}</h3>
+                <p class="font-label-mono text-[11px] text-on-surface-variant uppercase truncate">${ntEscapeHtml(ev.venue)}${names.length ? ` · ${ntEscapeHtml(names.join(" · "))}` : ""}</p>
+            </div>
+        </article>`;
+    }
+
+    // ------- Arranque -------
+    async function loadEvents() {
+        const featured = document.getElementById("featured");
+        try {
+            const { events, past } = await ntApi("/events");
+            upcoming = events;
+
+            if (upcoming.length) {
+                const fromHash = window.location.hash.replace("#evento-", "");
+                select(upcoming.some((e) => e.id === fromHash) ? fromHash : upcoming[0].id);
+            } else {
+                featured.innerHTML = `
+                <div class="border border-outline-variant/20 p-stack-lg flex flex-col items-center justify-center gap-stack-sm min-h-[240px] text-center">
+                    <p class="font-headline-lg text-headline-lg-mobile uppercase">Nada programado todavía</p>
+                    <p class="font-label-mono text-label-mono text-on-surface-variant uppercase">Suscríbete a la <a href="newsletter.html" class="text-secondary-container hover:text-on-surface">newsletter</a> y te avisamos de la próxima.</p>
+                </div>`;
+            }
+
+            if (past && past.length) {
+                document.getElementById("archive").classList.remove("hidden");
+                document.getElementById("archive-grid").innerHTML = past.map(archiveCard).join("");
+                // Enlace directo a un evento pasado: ir a su tarjeta del archivo.
+                const target = window.location.hash && document.getElementById(window.location.hash.slice(1));
+                if (target && target.closest("#archive")) target.scrollIntoView({ block: "center" });
+            }
+        } catch (err) {
+            featured.innerHTML = `<div class="border border-error/40 p-stack-lg text-center">
+                <p class="font-label-mono text-label-mono text-error uppercase">${ntEscapeHtml(err.message)}</p>
+            </div>`;
+        }
+    }
+
+    loadEvents();
+</script>
+</body>
+</html>

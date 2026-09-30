@@ -4,7 +4,7 @@ import { z } from "zod";
 import { AppError } from "@/utils/AppError";
 import { TICKET_CODE_REGEX } from "@/services/ticket.service";
 import { prisma } from "@/lib/prisma";
-import { ProductStatus, ProductType } from "@prisma/client";
+import { EventStatus, ProductStatus, ProductType } from "@prisma/client";
 import { CACHE_KEYS, CACHE_TTL_SECONDS, getCached, setCached } from "@/services/cache.service";
 
 /**
@@ -12,7 +12,8 @@ import { CACHE_KEYS, CACHE_TTL_SECONDS, getCached, setCached } from "@/services/
  *
  * Tickets de evento: son Product (productType TICKET_EVENTO, status ACTIVO)
  * ligados 1:1 a un Event, con una única variante GENERAL cuyo stockAvailable
- * es el aforo. Reutiliza el mismo Cart/Checkout/Stripe que la tienda — este
+ * es el aforo que queda (lo gestiona el evento). Reutiliza el mismo
+ * Cart/Checkout/Stripe que la tienda — este
  * endpoint solo expone el catálogo, igual que /api/shop y /api/drops.
  */
 export async function listTicketsHandler(_request: FastifyRequest, reply: FastifyReply) {
@@ -21,8 +22,14 @@ export async function listTicketsHandler(_request: FastifyRequest, reply: Fastif
     return reply.header("X-Cache", "HIT").send(cached);
   }
 
+  // Solo eventos publicados que no han pasado (margen de 12 h, como la agenda).
+  const cutoff = new Date(Date.now() - 12 * 60 * 60 * 1000);
   const tickets = await prisma.product.findMany({
-    where: { productType: ProductType.TICKET_EVENTO, status: ProductStatus.ACTIVO },
+    where: {
+      productType: ProductType.TICKET_EVENTO,
+      status: ProductStatus.ACTIVO,
+      event: { status: EventStatus.PUBLICADO, date: { gte: cutoff } },
+    },
     include: {
       variants: { select: { id: true, size: true, stockAvailable: true } },
       event: { select: { id: true, title: true, date: true, venue: true, posterUrl: true, status: true } },

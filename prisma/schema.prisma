@@ -154,6 +154,9 @@ model Event {
   description String?     @db.Text
   posterUrl   String?
   price       Decimal     @default(0) @db.Decimal(10, 2)
+  // Aforo total. Con aforo (y precio) el evento vende entradas: al guardarlo se
+  // crea/actualiza su producto TICKET_EVENTO, cuyo stock es aforo - vendidas.
+  capacity    Int?
   status      EventStatus @default(BORRADOR)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt

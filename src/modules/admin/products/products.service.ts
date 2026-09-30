@@ -56,7 +56,6 @@ export async function createProductWithInventory(input: CreateProductInput) {
         categoryId: input.categoryId ?? null,
         seoTitle: input.seoTitle || null,
         seoDescription: input.seoDescription || null,
-        eventId: input.eventId,
         variants: {
           create: input.variants.map((v, idx) => ({
             size: v.size,
@@ -101,6 +100,9 @@ export async function updateProductWithInventory(productId: string, input: Updat
   if (!existing) {
     throw AppError.notFound("Producto");
   }
+  if (existing.productType === ProductType.TICKET_EVENTO) {
+    throw new AppError("Las entradas se gestionan desde Eventos (precio y aforo del evento)", 422);
+  }
 
   const restocked: string[] = [];
 
@@ -124,7 +126,6 @@ export async function updateProductWithInventory(productId: string, input: Updat
         categoryId: input.categoryId,
         seoTitle: input.seoTitle === undefined ? undefined : input.seoTitle || null,
         seoDescription: input.seoDescription === undefined ? undefined : input.seoDescription || null,
-        eventId: input.eventId,
       },
     });
 

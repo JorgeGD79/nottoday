@@ -344,12 +344,6 @@ async function artistOptions() {
   return artists.map((a) => [a.id, a.stageName]);
 }
 
-// Eventos para el selector del producto TICKET_EVENTO.
-async function eventOptions() {
-  const { events } = await adminApi("/admin/events");
-  return events.map((e) => [e.id, `${e.title} (${fmtShortDate(e.date)})`]);
-}
-
 // ============================================================
 // SECCIONES
 // ============================================================
@@ -414,7 +408,15 @@ const Sections = {
         : "") + renderTable(
         ["Nombre", "Precio", "Tipo", "Estado", "Stock por variante", "Avisos", "Drop", ""],
         rows, "Sin productos. Crea el primero.");
-      wireRowActions(this.items, (p) => this.form(p), (p) =>
+      wireRowActions(this.items, (p) => {
+        // Las entradas se generan desde el evento (precio y aforo): se edita allí.
+        if (p.productType === "TICKET_EVENTO" && p.eventId) {
+          Sections.events.pendingEditId = p.eventId;
+          window.location.hash = "events";
+          return;
+        }
+        this.form(p);
+      }, (p) =>
         submitAndReload(adminApi(`/admin/products/${p.id}`, { method: "DELETE" }), "products", "Producto eliminado"));
     },
     variantRow(v = {}) {
@@ -428,10 +430,8 @@ const Sections = {
         </div>`;
     },
     async form(p = null) {
-      const isTicket = p?.productType === "TICKET_EVENTO";
-      const [events, categories] = await Promise.all([eventOptions(), categoryOptions()]);
-      const activeVariants = p ? p.variants.filter((v) => v.active && v.size !== "GENERAL") : [];
-      const generalStock = p?.variants.find((v) => v.size === "GENERAL")?.stockAvailable ?? "";
+      const categories = await categoryOptions();
+      const activeVariants = p ? p.variants.filter((v) => v.active) : [];
       const html = `
         ${fText("name", "Nombre", p?.name, { required: true })}
         ${fSelect("categoryId", "Categoría", [["", "— Sin categoría —"], ...categories], p?.categoryId || "")}
@@ -442,9 +442,10 @@ const Sections = {
           ${fText("weightGrams", "Peso envío (g)", p?.weightGrams ?? 0, { type: "number", step: "1", min: 0 })}
         </div>
         ${ImageField.render("prod-images", "Fotos del producto", p?.images || [], true)}
-        ${fSelect("productType", "Tipo", [["TIENDA_GENERAL", "Tienda general"], ["DROP_EXCLUSIVO", "Drop exclusivo"], ["TICKET_EVENTO", "Ticket de evento"]], p?.productType || "TIENDA_GENERAL")}
+        ${fSelect("productType", "Tipo", [["TIENDA_GENERAL", "Tienda general"], ["DROP_EXCLUSIVO", "Drop exclusivo"]], p?.productType || "TIENDA_GENERAL")}
         ${fSelect("status", "Estado", ["BORRADOR", "ACTIVO", "AGOTADO"], p?.status || "BORRADOR")}
-        <div id="size-stock-fields" class="${isTicket ? "hidden" : ""}">
+        <p class="font-label-mono text-[11px] text-on-surface-variant uppercase -mt-2">Las entradas de un evento se ponen a la venta desde Eventos (precio y aforo).</p>
+        <div id="size-stock-fields">
           <label class="nt-label">Variantes (talla / color / stock) — en el orden en que se muestran</label>
           <div class="flex flex-wrap gap-2 mt-2">
             ${Object.keys(VARIANT_PRESETS).map((k) => `<button type="button" data-preset="${k}" class="font-label-mono text-[11px] uppercase border border-outline-variant/30 px-2 py-1 text-on-surface-variant hover:border-secondary hover:text-secondary">${k}</button>`).join("")}
@@ -460,13 +461,6 @@ const Sections = {
           ${fDatetime("releaseAt", "Fecha/hora de lanzamiento", p?.dropMeta?.releaseAt)}
           ${fSelect("dropStatus", "Estado del drop", ["PROXIMAMENTE", "ABIERTO", "FINALIZADO"], p?.dropMeta?.dropStatus || "PROXIMAMENTE")}
         </fieldset>
-        <fieldset id="ticket-fields" class="border border-secondary-container/40 p-4 space-y-4 ${isTicket ? "" : "hidden"}">
-          <legend class="font-label-mono text-[12px] text-secondary uppercase px-2">Evento del ticket</legend>
-          ${events.length
-            ? fSelect("eventId", "Evento", events, p?.eventId || "")
-            : `<p class="font-label-mono text-[12px] text-error uppercase">Crea primero un evento en la sección Eventos.</p>`}
-          ${fText("ticketCapacity", "Aforo (capacidad)", generalStock, { type: "number", step: "1", min: 0 })}
-        </fieldset>
         <details class="border border-outline-variant/30 p-4" ${p?.seoTitle || p?.seoDescription ? "open" : ""}>
           <summary class="font-label-mono text-[12px] text-secondary uppercase cursor-pointer">SEO (buscadores y redes)</summary>
           <div class="space-y-4 mt-4">
@@ -478,16 +472,13 @@ const Sections = {
 
       Drawer.open(p ? "Editar producto" : "Nuevo producto", html, () => {
         const v = drawerValues();
-        const variants =
-          v.productType === "TICKET_EVENTO"
-            ? [{ size: "GENERAL", color: "", stockAvailable: parseInt(v.ticketCapacity, 10) || 0 }]
-            : [...document.querySelectorAll("[data-variant-row]")]
-                .map((row) => ({
-                  size: row.querySelector("[data-v-size]").value.trim(),
-                  color: row.querySelector("[data-v-color]").value.trim(),
-                  stockAvailable: parseInt(row.querySelector("[data-v-stock]").value, 10) || 0,
-                }))
-                .filter((x) => x.size);
+        const variants = [...document.querySelectorAll("[data-variant-row]")]
+          .map((row) => ({
+            size: row.querySelector("[data-v-size]").value.trim(),
+            color: row.querySelector("[data-v-color]").value.trim(),
+            stockAvailable: parseInt(row.querySelector("[data-v-stock]").value, 10) || 0,
+          }))
+          .filter((x) => x.size);
         if (!variants.length) { ntToast("Añade al menos una variante (talla)", true); return; }
         const payload = clean({
           name: v.name,
@@ -497,7 +488,6 @@ const Sections = {
           weightGrams: parseInt(v.weightGrams || "0", 10),
           productType: v.productType,
           status: v.status,
-          eventId: v.productType === "TICKET_EVENTO" ? v.eventId : undefined,
           slug: v.slug,
         });
         payload.categoryId = v.categoryId || null;
@@ -518,8 +508,6 @@ const Sections = {
       const form = document.getElementById("drawer-form");
       form.querySelector("[name=productType]").addEventListener("change", (e) => {
         document.getElementById("drop-fields").classList.toggle("hidden", e.target.value !== "DROP_EXCLUSIVO");
-        document.getElementById("ticket-fields").classList.toggle("hidden", e.target.value !== "TICKET_EVENTO");
-        document.getElementById("size-stock-fields").classList.toggle("hidden", e.target.value === "TICKET_EVENTO");
       });
       const rows = document.getElementById("variant-rows");
       document.getElementById("variant-add").addEventListener("click", () => rows.insertAdjacentHTML("beforeend", this.variantRow()));
@@ -640,25 +628,38 @@ const Sections = {
     title: "Eventos",
     icon: "event",
     items: [],
+    // Evento a abrir al entrar (p. ej. al editar su entrada desde Productos).
+    pendingEditId: null,
     async load() {
       actionsHost().innerHTML = newButton();
       document.getElementById("btn-new").addEventListener("click", () => this.form());
       host().innerHTML = `<div class="nt-skeleton h-40"></div>`;
       const { events } = await adminApi("/admin/events");
       this.items = events;
+      const ticketsCell = (e) => {
+        if (!e.capacity) return `<span class="text-on-surface-variant">Sin venta</span>`;
+        const left = e.capacity - e.ticketsSold;
+        return `<span class="font-label-mono text-[12px] ${left <= 0 ? "text-error" : ""}">${e.ticketsSold} / ${e.capacity}</span>
+          <span class="block mt-1">${e.ticketsOnSale ? badge(left > 0 ? "A la venta" : "Agotadas", left > 0 ? "ok" : "warn") : badge("No publicadas", "muted")}</span>`;
+      };
       const rows = events.map((e) => `
         <tr>
           <td class="font-bold uppercase">${ntEscapeHtml(e.title)}</td>
           <td class="font-label-mono text-[12px] whitespace-nowrap">${fmtShortDate(e.date)}</td>
           <td>${ntEscapeHtml(e.venue)}</td>
           <td>${Number(e.price) > 0 ? ntFormatMoney(e.price) : "Free"}</td>
+          <td>${ticketsCell(e)}</td>
           <td>${statusBadge(e.status)}</td>
           <td class="font-label-mono text-[12px] text-on-surface-variant">${(e.lineup || []).map((l) => ntEscapeHtml(l.artist.stageName)).join(" · ") || "—"}</td>
           ${rowActions(e.id)}
         </tr>`);
-      host().innerHTML = renderTable(["Título", "Fecha", "Sala", "Precio", "Estado", "Line-up", ""], rows, "Sin eventos programados.");
+      host().innerHTML = renderTable(["Título", "Fecha", "Sala", "Precio", "Entradas (vendidas / aforo)", "Estado", "Line-up", ""], rows, "Sin eventos programados.");
       wireRowActions(this.items, (e) => this.form(e), (e) =>
         submitAndReload(adminApi(`/admin/events/${e.id}`, { method: "DELETE" }), "events", "Evento eliminado"));
+
+      const pending = this.pendingEditId && this.items.find((e) => e.id === this.pendingEditId);
+      this.pendingEditId = null;
+      if (pending) this.form(pending);
     },
     async form(e = null) {
       const artists = await artistOptions();
@@ -670,24 +671,41 @@ const Sections = {
           <input class="nt-input w-20 text-center" data-lineup-billing type="number" min="0" title="0 = headliner" value="${entry?.billing ?? 0}"/>
           <button type="button" class="adm-icon-btn danger" data-lineup-remove><span class="material-symbols-outlined text-[20px]">close</span></button>
         </div>`;
+      const sold = e?.ticketsSold ?? 0;
 
       const html = `
-        ${fText("title", "Título", e?.title, { required: true })}
-        ${fDatetime("date", "Fecha y hora", e?.date, true)}
-        ${fText("venue", "Sala / Ciudad", e?.venue, { required: true, placeholder: "Nave 12 / Madrid" })}
-        ${fTextarea("description", "Descripción", e?.description)}
-        ${ImageField.render("event-poster", "Póster", e?.posterUrl ? [e.posterUrl] : [], false)}
-        ${fText("price", "Precio entrada (EUR)", e?.price ?? 0, { type: "number", step: "0.01", min: 0 })}
-        ${fSelect("status", "Estado", ["BORRADOR", "PUBLICADO", "CANCELADO", "FINALIZADO"], e?.status || "BORRADOR")}
-        <div>
-          <label class="nt-label">Line-up (billing: 0 = headliner)</label>
-          <div class="space-y-2 mt-2" id="lineup-rows">
+        <fieldset class="border border-outline-variant/30 p-4 space-y-4">
+          <legend class="font-label-mono text-[12px] text-secondary uppercase px-2">Evento</legend>
+          ${fText("title", "Título", e?.title, { required: true })}
+          <div class="grid grid-cols-2 gap-3">
+            ${fDatetime("date", "Fecha y hora", e?.date, true)}
+            ${fSelect("status", "Estado", ["BORRADOR", "PUBLICADO", "CANCELADO", "FINALIZADO"], e?.status || "BORRADOR")}
+          </div>
+          ${fText("venue", "Sala / Ciudad", e?.venue, { required: true, placeholder: "Nave 12 / Madrid" })}
+          ${fTextarea("description", "Descripción", e?.description)}
+          ${ImageField.render("event-poster", "Póster", e?.posterUrl ? [e.posterUrl] : [], false)}
+        </fieldset>
+        <fieldset class="border border-secondary-container/40 p-4 space-y-4">
+          <legend class="font-label-mono text-[12px] text-secondary uppercase px-2">Entradas</legend>
+          <div class="grid grid-cols-2 gap-3">
+            ${fText("price", "Precio entrada (EUR, IVA incl.)", e?.price ?? 0, { type: "number", step: "0.01", min: 0 })}
+            ${fText("capacity", "Aforo", e?.capacity ?? "", { type: "number", step: "1", min: Math.max(1, sold), placeholder: "sin venta" })}
+          </div>
+          ${e?.capacity ? `<p class="font-label-mono text-[12px] text-on-surface uppercase">Vendidas: ${sold} · Quedan: ${Math.max(0, e.capacity - sold)}</p>` : ""}
+          <p class="font-label-mono text-[11px] text-on-surface-variant uppercase">
+            Con aforo y precio, las entradas se ponen a la venta al PUBLICAR el evento (páginas Eventos y Tickets).
+            Deja el aforo vacío si es gratis o se vende fuera.
+          </p>
+        </fieldset>
+        <fieldset class="border border-outline-variant/30 p-4 space-y-2">
+          <legend class="font-label-mono text-[12px] text-secondary uppercase px-2">Line-up (billing: 0 = headliner)</legend>
+          <div class="space-y-2" id="lineup-rows">
             ${(e?.lineup || []).map((l) => lineupRow({ artistId: l.artist.id, billing: l.billing })).join("")}
           </div>
-          <button type="button" id="lineup-add" class="mt-2 font-label-mono text-[12px] uppercase border border-outline-variant/30 px-3 py-1.5 text-on-surface-variant hover:border-secondary hover:text-secondary transition-colors" ${artists.length ? "" : "disabled"}>
+          <button type="button" id="lineup-add" class="font-label-mono text-[12px] uppercase border border-outline-variant/30 px-3 py-1.5 text-on-surface-variant hover:border-secondary hover:text-secondary transition-colors" ${artists.length ? "" : "disabled"}>
             + Añadir artista
           </button>
-        </div>`;
+        </fieldset>`;
 
       Drawer.open(e ? "Editar evento" : "Nuevo evento", html, () => {
         const v = drawerValues();
@@ -695,14 +713,19 @@ const Sections = {
           artistId: row.querySelector("[data-lineup-artist]").value,
           billing: parseInt(row.querySelector("[data-lineup-billing]").value, 10) || 0,
         }));
+        const price = parseFloat(v.price || "0");
+        const capacity = v.capacity ? parseInt(v.capacity, 10) : null;
+        if (capacity && !(price > 0)) { ntToast("Para vender entradas pon un precio mayor que 0", true); return; }
+        if (capacity !== null && capacity < sold) { ntToast(`El aforo no puede ser menor que las ${sold} entradas vendidas`, true); return; }
         const payload = clean({
           title: v.title,
           date: fromLocalInput(v.date),
           venue: v.venue,
           description: v.description,
-          price: parseFloat(v.price || "0"),
+          price,
           status: v.status,
         });
+        payload.capacity = capacity;
         const poster = ImageField.get("event-poster")[0];
         if (poster) payload.posterUrl = poster;
         payload.lineup = lineup;

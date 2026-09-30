@@ -16,6 +16,7 @@ const NTChrome = (() => {
   const SHOP_ITEMS = [
     { label: "N-TY CLOTHES", href: "store.html" },
     { label: "N-TY JEWELRY", href: "store.html#joyas" },
+    { label: "EVENTOS", href: "events.html" },
     { label: "TICKETS", href: "tickets.html" },
   ];
   const CONTACT_ITEMS = [
@@ -24,7 +25,7 @@ const NTChrome = (() => {
     { label: "SERVICIOS", href: "services.html" },
   ];
   const LAB_VIEWS = ["sessions", "radio"];
-  const SHOP_VIEWS = ["store", "tickets"];
+  const SHOP_VIEWS = ["store", "events", "tickets"];
   const CONTACT_VIEWS = ["booking", "about", "services"];
 
   function activeGroup(active) {
