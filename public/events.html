@@ -208,7 +208,8 @@
             btn.disabled = true;
             try {
                 await NTCart.add({ productId: ev.tickets.productId, productVariantId: ev.tickets.variantId, quantity: qty });
-                ntToast(qty === 1 ? "Entrada añadida al carrito" : `${qty} entradas añadidas al carrito`);
+                const added = qty === 1 ? "Entrada añadida al carrito" : `${qty} entradas añadidas al carrito`;
+                ntToast(ev.tickets.nominative ? `${added}. Al pagar te pediremos el nombre de cada asistente` : added);
             } catch (err) {
                 ntToast(err.message, true);
             } finally {

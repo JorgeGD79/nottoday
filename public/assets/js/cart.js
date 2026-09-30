@@ -161,6 +161,11 @@ const NTCart = {
             <div>
               <h3 class="font-headline-lg text-headline-lg-mobile text-on-surface uppercase leading-none">${ntEscapeHtml(item.product.name)}</h3>
               <p class="font-label-mono text-label-mono text-on-surface-variant mt-1">${ntEscapeHtml(ntVariantLabel(item.productVariant))}</p>
+              ${item.product.event && item.product.event.nominativeTickets
+                ? `<p class="flex items-start gap-1 font-label-mono text-[10px] text-secondary uppercase tracking-wide mt-2">
+                     <span class="material-symbols-outlined text-[14px]">badge</span>Nominativas: el nombre de cada asistente se pide al pagar
+                   </p>`
+                : ""}
             </div>
             <div class="flex justify-between items-center mt-4 gap-2">
               <div class="flex items-center border border-outline-variant/30">
@@ -203,7 +208,11 @@ const NTCart = {
         <span class="font-label-mono text-label-mono text-on-surface-variant uppercase">Total</span>
         <span class="font-headline-lg text-headline-lg-mobile text-on-surface">${ntFormatMoney(total)}</span>
       </div>
-      <p class="font-label-mono text-[10px] text-on-surface-variant uppercase tracking-wide mb-stack-md">IVA incluido · el envío se calcula en el pago según tu país</p>`;
+      <p class="font-label-mono text-[10px] text-on-surface-variant uppercase tracking-wide mb-stack-md">${
+        this.cart.items.some((i) => i.product.productType !== "TICKET_EVENTO")
+          ? "IVA incluido · el envío se calcula en el pago según tu país"
+          : "IVA incluido · las entradas te llegan por email"
+      }</p>`;
 
     // Botones de eliminar (la X de cada línea).
     itemsEl.querySelectorAll("[data-remove]").forEach((btn) =>
