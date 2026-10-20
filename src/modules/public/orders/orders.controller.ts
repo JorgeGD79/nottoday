@@ -4,6 +4,10 @@ import { prisma } from "@/lib/prisma";
 import { AppError } from "@/utils/AppError";
 import { creditNotePdf, invoicePdf } from "@/services/invoice.service";
 import { maskIdDocument } from "@/utils/id-document";
+import { env } from "@/config/env";
+import { logger } from "@/lib/logger";
+import { sendEmail } from "@/services/email.service";
+import { withdrawalAdminEmail, withdrawalReceiptEmail } from "@/services/email-templates";
 
 const paramsSchema = z.object({ id: z.string().cuid() });
 const querySchema = z.object({ email: z.string().email() });
@@ -42,6 +46,7 @@ export async function trackOrderHandler(request: FastifyRequest, reply: FastifyR
       shippingMethodName: true,
       shippingCity: true,
       shippingCountry: true,
+      withdrawalRequestedAt: true,
       items: {
         select: {
           quantity: true,
@@ -96,4 +101,64 @@ export function sendPdf(reply: FastifyReply, { filename, pdf }: { filename: stri
     .header("Content-Disposition", `inline; filename="${filename}"`)
     .header("Cache-Control", "private, no-store")
     .send(pdf);
+}
+
+const withdrawSchema = z.object({
+  email: z.string().email(),
+  name: z.string().trim().min(2).max(120),
+  note: z.string().trim().max(1000).optional(),
+});
+
+/**
+ * POST /api/orders/:id/withdraw — función de desistimiento online
+ * (art. 11 bis de la Directiva 2011/83/UE, aplicable desde el 19/06/2026).
+ *
+ * Mismo acceso que el seguimiento (id + email). Registra la declaración y manda
+ * al cliente el acuse de recibo con fecha y hora (soporte duradero) y a la
+ * tienda el aviso interno. No reembolsa: eso se hace desde el panel al recibir
+ * la devolución. Es idempotente: repetirlo devuelve la fecha de la primera vez.
+ * Solo aplica a pedidos pagados con algún producto físico: las entradas para
+ * una fecha concreta están excluidas del desistimiento (LGDCU art. 103.l).
+ */
+export async function withdrawOrderHandler(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = paramsSchema.parse(request.params);
+  const { email, name, note } = withdrawSchema.parse(request.body);
+
+  const order = await prisma.order.findFirst({
+    where: { id, email: { equals: email.trim(), mode: "insensitive" } },
+    select: {
+      id: true,
+      email: true,
+      status: true,
+      refundedAt: true,
+      withdrawalRequestedAt: true,
+      items: { select: { quantity: true, variantLabel: true, product: { select: { name: true, productType: true } } } },
+    },
+  });
+  if (!order) throw AppError.notFound("Pedido");
+  if (order.withdrawalRequestedAt) return reply.send({ withdrawalRequestedAt: order.withdrawalRequestedAt, alreadyRequested: true });
+
+  const physical = order.items.filter((i) => i.product.productType !== "TICKET_EVENTO");
+  if (order.status !== "PAGADO" || order.refundedAt || !physical.length) {
+    throw new AppError("Este pedido no admite desistimiento online. Escríbenos y lo vemos.", 422);
+  }
+
+  // UPDATE condicional: dos envíos simultáneos no generan dos acuses.
+  const now = new Date();
+  const { count } = await prisma.order.updateMany({
+    where: { id: order.id, withdrawalRequestedAt: null },
+    data: { withdrawalRequestedAt: now, withdrawalName: name, withdrawalNote: note || null },
+  });
+  if (!count) {
+    const current = await prisma.order.findUniqueOrThrow({ where: { id: order.id }, select: { withdrawalRequestedAt: true } });
+    return reply.send({ withdrawalRequestedAt: current.withdrawalRequestedAt, alreadyRequested: true });
+  }
+
+  const data = { id: order.id, email: order.email, name, note: note || null, requestedAt: now, items: physical };
+  await sendEmail({ to: order.email, ...withdrawalReceiptEmail(data) });
+  const inbox = env.EMAIL_REPLY_TO || env.COMPANY_EMAIL;
+  if (inbox) await sendEmail({ to: inbox, ...withdrawalAdminEmail(data) });
+  else logger.warn({ orderId: order.id }, "Desistimiento sin buzón interno (EMAIL_REPLY_TO / COMPANY_EMAIL)");
+
+  return reply.send({ withdrawalRequestedAt: now, alreadyRequested: false });
 }

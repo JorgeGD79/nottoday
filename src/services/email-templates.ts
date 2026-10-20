@@ -151,6 +151,28 @@ function ticketsHtml(order: OrderEmailData) {
     ${blocks}`;
 }
 
+// Información legal que la confirmación del pedido tiene que llevar en soporte
+// duradero (LGDCU art. 98.7): vendedor, condiciones, desistimiento y garantía.
+function legalNoticeParts(hasPhysical: boolean, hasTickets: boolean) {
+  const seller = [env.COMPANY_NAME, env.COMPANY_TAX_ID && `NIF ${env.COMPANY_TAX_ID}`, env.COMPANY_ADDRESS].filter(Boolean).join(" · ");
+  const ticketsRule = "Las entradas para un evento en fecha concreta no admiten desistimiento (art. 103.l LGDCU); si el evento se cancela, te devolvemos el importe.";
+  const rights = [
+    hasPhysical && "Tienes 14 días naturales desde que recibes el pedido para desistir sin dar explicaciones, desde el seguimiento del pedido o con el formulario de devoluciones. Los productos tienen una garantía legal de 3 años.",
+    hasTickets && ticketsRule,
+  ].filter(Boolean).join(" ");
+  return { seller, rights, terms: `${env.APP_URL}/terms.html`, returns: `${env.APP_URL}/devoluciones.html` };
+}
+
+function legalNoticeHtml(hasPhysical: boolean, hasTickets: boolean) {
+  const p = legalNoticeParts(hasPhysical, hasTickets);
+  return `<p style="margin:24px 0 0;font-size:12px;color:#8e9192;">${escapeHtml(p.rights)} <a href="${escapeHtml(p.terms)}" style="color:#8e9192;">Condiciones de compra</a> · <a href="${escapeHtml(p.returns)}" style="color:#8e9192;">Devoluciones, desistimiento y garantía</a> (incluye el formulario de desistimiento).<br>Vendedor: ${escapeHtml(p.seller)}</p>`;
+}
+
+function legalNoticeText(hasPhysical: boolean, hasTickets: boolean) {
+  const p = legalNoticeParts(hasPhysical, hasTickets);
+  return `${p.rights}\nCondiciones de compra: ${p.terms}\nDevoluciones, desistimiento y garantía: ${p.returns}\nVendedor: ${p.seller}`;
+}
+
 // --------------------------------------------------------------------------
 // Plantillas
 // --------------------------------------------------------------------------
@@ -167,14 +189,15 @@ export function orderConfirmationEmail(order: OrderEmailData) {
      ${itemsTable(order)}
      ${address}
      ${ticketsHtml(order)}
-     <p style="margin:24px 0 0;">${button(trackUrl(order.id, order.email), order.tickets.length ? "Ver pedido y entradas" : "Seguir mi pedido")}</p>`
+     <p style="margin:24px 0 0;">${button(trackUrl(order.id, order.email), order.tickets.length ? "Ver pedido y entradas" : "Seguir mi pedido")}</p>
+     ${legalNoticeHtml(hasPhysical, order.tickets.length > 0)}`
   );
   const ticketsText = order.tickets.length
     ? `\n\nTus entradas (enseña el QR en la puerta; también las tienes en el enlace de seguimiento):\n${order.tickets
         .map((t) => `- ${t.event.title} · ${longDate(t.event.date)} · ${t.event.venue}${t.holderName ? ` · a nombre de ${t.holderName}${t.holderDocument ? ` (DNI ${maskIdDocument(t.holderDocument)})` : ""}` : ""} · código ${t.code}`)
         .join("\n")}`
     : "";
-  const text = `Pedido confirmado (${order.id})\n\n${itemsText(order)}${ticketsText}\n\nSeguimiento: ${trackUrl(order.id, order.email)}`;
+  const text = `Pedido confirmado (${order.id})\n\n${itemsText(order)}${ticketsText}\n\nSeguimiento: ${trackUrl(order.id, order.email)}\n\n${legalNoticeText(hasPhysical, order.tickets.length > 0)}`;
   return { subject: order.tickets.length ? `Tus entradas · pedido confirmado` : `Pedido confirmado · ${BRAND}`, html, text };
 }
 
@@ -204,6 +227,53 @@ export function orderRefundedEmail(order: OrderEmailData) {
   );
   const text = `Hemos reembolsado tu pedido ${order.id} (${money(order.total)}). Puede tardar 5-10 días en aparecer en tu cuenta.${order.tickets.length ? "\nLas entradas de este pedido han quedado anuladas." : ""}`;
   return { subject: `Reembolso de tu pedido · ${BRAND}`, html, text };
+}
+
+// --------------------------------------------------------------------------
+// Desistimiento online
+// --------------------------------------------------------------------------
+
+export interface WithdrawalEmailData {
+  id: string;
+  email: string;
+  name: string;
+  note: string | null;
+  requestedAt: Date;
+  items: { quantity: number; variantLabel: string; product: { name: string } }[];
+}
+
+const withdrawalItems = (w: WithdrawalEmailData) =>
+  w.items.map((i) => `${i.quantity}x ${i.product.name}${i.variantLabel ? ` (${i.variantLabel})` : ""}`);
+
+/** Acuse de recibo del desistimiento, en soporte duradero (art. 11 bis Dir. 2011/83). */
+export function withdrawalReceiptEmail(w: WithdrawalEmailData) {
+  const when = longDate(w.requestedAt);
+  const html = layout(
+    "Hemos recibido tu desistimiento",
+    `<p style="margin:0;">Confirmamos que el <strong style="color:#e5e2e1;">${escapeHtml(when)}</strong> nos comunicaste que desistes del contrato de este pedido.</p>
+     <p style="margin:8px 0 0;font-family:monospace;font-size:12px;color:#8e9192;">Pedido ${escapeHtml(w.id)} · ${escapeHtml(w.name)}</p>
+     <p style="margin:16px 0 0;">${withdrawalItems(w).map(escapeHtml).join("<br>")}</p>
+     <h2 style="margin:24px 0 4px;font-size:16px;text-transform:uppercase;color:#e5e2e1;">Qué pasa ahora</h2>
+     <p style="margin:0;">Devuélvenos los productos en un plazo máximo de 14 días naturales desde hoy. Te escribiremos con la dirección de devolución si no la tienes ya. Te reembolsaremos el importe, incluido el envío estándar, por el mismo medio de pago en un máximo de 14 días desde hoy; podemos esperar a recibir los productos o la prueba de que los has enviado.</p>
+     <p style="margin:24px 0 0;">${button(trackUrl(w.id, w.email), "Ver mi pedido")}</p>`
+  );
+  const text = `Hemos recibido tu desistimiento (${when}).\n\nPedido ${w.id} · ${w.name}\n${withdrawalItems(w).join("\n")}\n\nDevuélvenos los productos en un máximo de 14 días naturales desde hoy. Te reembolsaremos el importe, incluido el envío estándar, por el mismo medio de pago en un máximo de 14 días desde hoy; podemos esperar a recibir los productos o la prueba de su envío.\n\nSeguimiento: ${trackUrl(w.id, w.email)}`;
+  return { subject: `Desistimiento recibido · ${BRAND}`, html, text };
+}
+
+/** Aviso interno a la tienda: hay un desistimiento que gestionar. */
+export function withdrawalAdminEmail(w: WithdrawalEmailData) {
+  const when = longDate(w.requestedAt);
+  const html = layout(
+    "Nuevo desistimiento",
+    `<p style="margin:0;"><strong style="color:#e5e2e1;">${escapeHtml(w.name)}</strong> (${escapeHtml(w.email)}) ha desistido del pedido el ${escapeHtml(when)}.</p>
+     <p style="margin:8px 0 0;font-family:monospace;font-size:12px;color:#8e9192;">Pedido ${escapeHtml(w.id)}</p>
+     <p style="margin:16px 0 0;">${withdrawalItems(w).map(escapeHtml).join("<br>")}</p>
+     ${w.note ? `<p style="margin:16px 0 0;"><strong style="color:#e5e2e1;">Comentario:</strong><br>${escapeHtml(w.note)}</p>` : ""}
+     <p style="margin:16px 0 0;">Plazo legal para reembolsar: 14 días desde hoy (puedes esperar a recibir los productos). El reembolso se hace desde el panel, en Pedidos.</p>`
+  );
+  const text = `${w.name} (${w.email}) ha desistido del pedido ${w.id} el ${when}.\n${withdrawalItems(w).join("\n")}${w.note ? `\n\nComentario: ${w.note}` : ""}\n\nReembolso desde el panel en un máximo de 14 días.`;
+  return { subject: `Desistimiento · pedido ${w.id}`, html, text };
 }
 
 /** Pago recibido cuando el pedido ya había caducado y el stock ya no estaba disponible. */

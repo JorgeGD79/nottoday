@@ -8,9 +8,7 @@
 <link href="favicon.jpg" rel="apple-touch-icon"/>
 <link href="manifest.webmanifest" rel="manifest"/>
 <meta content="#131313" name="theme-color"/>
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="assets/css/fonts.css?v=1" rel="stylesheet"/>
 <link href="assets/css/site.css?v=9" rel="stylesheet"/>
 <style>
     .legal-section h2 {
@@ -65,17 +63,17 @@
             Política de <br/><span class="text-secondary">Privacidad</span>
         </h1>
         <p class="font-label-mono text-[12px] text-on-surface-variant uppercase tracking-widest mt-4">
-            Última actualización: julio 2026 · Plantilla orientativa — revisar con asesoría legal antes de publicar
+            Última actualización: octubre 2026
         </p>
     </header>
 
     <article class="legal-section pb-stack-lg">
         <h2><span class="num">01 /</span> Responsable del tratamiento</h2>
         <p>
-            <span class="placeholder">[razón social / nombre]</span>, NIF
-            <span class="placeholder">[NIF]</span>, domicilio en
-            <span class="placeholder">[domicilio completo]</span>. Para cualquier cuestión sobre tus datos:
-            <span class="placeholder">[email de privacidad]</span>.
+            <span class="placeholder" data-legal="name">[razón social / nombre]</span>, NIF
+            <span class="placeholder" data-legal="taxId">[NIF]</span>, domicilio en
+            <span class="placeholder" data-legal="address">[domicilio completo]</span>. Para cualquier cuestión sobre tus datos:
+            <span class="placeholder" data-legal="email">[email de privacidad]</span>.
         </p>
 
         <h2><span class="num">02 /</span> Qué datos recogemos</h2>
@@ -105,45 +103,49 @@
         </ul>
 
         <h2><span class="num">04 /</span> Base legal</h2>
-        <p>
-            La ejecución del contrato de compraventa (pedidos y envíos), tu solicitud previa (propuestas de colaboración),
-            el interés legítimo en recuperar carritos abandonados de compras iniciadas por ti, tu
-            consentimiento expreso (newsletter, retirable en cualquier momento) y el cumplimiento de
-            obligaciones legales.
-        </p>
-
-        <h2><span class="num">05 /</span> Con quién compartimos datos</h2>
         <ul>
-            <li><strong>Stripe</strong> (procesador de pagos) — recibe los datos necesarios para procesar el cobro. Los datos de tarjeta los introduces directamente en Stripe y nunca pasan por nuestros servidores.</li>
-            <li><strong>Resend</strong> (envío de emails) — recibe tu email y el contenido del correo para entregártelo.</li>
-            <li><strong>Empresas de transporte</strong> — reciben tu nombre, dirección y teléfono para entregar el pedido.</li>
-            <li><span class="placeholder">[Proveedor de hosting / infraestructura]</span> — aloja la web y la base de datos.</li>
+            <li><strong>Ejecución del contrato</strong> (art. 6.1.b RGPD): pedidos, envíos, entradas, facturas, desistimientos y garantías. Incluye el nombre y el documento de los asistentes en los eventos con entradas nominativas, que son una condición de acceso del evento.</li>
+            <li><strong>Tu solicitud</strong> (art. 6.1.b RGPD): propuestas de colaboración y consultas de pedido.</li>
+            <li><strong>Consentimiento</strong> (art. 6.1.a RGPD): newsletter y avisos de reposición. Puedes retirarlo cuando quieras, sin que afecte a lo anterior.</li>
+            <li><strong>Interés legítimo</strong> (art. 6.1.f RGPD): un único recordatorio de un carrito que empezaste a comprar. Puedes oponerte escribiéndonos al email del punto 01.</li>
+            <li><strong>Obligación legal</strong> (art. 6.1.c RGPD): facturación, contabilidad y atención de reclamaciones.</li>
         </ul>
-        <p>No vendemos ni cedemos tus datos a terceros con fines comerciales.</p>
-
+        <p>Para suscribirte a la newsletter debes tener al menos 14 años (art. 7 LOPDGDD).</p>
+        <h2><span class="num">05 /</span> Con quién compartimos datos</h2>
+        <p>Solo con los proveedores que necesitamos para dar el servicio, que tratan los datos por cuenta nuestra y con contrato de encargado del tratamiento (art. 28 RGPD):</p>
+        <ul>
+            <li><strong>Render</strong> (alojamiento de la web y la base de datos), con servidores en Frankfurt (Alemania).</li>
+            <li><strong>Stripe</strong> (pagos): recibe los datos necesarios para cobrar. Los datos de tarjeta los introduces directamente en Stripe y nunca pasan por nuestros servidores.</li>
+            <li><strong>Resend</strong> (envío de emails): recibe tu email y el contenido del correo para entregártelo.</li>
+            <li><strong>Cloudinary</strong> (alojamiento de imágenes de la web): no recibe datos de clientes, pero sirve imágenes y puede registrar la IP de quien las carga.</li>
+            <li><strong>Empresas de transporte</strong>: reciben tu nombre, dirección y teléfono para entregar el pedido.</li>
+        </ul>
+        <p><strong>Transferencias internacionales.</strong> Stripe, Resend, Cloudinary y Google (YouTube) son empresas de Estados Unidos o de su grupo, por lo que algunos datos pueden tratarse allí. Estas transferencias se amparan en el Marco de Privacidad de Datos UE-EE. UU., en el que están certificadas, o en las cláusulas contractuales tipo de la Comisión Europea.</p>
+        <p>No vendemos ni cedemos tus datos a terceros con fines comerciales. Solo los comunicaremos a autoridades cuando una ley nos obligue.</p>
         <h2><span class="num">06 /</span> Cuánto tiempo los conservamos</h2>
-        <p>
-            Los datos de pedidos se conservan durante los plazos exigidos por la normativa fiscal y de
-            consumo. Las propuestas de colaboración se conservan mientras estén en revisión y durante un plazo
-            razonable posterior. El documento (DNI, NIE o pasaporte) de las entradas nominativas se usa solo
-            para el control de acceso y se borra automáticamente 30 días después del evento. Los carritos no convertidos se eliminan periódicamente. Si te das de baja
-            de la newsletter, conservamos solo el registro de la baja para no volver a escribirte.
-        </p>
-
+        <ul>
+            <li><strong>Pedidos y facturas:</strong> 6 años desde la compra (art. 30 del Código de Comercio y normativa fiscal).</li>
+            <li><strong>Documento de las entradas nominativas</strong> (DNI, NIE o pasaporte): se usa solo para el control de acceso y se borra automáticamente 30 días después del evento.</li>
+            <li><strong>Propuestas de colaboración:</strong> mientras estén en revisión y 12 meses después de cerrarlas, salvo que lleguen a un acuerdo.</li>
+            <li><strong>Newsletter:</strong> hasta que te des de baja. Después conservamos solo el registro de la baja y del consentimiento, para no volver a escribirte y poder demostrar que lo diste.</li>
+            <li><strong>Avisos de reposición y listas de espera:</strong> hasta que te enviamos el aviso.</li>
+            <li><strong>Carritos no convertidos:</strong> se eliminan periódicamente.</li>
+        </ul>
         <h2><span class="num">07 /</span> Tus derechos</h2>
         <p>
             Puedes ejercer en cualquier momento tus derechos de <strong>acceso, rectificación, supresión,
             oposición, limitación y portabilidad</strong> escribiendo a
-            <span class="placeholder">[email de privacidad]</span>. Si consideras que no hemos tratado tus
+            <span class="placeholder" data-legal="email">[email de privacidad]</span>. Si consideras que no hemos tratado tus
             datos correctamente, puedes reclamar ante la Agencia Española de Protección de Datos
             (<a class="text-secondary hover:text-on-surface transition-colors" href="https://www.aepd.es" target="_blank" rel="noopener noreferrer">aepd.es</a>).
         </p>
 
-        <h2><span class="num">08 /</span> Almacenamiento local y terceros embebidos</h2>
+        <h2><span class="num">08 /</span> Almacenamiento local, cookies y terceros embebidos</h2>
         <ul>
-            <li>Usamos el <strong>almacenamiento local del navegador</strong> (localStorage) únicamente para recordar tu carrito entre visitas. No usamos cookies de seguimiento ni analítica de terceros.</li>
-            <li>Las N-TY Sessions se reproducen mediante <strong>YouTube en modo privacidad mejorada</strong> (youtube-nocookie.com): YouTube no instala cookies de seguimiento hasta que reproduces el vídeo. Al reproducirlo, aplica la <a class="text-secondary hover:text-on-surface transition-colors" href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">política de privacidad de Google</a>.</li>
-            <li>Las fuentes tipográficas se cargan desde Google Fonts y los estilos desde el CDN de Tailwind, que pueden registrar tu IP como parte de la entrega del contenido.</li>
+            <li>Usamos el <strong>almacenamiento local del navegador</strong> (localStorage) únicamente para recordar tu carrito entre visitas. Es técnicamente necesario para la tienda, por lo que no requiere consentimiento. No usamos cookies de seguimiento ni analítica de terceros.</li>
+            <li>Las N-TY Sessions se reproducen mediante <strong>YouTube en modo privacidad mejorada</strong> (youtube-nocookie.com): YouTube no instala cookies de seguimiento hasta que reproduces el vídeo. Las miniaturas de las sesiones se cargan desde los servidores de imágenes de YouTube, que reciben tu IP. Al reproducir un vídeo, aplica la <a class="text-secondary hover:text-on-surface transition-colors" href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">política de privacidad de Google</a>.</li>
+            <li>El pago se hace en un formulario de <strong>Stripe</strong> integrado en el checkout, que usa sus propias cookies técnicas para prevenir el fraude.</li>
+            <li>Las fuentes tipográficas y los estilos se sirven desde nuestro propio servidor: no se cargan desde Google Fonts ni desde otros CDN.</li>
         </ul>
     </article>
 </main>

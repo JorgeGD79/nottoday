@@ -69,11 +69,14 @@ const envSchema = z
     // Pausa entre correos de una campaña (Resend admite ~2 por segundo en el plan base).
     NEWSLETTER_SEND_INTERVAL_MS: z.coerce.number().int().min(0).max(60_000).default(600),
 
-    // Datos fiscales del emisor que aparecen en las facturas.
+    // Datos fiscales del emisor que aparecen en las facturas y en el aviso legal
+    // de la web (GET /api/legal: una sola fuente para facturas y páginas).
     COMPANY_NAME: z.string().default("NOT TODAY COLLECTIVE"),
     COMPANY_TAX_ID: z.string().default("[NIF PENDIENTE]"),
     COMPANY_ADDRESS: z.string().default("[Dirección fiscal pendiente]"),
     COMPANY_EMAIL: z.string().default(""),
+    // Datos registrales (Registro Mercantil o el que corresponda). Opcional.
+    COMPANY_REGISTRY: z.string().default(""),
     // IVA aplicado al envío (los productos llevan el suyo propio).
     SHIPPING_TAX_RATE: z.coerce.number().min(0).max(100).default(21),
     // Unidades disponibles a partir de las cuales se avisa de stock bajo.

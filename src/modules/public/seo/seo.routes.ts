@@ -203,6 +203,12 @@ const STATIC_PAGES: StaticPage[] = [
   },
   { file: "privacy.html", path: "/privacy.html", description: "Política de privacidad de NOT TODAY Collective." },
   { file: "terms.html", path: "/terms.html", description: "Términos y condiciones de la web y la tienda de NOT TODAY Collective." },
+  { file: "aviso-legal.html", path: "/aviso-legal.html", description: "Aviso legal de NOT TODAY Collective: datos del titular y condiciones de uso de la web." },
+  {
+    file: "devoluciones.html",
+    path: "/devoluciones.html",
+    description: "Devoluciones, desistimiento y garantía de las compras en la tienda de NOT TODAY, con el formulario de desistimiento.",
+  },
   { file: "checkout.html", path: "/checkout.html", noindex: true },
   { file: "track.html", path: "/track.html", noindex: true },
 ];

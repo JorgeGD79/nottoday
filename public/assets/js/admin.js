@@ -1002,6 +1002,7 @@ const Sections = {
                 ${o.creditNoteNumber ? `<p><button type="button" class="text-secondary underline" data-pdf="/api/admin/orders/${o.id}/credit-note">Rectificativa ${ntEscapeHtml(o.creditNoteNumber)}</button></p>` : ""}
                 ${o.discountCode ? `<p>Cupón: <span class="text-secondary">${ntEscapeHtml(o.discountCode.code)}</span></p>` : ""}
                 ${o._count && o._count.tickets ? `<p>Entradas emitidas: <span class="text-secondary">${o._count.tickets}</span></p>` : ""}
+                ${o.withdrawalRequestedAt ? `<p class="text-secondary">Desistimiento: ${fmtShortDate(o.withdrawalRequestedAt)}${o.withdrawalName ? ` · ${ntEscapeHtml(o.withdrawalName)}` : ""}${o.withdrawalNote ? `<br/>${ntEscapeHtml(o.withdrawalNote)}` : ""}</p>` : ""}
                 ${o.refundedAt ? `<p>Reembolso: ${fmtShortDate(o.refundedAt)}${o.stripeRefundId ? ` · ${ntEscapeHtml(o.stripeRefundId)}` : ""}</p>` : ""}
                 <p class="font-label-mono text-[10px]">${o.id}</p>
               </div>

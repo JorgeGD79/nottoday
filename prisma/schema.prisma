@@ -537,6 +537,13 @@ model Order {
   refundedAt     DateTime?
   stripeRefundId String?
 
+  // --- Desistimiento (función de desistimiento online, art. 11 bis Dir. 2011/83) ---
+  // Se marca cuando el cliente lo confirma desde el seguimiento del pedido; el
+  // reembolso sigue siendo manual desde el panel, al recibir la devolución.
+  withdrawalRequestedAt DateTime?
+  withdrawalName        String?
+  withdrawalNote        String?
+
   shippingMethod ShippingMethod? @relation(fields: [shippingMethodId], references: [id], onDelete: SetNull)
   discountCode   Discount?       @relation(fields: [discountCodeId], references: [id], onDelete: SetNull)
   items          OrderItem[]
