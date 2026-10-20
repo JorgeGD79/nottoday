@@ -163,7 +163,7 @@ const NTProductUI = {
                 ${p.productType === "DROP_EXCLUSIVO" ? "Drop exclusivo" : p.category ? `<a href="/tienda/${encodeURIComponent(p.category.slug)}" class="hover:text-secondary-container">${ntEscapeHtml(p.category.name)}</a>` : "Tienda"}
               </span>
               ${opts.modal ? `<h2 class="font-headline-xl text-[28px] text-on-surface uppercase leading-none mt-1">${ntEscapeHtml(p.name)}</h2>`
-                           : `<h1 class="font-headline-xl text-[32px] md:text-[44px] text-on-surface uppercase leading-none mt-1">${ntEscapeHtml(p.name)}</h1>`}
+                           : `<h1 class="font-headline-xl text-[32px] lg:text-[44px] text-on-surface uppercase leading-none mt-1">${ntEscapeHtml(p.name)}</h1>`}
               <p class="font-label-mono text-label-mono text-secondary-container mt-2">${ntFormatMoney(p.price)} <span class="text-on-surface-variant text-[11px]">IVA incl.</span></p>
             </div>
             ${p.description ? `<p class="font-body-md text-body-md text-on-surface-variant whitespace-pre-line">${ntEscapeHtml(p.description)}</p>` : ""}

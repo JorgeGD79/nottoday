@@ -10,24 +10,23 @@
 <meta content="#131313" name="theme-color"/>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <link href="assets/css/site.css?v=9" rel="stylesheet"/>
 <!-- Tailwind compilado (npm run build:css). Va el último, como hacía el CDN. -->
 <link href="assets/css/tailwind.css?v=1" rel="stylesheet"/>
+<link href="assets/css/redesign.css?v=1" rel="stylesheet"/>
 </head>
 <body class="antialiased min-h-screen flex flex-col">
 
 <!-- Main -->
 <main class="flex-grow pt-[140px] pb-32 md:pb-24 px-margin-mobile md:px-margin-desktop grid grid-cols-1 md:grid-cols-12 gap-gutter">
     <div class="md:col-span-12 mb-12">
-        <span class="font-label-mono text-[11px] tracking-[0.24em] text-secondary-container">CONTACTO</span>
         <h1 class="font-display-lg text-display-lg uppercase mb-4 mt-2">Make It<br/><span class="text-secondary-container">Happen</span></h1>
         <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
             Línea directa para colaborar con la marca: patrocinio de eventos, cápsulas de ropa, producción de contenido y experiencias con el colectivo. Construimos con quien comparte la visión.
         </p>
         <!-- La contratación de artistas la lleva el management de cada uno: no pasa por aquí. -->
-        <p class="font-label-mono text-[11px] text-on-surface-variant uppercase tracking-wide mt-4 max-w-2xl border-l-2 border-secondary-container pl-3">
+        <p class="font-label-mono text-[11px] text-on-surface-variant uppercase tracking-wide mt-4 max-w-2xl">
             ¿Quieres contratar a uno de nuestros artistas? Cada uno trabaja con su propio management.
         </p>
     </div>
@@ -180,5 +179,6 @@
         document.getElementById("form-collab").classList.remove("hidden");
     });
 </script>
+<script src="assets/js/redesign.js?v=1"></script>
 </body>
 </html>

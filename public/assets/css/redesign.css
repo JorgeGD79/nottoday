@@ -1,0 +1,167 @@
+/* ============================================================
+   NOT TODAY — capa de rediseño (design-taste-frontend + Web Interface Guidelines)
+   Se carga después de tailwind.css y site.css. Mantiene la marca
+   (#131313, #ff8a00, Nexa + TT Firs Neue) y quita los adornos:
+   etiquetas mono en mayúsculas, filetes de 1px, cajas con borde,
+   cristal, sombras en reposo y degradados decorativos.
+   ============================================================ */
+
+:root { color-scheme: dark; --nt-ink: #e5e2e1; --nt-muted: #b9b5b4; --nt-accent: #ff8a00;
+  --nt-field: #201f1f; --nt-field-2: #2a2929; --nt-ease: cubic-bezier(.2,.7,.2,1); }
+html { -webkit-tap-highlight-color: transparent; }
+html, body { font-family: "TT Firs Neue", system-ui, sans-serif; text-rendering: optimizeLegibility; }
+a, button, input, select, textarea, label, [role="button"] { touch-action: manipulation; }
+
+/* ---------- Tipografía: dos familias, sin mono decorativa ---------- */
+.font-label-mono, .text-label-mono {
+  font-family: "TT Firs Neue", system-ui, sans-serif !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+.font-label-mono { font-size: max(14px, 1em) !important; line-height: 1.35 !important; }
+.font-label-mono[class*="text-[9px]"], .font-label-mono[class*="text-[10px]"],
+.font-label-mono[class*="text-[11px]"], .font-label-mono[class*="text-[12px]"],
+.font-label-mono.text-xs { font-size: 14px !important; }
+button.font-label-mono, a.font-label-mono { font-weight: 600 !important; font-size: 15px !important; }
+[class*="tracking-["], .tracking-widest, .tracking-wider { letter-spacing: 0 !important; }
+.uppercase:not(h1):not(h2):not(h3):not(.font-headline-xl):not([class*="font-headline"]):not([class*="font-display"]) { text-transform: none !important; }
+p, li, dd { text-wrap: pretty; }
+h1, h2, h3 { text-wrap: balance; }
+code, kbd, samp, .nt-code { font-family: "JetBrains Mono", ui-monospace, monospace; letter-spacing: 0; }
+/* Precios, contadores y fechas sin bailes de ancho */
+[class*="price"], [id*="price"], [id*="total"], [id*="countdown"], [class*="countdown"], td, .tabular { font-variant-numeric: tabular-nums; }
+
+/* ---------- Sin filetes ni cajas de 1px ---------- */
+.border, .border-t, .border-b, .border-l, .border-r, .border-x, .border-y,
+[class*="border-t "], [class*="border-b "], .divide-y > *, .divide-x > * {
+  border-color: transparent !important;
+}
+/* Las cajas que eran solo un contorno pasan a ser superficies */
+div.border:not([class*="bg-"]), article.border:not([class*="bg-"]), section.border:not([class*="bg-"]),
+li.border:not([class*="bg-"]), form.border:not([class*="bg-"]), aside.border:not([class*="bg-"]) {
+  background-color: #1c1b1b;
+}
+/* Botones fantasma: relleno sólido en vez de contorno */
+a.border:not([class*="bg-"]), button.border:not([class*="bg-"]) {
+  background-color: var(--nt-field-2);
+}
+a.border:not([class*="bg-"]):hover, button.border:not([class*="bg-"]):hover { background-color: #3a3939; }
+hr { border: 0 !important; height: 0; margin-block: 8px; }
+.h-px, .w-px { background: transparent !important; }
+
+/* ---------- Campos: superficie rellena + línea de 2px que se enciende ---------- */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea {
+  background-color: var(--nt-field) !important;
+  color: var(--nt-ink) !important;
+  border: 0 !important;
+  border-bottom: 2px solid #3d3c3c !important;
+  border-radius: 0;
+  font-size: 16px !important;
+  font-family: "TT Firs Neue", system-ui, sans-serif !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  transition: border-color .15s var(--nt-ease), background-color .15s var(--nt-ease);
+}
+input:focus, select:focus, textarea:focus { outline: none; border-bottom-color: var(--nt-accent) !important; background-color: #262525 !important; }
+input::placeholder, textarea::placeholder { color: #8c8888 !important; }
+select option { background: #201f1f; color: #e5e2e1; }
+
+/* ---------- Sin cristal, sin sombras en reposo, sin degradados decorativos ---------- */
+[class*="backdrop-blur"] { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+nav[class*="backdrop-blur"], header[class*="backdrop-blur"], [class*="sticky"][class*="backdrop-blur"], [class*="fixed"][class*="backdrop-blur"] { background-color: #131313 !important; }
+[class*="shadow"]:not(input):not(select):not(textarea) { box-shadow: none !important; }
+.bg-gradient-to-br, .bg-gradient-to-r, .bg-gradient-to-l, .bg-gradient-to-tr { background-image: none !important; }
+[data-nt-decor="radial"] { background: #131313 !important; }
+
+/* ---------- Movimiento: propiedades explícitas, nada de transition:all ---------- */
+.transition-all { transition-property: color, background-color, border-color, opacity, transform !important; }
+.btn-primary, .btn-secondary, .nt-toast, .tab-btn, .filter-chip, .size-btn, .qty-btn { transition-property: color, background-color, border-color, opacity, transform !important; }
+.h-screen { height: 100svh !important; }
+.min-h-screen { min-height: 100svh !important; }
+
+/* Pulsación en todos los controles */
+a, button, [role="button"] { transition-property: color, background-color, opacity, transform; transition-duration: .15s; transition-timing-function: var(--nt-ease); }
+button:active, a[class*="bg-"]:active, a.border:active { transform: translateY(1px) scale(.985); }
+
+/* Entrada escalonada por sección (la clase la pone redesign.js: sin JS no se oculta nada) */
+.nt-will-rise { opacity: 0; transform: translateY(24px); }
+.nt-rise { opacity: 1; transform: none; transition: opacity .6s var(--nt-ease), transform .6s var(--nt-ease); transition-delay: var(--nt-delay, 0ms); }
+/* Imágenes: ligera deriva al pasar */
+article img, a > img, .group img { transition: transform .6s var(--nt-ease); }
+article:hover img, a:hover > img, .group:hover img { transform: scale(1.03); }
+
+/* ---------- Foco visible ---------- */
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--nt-accent) !important; outline-offset: 3px !important; }
+input:focus-visible, select:focus-visible, textarea:focus-visible { outline: none !important; }
+
+/* Salto al contenido */
+.nt-skip { position: fixed; left: 12px; top: 12px; z-index: 10000; background: var(--nt-accent); color: #050505;
+  font: 600 15px/1 "TT Firs Neue", system-ui, sans-serif; padding: 12px 16px; text-decoration: none; transform: translateY(-300%); transition: transform .15s; }
+.nt-skip:focus { transform: none; }
+
+/* Toast sin contorno, superficie de acento */
+.nt-toast { border: 0 !important; background: #ff8a00 !important; color: #050505 !important;
+  font-family: "TT Firs Neue", system-ui, sans-serif !important; letter-spacing: 0 !important; text-transform: none !important; font-size: 15px !important; }
+.nt-toast.error { background: #ffb4ab !important; color: #370000 !important; }
+
+/* Cajones y modales: el scroll no se escapa a la página */
+[role="dialog"], [id*="drawer"], [id*="modal"], .overflow-y-auto { overscroll-behavior: contain; }
+
+/* Tamaños mínimos de texto secundario */
+.text-\[9px\], .text-\[10px\], .text-\[11px\], .text-\[12px\] { font-size: 13px !important; }
+
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  .nt-will-rise { opacity: 1; transform: none; }
+  article:hover img, a:hover > img, .group:hover img { transform: none; }
+}
+
+/* ---------- Componentes de site.css: de contorno a superficie ---------- */
+.brutal-card, .nt-card { border: 0 !important; background-color: #1c1b1b !important; }
+.brutal-card:hover, .nt-card:hover { background-color: #242323 !important; }
+.nt-grid-lines { gap: 4px !important; border: 0 !important; }
+.nt-grid-lines > * { outline: 0 !important; background-color: #1c1b1b !important; }
+.tab-btn { border: 0 !important; background: #201f1f !important; font-family: "TT Firs Neue", system-ui, sans-serif !important; text-transform: none !important; font-size: 15px !important; font-weight: 600; }
+.tab-btn.active { background: #ff8a00 !important; color: #050505 !important; }
+.size-btn { border: 0 !important; background: #2a2929 !important; font-family: "TT Firs Neue", system-ui, sans-serif !important; font-size: 15px !important; text-transform: none !important; min-height: 40px; }
+.size-btn:hover:not(:disabled) { background: #3a3939 !important; color: #e5e2e1 !important; }
+.size-btn.selected, .size-btn.selected:hover:not(:disabled) { background: #ff8a00 !important; color: #050505 !important; }
+
+/* Menú flotante de chrome.js: superficie sólida, sin contorno, cristal ni sombra */
+#nt-nav-bar { border: 0 !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; box-shadow: none !important; background: #0e0e0e !important; }
+#nt-nav-bar * { letter-spacing: 0 !important; }
+
+/* La mono queda fuera: cualquier regla heredada que la pida cae en la cara de texto */
+@font-face { font-family: "JetBrains Mono"; src: url("../fonts/TT-Firs-Neue.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
+.nt-label, .nt-filter, .nt-tab, label { text-transform: none !important; letter-spacing: 0 !important; font-size: 15px !important; }
+.nt-filter { border: 0 !important; background-color: #201f1f !important; }
+.nt-tab { font-size: 16px !important; }
+
+/* Títulos de tarjeta: caben en dos líneas */
+.grid article h3, .grid > a:not(.lg\:col-span-2) h3, [id*="grid"] h3:not(.text-\[40px\]) { font-size: clamp(20px, 1.7vw, 26px) !important; line-height: 1.1 !important; letter-spacing: -0.01em !important; }
+.grid article h2, [id*="grid"] article h2 { font-size: clamp(20px, 1.7vw, 26px) !important; line-height: 1.1 !important; }
+article [class*="text-secondary-container"].font-label-mono { font-size: 18px !important; font-weight: 600; }
+.text-headline-lg { font-size: clamp(30px, 3.4vw, 48px) !important; }
+@media (max-width: 600px) { .text-display-lg { font-size: clamp(44px, 15vw, 64px) !important; } }
+
+/* Botones de contorno grueso: pasan a botones rellenos y legibles */
+button[class*="border-2"][class*="border-on-surface"], a[class*="border-2"][class*="border-on-surface"] {
+  border-color: transparent !important; background: #e5e2e1 !important; color: #131313 !important; }
+button[class*="border-2"][class*="border-on-surface"]:hover, a[class*="border-2"][class*="border-on-surface"]:hover { background: #ff8a00 !important; color: #050505 !important; }
+button[class*="border-2"][class*="border-secondary-container"], a[class*="border-2"][class*="border-secondary-container"] {
+  border-color: transparent !important; background: #ff8a00 !important; color: #050505 !important; }
+button.text-headline-lg-mobile, a.text-headline-lg-mobile { font-size: 20px !important; letter-spacing: 0 !important; line-height: 1.2 !important; padding-top: 14px !important; padding-bottom: 14px !important; }
+[class*="border-l-"] { border-left-color: transparent !important; }
+[class*="border-l-"].pl-4, [class*="border-l-"].pl-3 { padding-left: 0 !important; }
+
+/* Admin: etiquetas de tabla, menú y estados en la cara de texto */
+.adm-table th { font-family: "TT Firs Neue", system-ui, sans-serif !important; font-size: 14px !important; letter-spacing: 0 !important; text-transform: none !important; color: #b9b5b4 !important; font-weight: 600; }
+.adm-table td { font-family: "TT Firs Neue", system-ui, sans-serif !important; font-variant-numeric: tabular-nums; }
+.adm-badge { font-family: "TT Firs Neue", system-ui, sans-serif !important; font-size: 13px !important; letter-spacing: 0 !important; text-transform: none !important; border: 0 !important; padding: 4px 10px !important; font-weight: 600; }
+.adm-badge.ok { background: rgba(255,138,0,.16); }
+.adm-badge.muted { background: #2a2929; color: #c4c0bf !important; }
+.adm-badge.warn { background: rgba(255,180,171,.14); }
+.adm-nav-btn { font-family: "TT Firs Neue", system-ui, sans-serif !important; font-size: 15px !important; letter-spacing: 0 !important; text-transform: none !important; transition-property: color, background-color !important; }
+.adm-nav-btn.active { border-left-color: transparent !important; background: #ff8a00 !important; color: #050505 !important; }
