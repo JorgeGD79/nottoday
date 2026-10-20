@@ -12,7 +12,7 @@
 <link href="assets/css/site.css?v=9" rel="stylesheet"/>
 <!-- Tailwind compilado (npm run build:css). Va el último, como hacía el CDN. -->
 <link href="assets/css/tailwind.css?v=1" rel="stylesheet"/>
-<link href="assets/css/redesign.css?v=1" rel="stylesheet"/>
+<link href="assets/css/redesign.css?v=2" rel="stylesheet"/>
 </head>
 <body class="antialiased min-h-screen pb-28 md:pb-0">
 
@@ -47,10 +47,10 @@
     </div>
 </main>
 
-<script src="assets/js/api.js"></script>
-<script src="assets/js/chrome.js"></script>
+<script src="assets/js/api.js?v=2"></script>
+<script src="assets/js/chrome.js?v=2"></script>
 <script>NTChrome.mount({ active: "radio" });</script>
-<script src="assets/js/cart.js"></script>
+<script src="assets/js/cart.js?v=2"></script>
 <script>
     // ------- N-TY Radio: parrilla real + reproducción sincronizada -------
     const WEEKDAYS = [
@@ -189,6 +189,6 @@
         renderToggleButton();
     })();
 </script>
-<script src="assets/js/redesign.js?v=1"></script>
+<script src="assets/js/redesign.js?v=2"></script>
 </body>
 </html>
