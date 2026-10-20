@@ -113,32 +113,68 @@ const NTChrome = (() => {
     </footer>`;
   }
 
-  // Mismos 4 botones que el nav de escritorio (LAB/SHOP/NEWSLETTER/CONTACTO),
-  // cada uno al mismo destino que su label en escritorio (el texto entero es
-  // un link, no solo el caret) — así el bottom nav no es un menú distinto,
-  // es el mismo nav en formato de pestañas.
+  // Mismos 4 botones que el nav de escritorio (LAB/SHOP/NEWSLETTER/CONTACTO).
+  // Los que en escritorio tienen desplegable abren aquí una hoja encima de la
+  // barra con las mismas opciones; sin ella, Radio, Events, Jewelry, Tickets,
+  // Sobre nosotros y Servicios no tenían acceso desde el móvil.
+  const MOBILE_TABS = [
+    { group: "lab", href: "sessions.html", icon: "science", label: "LAB", children: LAB_ITEMS },
+    { group: "shop", href: "store.html", icon: "shopping_bag", label: "SHOP", children: SHOP_ITEMS },
+    { group: "news", href: "newsletter.html", icon: "mail", label: "NEWSLETTER" },
+    { group: "contacto", href: "booking.html", icon: "edit_calendar", label: "CONTACTO", children: CONTACT_ITEMS },
+  ];
+
   function mobileNavHtml(active) {
     const ag = activeGroup(active);
-    const tabs = [
-      { group: "lab", href: "sessions.html", icon: "science", label: "LAB" },
-      { group: "shop", href: "store.html", icon: "shopping_bag", label: "SHOP" },
-      { group: "news", href: "newsletter.html", icon: "mail", label: "NEWSLETTER" },
-      { group: "contacto", href: "booking.html", icon: "edit_calendar", label: "CONTACTO" },
-    ];
+    const here = location.pathname.split("/").pop() || "index.html";
+    const sheets = MOBILE_TABS.filter((t) => t.children)
+      .map((t) => `
+      <div class="nt-mobile-sheet hidden" id="nt-sheet-${t.group}" role="menu" aria-label="${t.label}">
+        ${t.children
+          .map((c) => {
+            const cur = c.href === here || location.pathname === c.href;
+            return `<a role="menuitem" href="${c.href}" class="block px-6 py-4 text-[16px] font-semibold ${cur ? "text-secondary" : "text-on-surface"}"${cur ? ' aria-current="page"' : ""}>${c.label}</a>`;
+          })
+          .join("")}
+      </div>`)
+      .join("");
     return `
-    <nav class="md:hidden fixed bottom-0 left-0 right-0 z-[500] flex bg-[#050505] border-t border-outline-variant/30" style="padding-bottom:env(safe-area-inset-bottom);">
-      ${tabs
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 z-[500] bg-[#050505]" style="padding-bottom:env(safe-area-inset-bottom);" aria-label="Navegación">
+      <div class="nt-mobile-sheets bg-[#1c1b1b]">${sheets}</div>
+      <div class="flex">
+      ${MOBILE_TABS
         .map((t) => {
           const isActive = t.group === ag;
-          return `<a href="${t.href}" class="flex-1 flex flex-col items-center gap-1 pt-3.5 pb-5 ${
-            isActive ? "text-secondary" : "text-on-surface-variant"
-          }">
-            <span class="material-symbols-outlined text-[22px]">${t.icon}</span>
-            <span class="font-label-mono text-[9px] tracking-[0.05em] uppercase">${t.label}</span>
-          </a>`;
+          const cls = `flex-1 flex flex-col items-center gap-1 pt-3.5 pb-5 ${isActive ? "text-secondary" : "text-on-surface-variant"}`;
+          const inner = `<span class="material-symbols-outlined text-[22px]">${t.icon}</span>
+            <span class="font-label-mono text-[9px] tracking-[0.05em] uppercase">${t.label}</span>`;
+          return t.children
+            ? `<button type="button" class="${cls}" data-sheet="${t.group}" aria-haspopup="menu" aria-expanded="false" aria-controls="nt-sheet-${t.group}">${inner}</button>`
+            : `<a href="${t.href}" class="${cls}">${inner}</a>`;
         })
         .join("")}
+      </div>
     </nav>`;
+  }
+
+  function wireMobileSheets(nav) {
+    const close = () => {
+      nav.querySelectorAll(".nt-mobile-sheet").forEach((s) => s.classList.add("hidden"));
+      nav.querySelectorAll("[data-sheet]").forEach((b) => b.setAttribute("aria-expanded", "false"));
+    };
+    nav.querySelectorAll("[data-sheet]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const sheet = nav.querySelector(`#nt-sheet-${btn.dataset.sheet}`);
+        const open = sheet.classList.contains("hidden");
+        close();
+        if (open) {
+          sheet.classList.remove("hidden");
+          btn.setAttribute("aria-expanded", "true");
+        }
+      });
+    });
+    document.addEventListener("click", (e) => { if (!nav.contains(e.target)) close(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
   }
 
   function wireDropdowns(root) {
@@ -260,7 +296,9 @@ const NTChrome = (() => {
 
     const mobileHost = document.createElement("div");
     mobileHost.innerHTML = mobileNavHtml(active);
-    document.body.appendChild(mobileHost.firstElementChild);
+    const mobileNav = mobileHost.firstElementChild;
+    document.body.appendChild(mobileNav);
+    wireMobileSheets(mobileNav);
   }
 
   return { mount };
