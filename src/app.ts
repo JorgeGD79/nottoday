@@ -35,6 +35,7 @@ import { publicRadioRoutes } from "@/modules/public/radio/radio.routes";
 import { adminRadioRoutes } from "@/modules/admin/radio/radio.routes";
 import { publicShippingRoutes } from "@/modules/public/shipping/shipping.routes";
 import { publicOrdersRoutes } from "@/modules/public/orders/orders.routes";
+import { publicLegalRoutes } from "@/modules/public/legal/legal.routes";
 import { adminShippingRoutes } from "@/modules/admin/shipping/shipping.routes";
 import { adminOrdersRoutes } from "@/modules/admin/orders/orders.routes";
 import { adminUploadsRoutes } from "@/modules/admin/uploads/uploads.routes";
@@ -79,15 +80,15 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   // --- Seguridad / plataforma ---
   // CSP relajada solo en lo que exige el frontend estático: scripts y estilos
-  // inline de las páginas, Google Fonts e imágenes remotas (posters/productos
+  // inline de las páginas e imágenes remotas (posters/productos
   // alojados en cualquier https). Tailwind ya no va por CDN: se compila en el build.
   await app.register(helmet, {
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'", "'unsafe-inline'", "https://js.stripe.com"],
-        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        fontSrc: ["'self'"],
         imgSrc: ["'self'", "data:", "https:"],
         // Vídeo del hero (y cualquier otro futuro) servido desde Cloudinary u
         // otro host https — mismo criterio permisivo que imgSrc.
@@ -180,6 +181,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(publicRadioRoutes, { prefix: "/api/radio" });
   await app.register(publicShippingRoutes, { prefix: "/api/shipping" });
   await app.register(publicOrdersRoutes, { prefix: "/api/orders" });
+  await app.register(publicLegalRoutes, { prefix: "/api/legal" });
   await app.register(publicNewsletterRoutes, { prefix: "/api/newsletter" });
   await app.register(authRoutes, { prefix: "/api/auth" });
 

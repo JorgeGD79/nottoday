@@ -8,9 +8,7 @@
 <link href="favicon.jpg" rel="apple-touch-icon"/>
 <link href="manifest.webmanifest" rel="manifest"/>
 <meta content="#131313" name="theme-color"/>
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="assets/css/fonts.css?v=1" rel="stylesheet"/>
 <link href="assets/css/site.css?v=9" rel="stylesheet"/>
 <!-- Tailwind compilado (npm run build:css). Va el último, como hacía el CDN. -->
 <link href="assets/css/tailwind.css?v=1" rel="stylesheet"/>
@@ -52,7 +50,8 @@
                 </h2>
                 <div class="space-y-stack-md">
                     <div><label class="nt-label" for="checkout-email">Email</label>
-                        <input type="email" id="checkout-email" class="nt-input" placeholder="tu@email.com" required autocomplete="email"/></div>
+                        <input type="email" id="checkout-email" class="nt-input" placeholder="tu@email.com" required autocomplete="email" aria-describedby="checkout-privacy"/>
+                        <p id="checkout-privacy" class="font-body-md text-[12px] text-on-surface-variant leading-snug mt-2">Usamos tus datos para gestionar el pedido, el envío y la factura, y guardamos el email en cuanto lo escribes por si la compra se queda a medias (te lo recordaremos una sola vez). Responsable: <span data-legal="name">NOT TODAY</span>. Puedes acceder, rectificar o suprimir tus datos y más, según la <a href="privacy.html" target="_blank" rel="noopener" class="underline text-secondary">política de privacidad</a>.</p></div>
                     <div><label class="nt-label" for="ship-country">País</label>
                         <select id="ship-country" class="nt-input" required autocomplete="country"></select></div>
                     <label class="flex items-center gap-2 font-label-mono text-[12px] text-on-surface-variant uppercase cursor-pointer">
@@ -120,6 +119,17 @@
                 <h2 class="font-headline-lg text-headline-lg-mobile text-on-surface uppercase mb-stack-md">Tu pedido</h2>
                 <div id="order-items" class="space-y-stack-sm mb-stack-md"></div>
                 <div id="order-totals" class="border-t border-outline-variant/30 pt-stack-md"></div>
+                <!-- Información precontractual (LGDCU art. 97 y 98, LSSI art. 27) -->
+                <div class="border-t border-outline-variant/30 mt-stack-md pt-stack-md space-y-1.5 font-body-md text-[12px] text-on-surface-variant leading-snug">
+                    <p><strong class="text-on-surface">Vendedor:</strong> <span data-legal="name">[razón social / nombre]</span> · NIF <span data-legal="taxId">[NIF]</span> · <a href="aviso-legal.html" target="_blank" rel="noopener" class="underline">datos completos</a></p>
+                    <p><strong class="text-on-surface">Entrega:</strong> en el plazo del método de envío elegido y como máximo en 30 días. Las entradas llegan por email al confirmarse el pago.</p>
+                    <p><strong class="text-on-surface">Desistimiento:</strong> 14 días naturales desde que recibes el pedido, sin dar explicaciones. Las entradas para un evento con fecha no admiten desistimiento.</p>
+                    <p><strong class="text-on-surface">Garantía:</strong> 3 años en todos los productos. <a href="devoluciones.html" target="_blank" rel="noopener" class="underline">Devoluciones y garantía</a></p>
+                </div>
+                <label class="flex items-start gap-2 mt-stack-md font-body-md text-[13px] text-on-surface-variant leading-snug cursor-pointer">
+                    <input type="checkbox" id="accept-terms" form="checkout-form" required class="mt-0.5 bg-transparent border-outline-variant text-secondary focus:ring-0"/>
+                    <span>He leído y acepto las <a href="terms.html" target="_blank" rel="noopener" class="underline text-secondary">Condiciones de compra</a>.</span>
+                </label>
                 <button type="submit" form="checkout-form" id="pay-btn" class="btn-primary mt-stack-md">Pagar</button>
                 <p class="font-label-mono text-[10px] text-on-surface-variant uppercase tracking-wide mt-stack-sm text-center">Pago seguro · No almacenamos datos de tarjeta</p>
             </div>

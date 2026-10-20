@@ -104,12 +104,19 @@ const NTChrome = (() => {
         <div class="flex flex-col gap-1.5 font-label-mono text-[12px]">
           <a href="about.html" class="text-on-surface-variant hover:text-secondary transition-colors w-fit">Sobre Nosotros</a>
           <a href="services.html" class="text-on-surface-variant hover:text-secondary transition-colors w-fit">Servicios</a>
-          <a href="track.html" class="text-on-surface-variant hover:text-secondary transition-colors w-fit">Track Order</a>
-          <a href="terms.html" class="text-on-surface-variant hover:text-secondary transition-colors w-fit">Terms</a>
-          <a href="privacy.html" class="text-on-surface-variant hover:text-secondary transition-colors w-fit">Privacy</a>
+          <a href="track.html" class="text-on-surface-variant hover:text-secondary transition-colors w-fit">Seguimiento de pedido</a>
         </div>
       </div>
-      <div class="md:self-end font-label-mono text-[10px] text-on-surface-variant">© 2026 NOT TODAY COLLECTIVE. ALL RIGHTS RESERVED.</div>
+      <div>
+        <div class="font-label-mono text-[11px] text-on-surface-variant tracking-[0.06em] uppercase mb-3">Legal</div>
+        <div class="flex flex-col gap-1.5 font-label-mono text-[12px]">
+          <a href="aviso-legal.html" class="text-on-surface-variant hover:text-secondary transition-colors w-fit">Aviso legal</a>
+          <a href="terms.html" class="text-on-surface-variant hover:text-secondary transition-colors w-fit">Condiciones de compra</a>
+          <a href="devoluciones.html" class="text-on-surface-variant hover:text-secondary transition-colors w-fit">Devoluciones y garantía</a>
+          <a href="privacy.html" class="text-on-surface-variant hover:text-secondary transition-colors w-fit">Privacidad y cookies</a>
+        </div>
+        <div class="font-label-mono text-[10px] text-on-surface-variant mt-stack-md">© 2026 NOT TODAY COLLECTIVE. TODOS LOS DERECHOS RESERVADOS.</div>
+      </div>
     </footer>`;
   }
 
@@ -271,6 +278,24 @@ const NTChrome = (() => {
     window.addEventListener("resize", update);
   }
 
+  // Datos del titular (aviso legal, condiciones, privacidad, checkout): salen de
+  // las variables COMPANY_* del servidor, las mismas que usan las facturas. Si
+  // una está vacía o pendiente, se queda el marcador que trae el HTML.
+  function fillLegal() {
+    const nodes = document.querySelectorAll("[data-legal]");
+    if (!nodes.length || typeof ntApi !== "function") return;
+    ntApi("/legal")
+      .then((info) => {
+        nodes.forEach((el) => {
+          const value = info && info[el.dataset.legal];
+          if (!value || /PENDIENTE/i.test(value)) return;
+          el.textContent = value;
+          el.classList.remove("placeholder");
+        });
+      })
+      .catch(() => {});
+  }
+
   function mount(opts) {
     const options = opts || {};
     const active = options.active || null;
@@ -299,6 +324,7 @@ const NTChrome = (() => {
     const mobileNav = mobileHost.firstElementChild;
     document.body.appendChild(mobileNav);
     wireMobileSheets(mobileNav);
+    fillLegal();
   }
 
   return { mount };

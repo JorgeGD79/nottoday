@@ -8,9 +8,7 @@
 <link href="favicon.jpg" rel="apple-touch-icon"/>
 <link href="manifest.webmanifest" rel="manifest"/>
 <meta content="#131313" name="theme-color"/>
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="assets/css/fonts.css?v=1" rel="stylesheet"/>
 <link href="assets/css/site.css?v=9" rel="stylesheet"/>
 <!-- Tailwind compilado (npm run build:css). Va el último, como hacía el CDN. -->
 <link href="assets/css/tailwind.css?v=1" rel="stylesheet"/>
@@ -185,6 +183,73 @@
         </div>`;
     }
 
+    // Función de desistimiento online (art. 11 bis Dir. 2011/83/UE): un botón
+    // "Desistir del contrato aquí" visible mientras dure el plazo y una segunda
+    // confirmación. Solo para pedidos pagados con algo físico: las entradas para
+    // una fecha concreta no admiten desistimiento.
+    function withdrawalHtml(order) {
+        const physical = order.items.some((i) => i.product.productType !== "TICKET_EVENTO");
+        if (!physical || order.status !== "PAGADO") return "";
+        if (order.withdrawalRequestedAt) {
+            return `
+            <div class="lg:col-span-12 nt-card" id="withdrawal-card">
+                <span class="font-label-mono text-[11px] text-secondary-container uppercase tracking-widest">Desistimiento</span>
+                <p class="font-body-md text-[14px] text-on-surface mt-2">Recibimos tu desistimiento el ${ntEscapeHtml(fmtLong(order.withdrawalRequestedAt))}. Te enviamos el acuse por email; devuélvenos los productos en 14 días naturales y te reembolsamos.</p>
+            </div>`;
+        }
+        return `
+        <div class="lg:col-span-12 nt-card" id="withdrawal-card">
+            <span class="font-label-mono text-[11px] text-secondary-container uppercase tracking-widest">Desistimiento</span>
+            <p class="font-body-md text-[14px] text-on-surface-variant mt-2">Tienes 14 días naturales desde que recibes el pedido para desistir sin dar explicaciones. <a href="devoluciones.html" class="underline text-secondary-container">Cómo funciona</a>.</p>
+            <button type="button" id="withdraw-open" class="mt-stack-md border border-on-surface px-4 py-2 font-label-mono text-[12px] uppercase tracking-[0.06em] text-on-surface hover:bg-on-surface hover:text-primary-container transition-colors">Desistir del contrato aquí</button>
+            <form id="withdraw-form" class="hidden mt-stack-md space-y-stack-md max-w-xl" novalidate>
+                <div>
+                    <label class="nt-label" for="withdraw-name">Nombre y apellidos</label>
+                    <input class="nt-input" id="withdraw-name" type="text" required minlength="2" maxlength="120" autocomplete="name"/>
+                </div>
+                <div>
+                    <label class="nt-label" for="withdraw-note">Comentario (opcional)</label>
+                    <textarea class="nt-input" id="withdraw-note" rows="3" maxlength="1000" placeholder="Por ejemplo, qué productos devuelves si no son todos"></textarea>
+                </div>
+                <p class="font-body-md text-[13px] text-on-surface-variant">Al confirmar, nos comunicas que desistes del contrato de este pedido (${ntEscapeHtml(order.id)}). Te mandaremos el acuse de recibo a ${ntEscapeHtml(currentEmail)}.</p>
+                <button type="submit" class="btn-primary">Confirmar desistimiento</button>
+            </form>
+        </div>`;
+    }
+
+    function wireWithdrawal(order) {
+        const openBtn = document.getElementById("withdraw-open");
+        const form = document.getElementById("withdraw-form");
+        if (!openBtn || !form) return;
+        openBtn.addEventListener("click", () => {
+            openBtn.classList.add("hidden");
+            form.classList.remove("hidden");
+            document.getElementById("withdraw-name").focus();
+        });
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            if (!form.reportValidity()) return;
+            const btn = form.querySelector("button[type=submit]");
+            btn.disabled = true;
+            try {
+                const { withdrawalRequestedAt } = await ntApi(`/orders/${encodeURIComponent(order.id)}/withdraw`, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        email: currentEmail,
+                        name: document.getElementById("withdraw-name").value.trim(),
+                        note: document.getElementById("withdraw-note").value.trim() || undefined,
+                    }),
+                });
+                const card = document.getElementById("withdrawal-card");
+                card.outerHTML = withdrawalHtml({ ...order, withdrawalRequestedAt });
+                ntToast("Desistimiento recibido");
+            } catch (err) {
+                ntToast(err.message, true);
+                btn.disabled = false;
+            }
+        });
+    }
+
     let currentEmail = "";
     function renderOrder(order) {
         const steps = buildSteps(order);
@@ -220,7 +285,9 @@
             </div>
             ${invoiceLinks(order)}
         </div>
+        ${withdrawalHtml(order)}
         ${ticketsHtml(order.tickets)}`;
+        wireWithdrawal(order);
 
         result.querySelectorAll("[data-copy]").forEach((btn) =>
             btn.addEventListener("click", async () => {

@@ -8,9 +8,7 @@
 <link href="favicon.jpg" rel="apple-touch-icon"/>
 <link href="manifest.webmanifest" rel="manifest"/>
 <meta content="#131313" name="theme-color"/>
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="assets/css/fonts.css?v=1" rel="stylesheet"/>
 <link href="assets/css/site.css?v=9" rel="stylesheet"/>
 <style>
     .legal-section h2 {
@@ -65,7 +63,7 @@
             Términos y <br/><span class="text-secondary">Condiciones</span>
         </h1>
         <p class="font-label-mono text-[12px] text-on-surface-variant uppercase tracking-widest mt-4">
-            Última actualización: julio 2026 · Plantilla orientativa — revisar con asesoría legal antes de publicar
+            Última actualización: octubre 2026
         </p>
     </header>
 
@@ -73,10 +71,10 @@
         <h2><span class="num">01 /</span> Identidad del titular</h2>
         <p>
             El sitio web NOT TODAY (en adelante, "el Sitio") es titularidad de
-            <span class="placeholder">[razón social / nombre]</span>, con NIF
-            <span class="placeholder">[NIF]</span> y domicilio en
-            <span class="placeholder">[domicilio completo]</span>. Contacto:
-            <span class="placeholder">[email de contacto]</span>.
+            <span class="placeholder" data-legal="name">[razón social / nombre]</span>, con NIF
+            <span class="placeholder" data-legal="taxId">[NIF]</span> y domicilio en
+            <span class="placeholder" data-legal="address">[domicilio completo]</span>. Contacto:
+            <span class="placeholder" data-legal="email">[email de contacto]</span>. Más datos en el <a class="text-secondary hover:text-on-surface transition-colors" href="aviso-legal.html">Aviso legal</a>.
         </p>
 
         <h2><span class="num">02 /</span> Objeto</h2>
@@ -99,6 +97,11 @@
             reservado. El contrato de compraventa se perfecciona en el momento en que el pago es confirmado.
             Si el pago falla o se cancela, el pedido queda anulado y el stock se libera automáticamente.
         </p>
+        <p>
+            Antes de pagar tienes que aceptar estas condiciones. Te enviamos la confirmación del pedido por
+            email, con su detalle y estas condiciones enlazadas. Puedes guardar o imprimir esta página en
+            cualquier momento. El idioma del contrato es el español.
+        </p>
 
         <h2><span class="num">04 /</span> Precios e impuestos</h2>
         <p>
@@ -109,26 +112,32 @@
 
         <h2><span class="num">05 /</span> Envíos y seguimiento</h2>
         <p>
-            Los métodos de envío disponibles, sus costes y plazos orientativos son los publicados en el
-            propio checkout en el momento de la compra. Una vez confirmado el pago y expedido el pedido,
+            Los métodos de envío disponibles y sus costes son los publicados en el propio checkout en el
+            momento de la compra, según el país de entrega. Salvo que el método indique otro plazo, entregamos
+            en un máximo de <strong>30 días naturales</strong> desde la compra; si no podemos cumplirlo te
+            avisaremos y podrás cancelar el pedido con reembolso completo. Una vez expedido el pedido,
             el estado puede consultarse en la página de <a class="text-secondary hover:text-on-surface transition-colors" href="track.html">Seguimiento</a>
             introduciendo el número de pedido y el email de compra, incluyendo el código de seguimiento del
-            transportista cuando esté disponible.
+            transportista cuando esté disponible. Las entradas no se envían: llegan por email al confirmarse el pago.
         </p>
-
-        <h2><span class="num">06 /</span> Desistimiento y devoluciones</h2>
+        <h2><span class="num">06 /</span> Desistimiento, devoluciones y garantía</h2>
         <p>
-            De acuerdo con la legislación de consumo española, dispones de un plazo de <strong>14 días
-            naturales</strong> desde la recepción del pedido para ejercer tu derecho de desistimiento sin
-            necesidad de justificación, contactando en <span class="placeholder">[email de devoluciones]</span>.
+            Si eres consumidor, tienes <strong>14 días naturales</strong> desde que recibes el pedido para
+            desistir de la compra sin dar explicaciones, con el botón <strong>"Desistir del contrato aquí"</strong>
+            del <a class="text-secondary hover:text-on-surface transition-colors" href="track.html">seguimiento del pedido</a>, por email o con el formulario modelo.
+            Te reembolsamos todo lo pagado, incluido el envío estándar, en un máximo de 14 días desde que nos
+            lo comunicas. Los gastos de devolución corren de tu cuenta, salvo producto defectuoso o error nuestro.
         </p>
-        <ul>
-            <li>El producto debe devolverse sin usar, con sus etiquetas y en su embalaje original.</li>
-            <li>Los gastos de devolución corren a cargo del cliente, salvo producto defectuoso o error nuestro.</li>
-            <li>El reembolso (incluido el envío inicial estándar) se efectúa por el mismo medio de pago en un plazo máximo de 14 días desde la recepción de la devolución.</li>
-            <li><span class="placeholder">[Si aplica: indicar aquí excepciones para piezas personalizadas o condiciones específicas de drops]</span></li>
-        </ul>
-
+        <p>
+            Las <strong>entradas para eventos</strong> en una fecha concreta no admiten desistimiento
+            (art. 103.l LGDCU); si el evento se cancela, te devolvemos el importe. Tampoco los productos
+            personalizados ni los precintados por higiene que se hayan desprecintado.
+        </p>
+        <p>
+            Todos los productos tienen una <strong>garantía legal de 3 años</strong> desde la entrega.
+            El detalle, las excepciones y el formulario de desistimiento están en
+            <a class="text-secondary hover:text-on-surface transition-colors" href="devoluciones.html">Devoluciones y garantía</a>.
+        </p>
         <h2><span class="num">07 /</span> Cupones y promociones</h2>
         <p>
             Los códigos de descuento están sujetos a las condiciones indicadas en cada campaña (vigencia,
@@ -161,12 +170,13 @@
             de un uso del Sitio contrario a estos términos.
         </p>
 
-        <h2><span class="num">11 /</span> Ley aplicable y jurisdicción</h2>
+        <h2><span class="num">11 /</span> Ley aplicable, reclamaciones y jurisdicción</h2>
         <p>
-            Estos términos se rigen por la legislación española. Cualquier controversia se someterá a los
-            juzgados y tribunales que correspondan conforme a la normativa de consumidores y usuarios.
-            Puedes acudir también a la plataforma europea de resolución de litigios en línea:
-            <a class="text-secondary hover:text-on-surface transition-colors" href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener noreferrer">ec.europa.eu/consumers/odr</a>.
+            Estas condiciones se rigen por la legislación española. Si tienes cualquier queja, escríbenos a
+            <span class="placeholder" data-legal="email">[email de contacto]</span> y te responderemos en un plazo máximo de un mes.
+            No estamos adheridos a ningún sistema de arbitraje de consumo ni a otra entidad de resolución
+            alternativa de litigios. Si eres consumidor, puedes acudir a los servicios de consumo de tu
+            comunidad autónoma o a los juzgados de tu domicilio.
         </p>
     </article>
 </main>
